@@ -1,13 +1,29 @@
 package com.example.plantpal.domain.entity;
 
-import com.example.plantpal.domain.enums.ActionType;
-import jakarta.persistence.*;
-import lombok.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import com.example.plantpal.domain.enums.ActionType;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "care_logs")
@@ -23,8 +39,6 @@ public class CareLog {
     @JoinColumn(name = "plant_id", nullable = false)
     private Plant plant;
 
-    // nullable: รดน้ำนอกตารางก็บันทึกได้
-    // ลบตารางดูแล -> log เก่ายังอยู่ แค่ค่านี้เป็น NULL (ON DELETE SET NULL)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "care_schedule_id")
     @OnDelete(action = OnDeleteAction.SET_NULL)
