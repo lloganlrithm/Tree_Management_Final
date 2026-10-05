@@ -14,3 +14,15 @@
 
 /* กล่องการ์ดว่าง ให้ซ่อนไว้ก่อน */
 #plant-grid:empty { display: none; }
+
+
+/* ===== หน้ารายละเอียดต้นไม้ ===== */
+.species-facts { display: flex; flex-wrap: wrap; gap: 12px 40px; }
+.sp-item { display: flex; flex-direction: column; gap: 2px; }
+.sp-item .k { font-size: .8rem; color: var(--muted); }
+.sp-item .v { font-weight: 500; }
+.sp-item .v b { font-family: var(--font-head); font-size: 1.2rem; }
+.sp-desc { margin-top: 14px; color: var(--muted); font-size: .9rem; max-width: 70ch; }
+
+/* กล่องว่างรองานเพื่อน: เส้นประ */
+.slot { border-style: dashed; box-shadow: none; }
