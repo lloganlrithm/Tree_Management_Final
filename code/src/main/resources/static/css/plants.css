@@ -73,3 +73,11 @@
   .landing-preview { grid-template-columns: 1fr; }
   .landing-preview .plant-card:nth-child(2) { margin-top: 0; }
 }
+
+/* ข้อความผลลัพธ์หลังบันทึก/ลบ */
+.flash { padding: 12px 16px; border-radius: var(--radius-md); margin-bottom: 16px; font-weight: 500; }
+.flash.ok  { background: #e6f2e9; color: var(--primary-strong); }
+.flash.err { background: #fbe8e8; color: #a33a3a; }
+
+/* แถวว่างในตาราง (ยังไม่มีข้อมูล) */
+.empty-row { text-align: center; padding: 40px 20px; color: var(--muted); }
