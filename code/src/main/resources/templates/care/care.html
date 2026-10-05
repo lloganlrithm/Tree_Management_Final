@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="th" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <th:block th:replace="~{fragments/layout :: head('ตารางและการดูแล')}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/care.css}">
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- Sidebar -->
+    <aside th:replace="~{fragments/layout :: sidebar('care')}"></aside>
+
+    <div class="main">
+
+        <!-- Topbar -->
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+
+        <main class="content care-content">
+
+            <!-- Page Header -->
+            <section class="care-page-header">
+                <div>
+                    <h1>ตารางและการดูแล</h1>
+                    <p>ติดตามและบันทึกการดูแลต้นไม้ของคุณ</p>
+                </div>
+            </section>
+
+            <!-- Filter -->
+            <section class="care-toolbar">
+                <div class="care-filters">
+
+                    <button class="care-filter-btn active"
+                            type="button"
+                            data-filter="ALL">
+                        ทั้งหมด
+                    </button>
+
+                    <button class="care-filter-btn"
+                            type="button"
+                            data-filter="WATER">
+                        รดน้ำ
+                    </button>
+
+                    <button class="care-filter-btn"
+                            type="button"
+                            data-filter="FERTILIZE">
+                        ใส่ปุ๋ย
+                    </button>
+
+                    <button class="care-filter-btn"
+                            type="button"
+                            data-filter="REPOT">
+                        เปลี่ยนกระถาง
+                    </button>
+
+                    <button class="care-filter-btn"
+                            type="button"
+                            data-filter="CHECK_SUNLIGHT">
+                        เช็กแดด
+                    </button>
+
+                    <button class="care-filter-btn"
+                            type="button"
+                            data-filter="HEALTH_CHECK">
+                        ตรวจสุขภาพ
+                    </button>
+
+                </div>
+            </section>
+
+            <!-- Care Schedule -->
+            <section class="care-section">
+
+                <div class="care-section-header">
+                    <div>
+                        <h2>ตารางดูแล</h2>
+                        <p>รายการดูแลต้นไม้จากตารางที่บันทึกไว้</p>
+                    </div>
+
+                    <span class="care-count"
+                          th:text="${schedules.size()} + ' รายการ'">
+                        0 รายการ
+                    </span>
+                </div>
+
+                <div class="care-task-list" id="careTaskList">
+
+                    <!-- Schedule Card -->
+                    <article class="care-task-card"
+                             th:each="schedule : ${schedules}"
+                             th:if="${schedule.isActive}"
+                             th:attr="data-action=${schedule.actionType.name()}">
+
+                        <!-- Icon -->
+                        <div class="care-task-icon">
+
+                            <span th:switch="${schedule.actionType.name()}">
+                                <span th:case="'WATER'">💧</span>
+                                <span th:case="'FERTILIZE'">🌱</span>
+                                <span th:case="'REPOT'">🪴</span>
+                                <span th:case="'CHECK_SUNLIGHT'">☀️</span>
+                                <span th:case="'HEALTH_CHECK'">🩺</span>
+                                <span th:case="*">🌿</span>
+                            </span>
+
+                        </div>
+
+                        <!-- Information -->
+                        <div class="care-task-info">
+
+                            <h3 th:text="${schedule.plant.nickname != null
+                                ? schedule.plant.nickname
+                                : 'ต้นไม้ของฉัน'}">
+                                ต้นไม้ของฉัน
+                            </h3>
+
+                            <div class="care-task-type">
+
+                                <span th:switch="${schedule.actionType.name()}">
+                                    <span th:case="'WATER'">รดน้ำ</span>
+                                    <span th:case="'FERTILIZE'">ใส่ปุ๋ย</span>
+                                    <span th:case="'REPOT'">เปลี่ยนกระถาง</span>
+                                    <span th:case="'CHECK_SUNLIGHT'">เช็กแดด</span>
+                                    <span th:case="'HEALTH_CHECK'">ตรวจสุขภาพ</span>
+                                </span>
+
+                            </div>
+
+                            <div class="care-task-date">
+                                กำหนด:
+                                <strong th:text="${schedule.nextDueDate}">
+                                    2026-10-06
+                                </strong>
+                            </div>
+
+                        </div>
+
+                        <!-- Status -->
+                        <div class="care-task-status">
+                            <span class="care-status active">
+                                กำลังใช้งาน
+                            </span>
+                        </div>
+
+                    </article>
+
+                    <!-- Empty State -->
+                    <div class="care-empty"
+                         th:if="${schedules.isEmpty()}">
+
+                        <div class="care-empty-icon">🌱</div>
+
+                        <h3>ยังไม่มีตารางดูแล</h3>
+
+                        <p>
+                            ตอนนี้ยังไม่มีข้อมูลการดูแลต้นไม้ในระบบ
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+</div>
+
+<!-- Shared Scripts -->
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+<!-- Care JavaScript -->
+<script th:src="@{/js/care.js}"></script>
+
+</body>
+</html>
