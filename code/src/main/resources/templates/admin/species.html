@@ -23,7 +23,7 @@
         </div>
         <!-- data-fill-* = ล้างค่าในฟอร์มให้ว่างตอนเพิ่มใหม่ -->
         <button class="btn btn-primary" type="button" data-open="species-modal"
-                data-fill-mode="เพิ่มพันธุ์ไม้" data-fill-name="" data-fill-water="" data-fill-sun="MEDIUM" data-fill-desc="">
+                data-fill-mode="เพิ่มพันธุ์ไม้" data-fill-name="" data-fill-water="" data-fill-fertilize="" data-fill-repot="" data-fill-sun="MEDIUM" data-fill-desc="">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
           เพิ่มพันธุ์ไม้
         </button>
@@ -36,6 +36,8 @@
             <tr>
               <th>ชื่อพันธุ์ไม้</th>
               <th>รดน้ำทุก (วัน)</th>
+              <th>ใส่ปุ๋ยทุก (วัน)</th>
+              <th>เปลี่ยนกระถางทุก (วัน)</th>
               <th>แสง</th>
               <th>คำอธิบาย</th>
               <th><span class="sr-only">จัดการ</span></th>
@@ -45,50 +47,60 @@
             <tr>
               <td><b>มอนสเตอร่า</b></td>
               <td class="num">7</td>
+              <td class="num">30</td>
+              <td class="num">365</td>
               <td><span class="badge plain sun-MEDIUM">แดดปานกลาง</span></td>
               <td class="desc-cell">ชอบแดดรำไร ใบใหญ่มีรอยแยกสวยงาม</td>
               <td class="row-actions">
-                <button class="btn btn-sm btn-soft" type="button" data-open="species-modal" data-fill-mode="แก้ไขพันธุ์ไม้" data-fill-name="มอนสเตอร่า" data-fill-water="7" data-fill-sun="MEDIUM" data-fill-desc="ชอบแดดรำไร ใบใหญ่มีรอยแยกสวยงาม">แก้ไข</button>
+                <button class="btn btn-sm btn-soft" type="button" data-open="species-modal" data-fill-mode="แก้ไขพันธุ์ไม้" data-fill-name="มอนสเตอร่า" data-fill-water="7" data-fill-fertilize="30" data-fill-repot="365" data-fill-sun="MEDIUM" data-fill-desc="ชอบแดดรำไร ใบใหญ่มีรอยแยกสวยงาม">แก้ไข</button>
                 <button class="btn btn-sm btn-danger" type="button" data-open="species-delete" data-fill-target="มอนสเตอร่า">ลบ</button>
               </td>
             </tr>
             <tr>
               <td><b>ลิ้นมังกร</b></td>
               <td class="num">14</td>
+              <td class="num">60</td>
+              <td class="num">730</td>
               <td><span class="badge plain sun-LOW">แดดรำไร</span></td>
               <td class="desc-cell">ทนแล้ง อยู่ในที่แสงน้อยได้ เหมาะกับมือใหม่</td>
               <td class="row-actions">
-                <button class="btn btn-sm btn-soft" type="button" data-open="species-modal" data-fill-mode="แก้ไขพันธุ์ไม้" data-fill-name="ลิ้นมังกร" data-fill-water="14" data-fill-sun="LOW" data-fill-desc="ทนแล้ง อยู่ในที่แสงน้อยได้ เหมาะกับมือใหม่">แก้ไข</button>
+                <button class="btn btn-sm btn-soft" type="button" data-open="species-modal" data-fill-mode="แก้ไขพันธุ์ไม้" data-fill-name="ลิ้นมังกร" data-fill-water="14" data-fill-fertilize="60" data-fill-repot="730" data-fill-sun="LOW" data-fill-desc="ทนแล้ง อยู่ในที่แสงน้อยได้ เหมาะกับมือใหม่">แก้ไข</button>
                 <button class="btn btn-sm btn-danger" type="button" data-open="species-delete" data-fill-target="ลิ้นมังกร">ลบ</button>
               </td>
             </tr>
             <tr>
               <td><b>ปอทอส</b></td>
               <td class="num">5</td>
+              <td class="num">30</td>
+              <td class="num">365</td>
               <td><span class="badge plain sun-MEDIUM">แดดปานกลาง</span></td>
               <td class="desc-cell">ไม้เลื้อยโตเร็ว ปลูกในน้ำหรือดินก็ได้</td>
               <td class="row-actions">
-                <button class="btn btn-sm btn-soft" type="button" data-open="species-modal" data-fill-mode="แก้ไขพันธุ์ไม้" data-fill-name="ปอทอส" data-fill-water="5" data-fill-sun="MEDIUM" data-fill-desc="ไม้เลื้อยโตเร็ว ปลูกในน้ำหรือดินก็ได้">แก้ไข</button>
+                <button class="btn btn-sm btn-soft" type="button" data-open="species-modal" data-fill-mode="แก้ไขพันธุ์ไม้" data-fill-name="ปอทอส" data-fill-water="5" data-fill-fertilize="30" data-fill-repot="365" data-fill-sun="MEDIUM" data-fill-desc="ไม้เลื้อยโตเร็ว ปลูกในน้ำหรือดินก็ได้">แก้ไข</button>
                 <button class="btn btn-sm btn-danger" type="button" data-open="species-delete" data-fill-target="ปอทอส">ลบ</button>
               </td>
             </tr>
             <tr>
               <td><b>ไทรใบสัก</b></td>
               <td class="num">7</td>
+              <td class="num">30</td>
+              <td class="num">365</td>
               <td><span class="badge plain sun-HIGH">แดดจัด</span></td>
               <td class="desc-cell">ต้องการแสงสว่างมาก ไม่ชอบถูกย้ายที่บ่อย</td>
               <td class="row-actions">
-                <button class="btn btn-sm btn-soft" type="button" data-open="species-modal" data-fill-mode="แก้ไขพันธุ์ไม้" data-fill-name="ไทรใบสัก" data-fill-water="7" data-fill-sun="HIGH" data-fill-desc="ต้องการแสงสว่างมาก ไม่ชอบถูกย้ายที่บ่อย">แก้ไข</button>
+                <button class="btn btn-sm btn-soft" type="button" data-open="species-modal" data-fill-mode="แก้ไขพันธุ์ไม้" data-fill-name="ไทรใบสัก" data-fill-water="7" data-fill-fertilize="30" data-fill-repot="365" data-fill-sun="HIGH" data-fill-desc="ต้องการแสงสว่างมาก ไม่ชอบถูกย้ายที่บ่อย">แก้ไข</button>
                 <button class="btn btn-sm btn-danger" type="button" data-open="species-delete" data-fill-target="ไทรใบสัก">ลบ</button>
               </td>
             </tr>
             <tr>
               <td><b>กระบองเพชร</b></td>
               <td class="num">21</td>
+              <td class="num">90</td>
+              <td class="num">730</td>
               <td><span class="badge plain sun-HIGH">แดดจัด</span></td>
               <td class="desc-cell">รดน้ำน้อย ชอบแดดจัด ระวังน้ำขัง</td>
               <td class="row-actions">
-                <button class="btn btn-sm btn-soft" type="button" data-open="species-modal" data-fill-mode="แก้ไขพันธุ์ไม้" data-fill-name="กระบองเพชร" data-fill-water="21" data-fill-sun="HIGH" data-fill-desc="รดน้ำน้อย ชอบแดดจัด ระวังน้ำขัง">แก้ไข</button>
+                <button class="btn btn-sm btn-soft" type="button" data-open="species-modal" data-fill-mode="แก้ไขพันธุ์ไม้" data-fill-name="กระบองเพชร" data-fill-water="21" data-fill-fertilize="90" data-fill-repot="730" data-fill-sun="HIGH" data-fill-desc="รดน้ำน้อย ชอบแดดจัด ระวังน้ำขัง">แก้ไข</button>
                 <button class="btn btn-sm btn-danger" type="button" data-open="species-delete" data-fill-target="กระบองเพชร">ลบ</button>
               </td>
             </tr>
@@ -131,6 +143,18 @@
               <option value="MEDIUM">แดดปานกลาง</option>
               <option value="HIGH">แดดจัด</option>
             </select>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="field">
+            <label for="sp-fertilize">ใส่ปุ๋ยทุกกี่วัน</label>
+            <input class="input" id="sp-fertilize" name="fertilizeIntervalDays" type="number" min="1" max="365" data-fill="fertilize">
+            <span class="hint">เว้นว่าง = ใช้ค่าตั้งต้น</span>
+          </div>
+          <div class="field">
+            <label for="sp-repot">เปลี่ยนกระถางทุกกี่วัน</label>
+            <input class="input" id="sp-repot" name="repotIntervalDays" type="number" min="1" max="1095" data-fill="repot">
+            <span class="hint">เว้นว่าง = ใช้ค่าตั้งต้น</span>
           </div>
         </div>
         <div class="field">
