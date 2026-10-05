@@ -111,5 +111,4 @@
   .rp-dl { grid-template-columns: 1fr; gap: 2px; }
   .rp-dl dd { margin-bottom: 10px; }
   .note { padding: 14px 16px; }
-  .note .side { display: none; }
 }
