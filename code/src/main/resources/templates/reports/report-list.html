@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="th" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/layout :: head('รายงานของฉัน')}"></head>
+
+<body>
+<div class="app">
+
+  <aside th:replace="~{fragments/layout :: sidebar('reports')}"></aside>
+
+  <div class="main">
+    <header th:replace="~{fragments/layout :: topbar}"></header>
+
+    <main class="content">
+      <link rel="stylesheet" th:href="@{/css/reports.css}" href="/css/reports.css">
+
+      <div class="page-head">
+        <div>
+          <h1>รายงานสุขภาพของฉัน</h1>
+          <p>ปัญหาที่แจ้งไว้และคำตอบจากผู้ดูแลระบบ</p>
+        </div>
+        <a class="btn btn-primary" th:href="@{/reports/new}" href="/reports/new"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>แจ้งปัญหา</a>
+      </div>
+
+      <div class="card toolbar">
+        <!-- ตอนต่อ Service เปลี่ยนเป็นลิงก์ ?status=... แทนการกรองในหน้า -->
+        <div class="chips" data-target="#report-list">
+          <span class="label">สถานะ</span>
+          <button type="button" class="chip active" data-filter="all">ทั้งหมด</button>
+          <button type="button" class="chip" data-filter="PENDING">รอตรวจ</button>
+          <button type="button" class="chip" data-filter="IN_PROGRESS">กำลังดำเนินการ</button>
+          <button type="button" class="chip" data-filter="RESOLVED">แก้ไขแล้ว</button>
+          <button type="button" class="chip" data-filter="REJECTED">ปฏิเสธ</button>
+        </div>
+      </div>
+
+      <div class="list" id="report-list">
+        <a class="card list-item rp-item" href="/reports/1" data-tags="IN_PROGRESS">
+          <span class="icon-tile crit"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg></span>
+          <div class="body">
+            <div class="title-row">
+              <h3 data-field="health_reports.title">ใบเหลืองและมีจุดสีน้ำตาล</h3>
+              <span class="badge sev-HIGH" data-field="health_reports.severity">รุนแรง</span>
+              <span class="badge st-IN_PROGRESS" data-field="health_reports.status">กำลังดำเนินการ</span>
+            </div>
+            <span class="kv muted">ต้นไม้ <b data-field="plants.nickname">ฟิโลหัวใจ</b> · แจ้งเมื่อ <time datetime="2026-10-04T09:12" data-field="health_reports.created_at">4 ต.ค. 2026</time></span>
+          </div>
+          <span class="rp-chev"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span>
+        </a>
+
+        <a class="card list-item rp-item" href="/reports/2" data-tags="PENDING">
+          <span class="icon-tile warn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg></span>
+          <div class="body">
+            <div class="title-row">
+              <h3 data-field="health_reports.title">ใบเหี่ยวแม้รดน้ำแล้ว</h3>
+              <span class="badge sev-MEDIUM" data-field="health_reports.severity">ปานกลาง</span>
+              <span class="badge st-PENDING" data-field="health_reports.status">รอตรวจ</span>
+            </div>
+            <span class="kv muted">ต้นไม้ <b data-field="plants.nickname">บอสตันฟู</b> · แจ้งเมื่อ <time datetime="2026-10-05T18:40" data-field="health_reports.created_at">5 ต.ค. 2026</time></span>
+          </div>
+          <span class="rp-chev"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span>
+        </a>
+
+        <a class="card list-item rp-item" href="/reports/3" data-tags="RESOLVED">
+          <span class="icon-tile"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg></span>
+          <div class="body">
+            <div class="title-row">
+              <h3 data-field="health_reports.title">มีแมลงตัวเล็กใต้ใบ</h3>
+              <span class="badge sev-LOW" data-field="health_reports.severity">เล็กน้อย</span>
+              <span class="badge st-RESOLVED" data-field="health_reports.status">แก้ไขแล้ว</span>
+            </div>
+            <span class="kv muted">ต้นไม้ <b data-field="plants.nickname">ยางดำ</b> · แจ้งเมื่อ <time datetime="2026-09-21T10:05" data-field="health_reports.created_at">21 ก.ย. 2026</time></span>
+          </div>
+          <span class="rp-chev"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span>
+        </a>
+
+        <a class="card list-item rp-item" href="/reports/4" data-tags="REJECTED">
+          <span class="icon-tile"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg></span>
+          <div class="body">
+            <div class="title-row">
+              <h3 data-field="health_reports.title">กระถางมีกลิ่น</h3>
+              <span class="badge sev-LOW" data-field="health_reports.severity">เล็กน้อย</span>
+              <span class="badge st-REJECTED" data-field="health_reports.status">ปฏิเสธ</span>
+            </div>
+            <span class="kv muted">ต้นไม้ <b data-field="plants.nickname">ม่อนม่อน</b> · แจ้งเมื่อ <time datetime="2026-09-10T15:30" data-field="health_reports.created_at">10 ก.ย. 2026</time></span>
+          </div>
+          <span class="rp-chev"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span>
+        </a>
+      </div>
+
+      <!-- ยังไม่มีรายงาน: แสดงกล่องนี้แทนรายการ (th:if="${#lists.isEmpty(reports)}") -->
+      <div class="card card-pad muted" style="text-align:center" hidden>
+        ยังไม่มีรายงาน ถ้าต้นไม้ดูผิดปกติ กด "แจ้งปัญหา" ได้เลย
+      </div>
+
+      <nav class="rp-pager" aria-label="แบ่งหน้า">
+        <span class="is-disabled">ก่อนหน้า</span>
+        <span class="is-current" aria-current="page">1</span>
+        <a href="?page=2">2</a>
+        <a href="?page=2">ถัดไป</a>
+      </nav>
+    </main>
+  </div>
+</div>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>
