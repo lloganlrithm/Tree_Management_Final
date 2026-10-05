@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="th" xmlns:th="http://www.thymeleaf.org">
+<!--เก็บแค่ fragment รายงานสุขภาพของต้นไม้ 1 ต้น ให้ดึงไปใส่ในหน้ารายละเอียดต้นไม้:
+     <section th:replace="~{fragments/reports :: plantReports}"></section> -->
+<body>
+
+<section class="card card-pad" th:fragment="plantReports">
+  <!-- layout ยังไม่ได้ลิงก์ reports.css เลยลิงก์ไว้ในตัว fragment -->
+  <link rel="stylesheet" th:href="@{/css/reports.css}" href="/css/reports.css">
+
+  <div class="section-head">
+    <h2>รายงานสุขภาพ</h2>
+    <!-- ส่ง id ต้นไม้ไปให้ฟอร์มเลือกต้นนี้ไว้ก่อน: th:href="@{/reports/new(plantId=${plant.id})}" -->
+    <a class="btn btn-soft btn-sm" href="/reports/new?plantId=1">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>แจ้งปัญหา
+    </a>
+  </div>
+
+  <!-- รายงานของต้นนี้ (health_reports.plant_id = id ต้นไม้) ใหม่สุดก่อน -->
+  <ul class="rp-mini">
+    <li>
+      <a href="/reports/1">
+        <span class="grow">
+          <b data-field="health_reports.title">ใบเหลืองและมีจุดสีน้ำตาล</b>
+          <time class="muted small" datetime="2026-10-04T09:12" data-field="health_reports.created_at">4 ต.ค. 2026</time>
+        </span>
+        <span class="badge sev-HIGH" data-field="health_reports.severity">รุนแรง</span>
+        <span class="badge st-IN_PROGRESS" data-field="health_reports.status">กำลังดำเนินการ</span>
+      </a>
+    </li>
+    <li>
+      <a href="/reports/5">
+        <span class="grow">
+          <b data-field="health_reports.title">ปลายใบไหม้</b>
+          <time class="muted small" datetime="2026-08-15T16:45" data-field="health_reports.created_at">15 ส.ค. 2026</time>
+        </span>
+        <span class="badge sev-LOW" data-field="health_reports.severity">เล็กน้อย</span>
+        <span class="badge st-RESOLVED" data-field="health_reports.status">แก้ไขแล้ว</span>
+      </a>
+    </li>
+  </ul>
+
+  <!-- ต้นนี้ยังไม่มีรายงาน: th:if="${#lists.isEmpty(reports)}" -->
+  <p class="muted small" hidden>ยังไม่เคยแจ้งปัญหาของต้นนี้</p>
+</section>
+
+</body>
+</html>
