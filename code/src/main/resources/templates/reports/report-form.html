@@ -1,179 +1,99 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="th" xmlns:th="http://www.thymeleaf.org">
-  <head
-    th:replace="~{fragments/layout :: head('แจ้งปัญหาสุขภาพต้นไม้')}"
-  ></head>
 
-  <body>
-    <div class="app">
-      <aside th:replace="~{fragments/layout :: sidebar('reports')}"></aside>
+<head th:replace="~{fragments/layout :: head('แจ้งปัญหาสุขภาพต้นไม้')}"></head>
 
-      <div class="main">
-        <header th:replace="~{fragments/layout :: topbar}"></header>
+<body>
+<div class="app">
 
-        <main class="content">
-          <!-- head ของ layout ยังรับแค่ชื่อหน้า เลยลิงก์ CSS ของหน้านี้ไว้ตรงนี้ (ถ้าพรีมเพิ่มช่องใน head ค่อยย้ายไป) -->
-          <link
-            rel="stylesheet"
-            th:href="@{/css/reports.css}"
-            href="/css/reports.css"
-          />
+  <aside th:replace="~{fragments/layout :: sidebar('reports')}"></aside>
 
-          <a class="back" th:href="@{/reports}" href="/reports"
-            ><svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="m15 18-6-6 6-6" /></svg
-            >รายงานของฉัน</a
-          >
+  <div class="main">
+    <header th:replace="~{fragments/layout :: topbar}"></header>
 
-          <div class="page-head">
-            <div>
-              <h1>แจ้งปัญหาสุขภาพต้นไม้</h1>
-              <p>บอกอาการที่พบ ผู้ดูแลระบบจะตอบกลับพร้อมคำแนะนำ</p>
-            </div>
-          </div>
+    <main class="content">
+      <!-- head ของ layout ยังรับแค่ชื่อหน้า เลยลิงก์ CSS ของหน้านี้ไว้ตรงนี้ (ถ้าพรีมเพิ่มช่องใน head ค่อยย้ายไป) -->
+      <link rel="stylesheet" th:href="@{/css/reports.css}" href="/css/reports.css">
 
-          <form
-            class="card rp-form"
-            method="post"
-            th:action="@{/reports}"
-            action="/reports"
-          >
-            <div class="field">
-              <label for="plant_id">ต้นไม้ที่มีปัญหา</label>
-              <!-- มาจากหน้ารายละเอียดต้นไม้ (/reports/new?plantId=ID) ให้เลือกต้นนั้นไว้: th:selected="${param.plantId != null and param.plantId[0] == p.id}" -->
-              <select
-                class="select"
-                id="plant_id"
-                name="plant_id"
-                data-field="health_reports.plant_id"
-                required
-              >
-                <option value="" disabled>เลือกต้นไม้</option>
-                <option value="1" selected>ฟิโลหัวใจ</option>
-                <option value="2">ยางดำ</option>
-                <option value="3">บอสตันฟู</option>
-                <option value="4">ม่อนม่อน</option>
-                <option value="5">น้องหนาม</option>
-              </select>
-            </div>
+      <a class="back" th:href="@{/reports}" href="/reports"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>รายงานของฉัน</a>
 
-            <div class="field">
-              <label for="title">หัวข้อ</label>
-              <input
-                class="input"
-                type="text"
-                id="title"
-                name="title"
-                data-field="health_reports.title"
-                maxlength="150"
-                placeholder="เช่น ใบเหลือง, ใบเหี่ยว"
-                required
-              />
-            </div>
-
-            <div class="field">
-              <label for="description">รายละเอียด</label>
-              <textarea
-                class="textarea"
-                id="description"
-                name="description"
-                data-field="health_reports.description"
-                placeholder="อาการที่เห็น เริ่มเป็นเมื่อไร ดูแลอะไรไปแล้วบ้าง"
-              ></textarea>
-            </div>
-
-            <fieldset class="rp-fieldset">
-              <legend>ความรุนแรง</legend>
-              <div class="seg rp-seg" data-field="health_reports.severity">
-                <label
-                  ><input type="radio" name="severity" value="LOW" /><span
-                    >เล็กน้อย</span
-                  ></label
-                >
-                <label
-                  ><input
-                    type="radio"
-                    name="severity"
-                    value="MEDIUM"
-                    checked
-                  /><span class="rp-opt-MEDIUM">ปานกลาง</span></label
-                >
-                <label
-                  ><input type="radio" name="severity" value="HIGH" /><span
-                    class="rp-opt-HIGH"
-                    >รุนแรง</span
-                  ></label
-                >
-              </div>
-            </fieldset>
-
-            <div class="field">
-              <label for="image_url">URL รูป</label>
-              <input
-                class="input"
-                type="url"
-                id="image_url"
-                name="image_url"
-                data-field="health_reports.image_url"
-                maxlength="500"
-                placeholder="https://..."
-              />
-              <span class="hint"
-                >ไม่บังคับ ใส่ลิงก์รูปต้นไม้ที่เห็นอาการชัดๆ</span
-              >
-              <div class="rp-preview" id="image-preview" aria-live="polite">
-                พรีวิวรูปจะแสดงที่นี่
-              </div>
-            </div>
-
-            <div class="form-actions">
-              <a class="btn" th:href="@{/reports}" href="/reports">ยกเลิก</a>
-              <button type="submit" class="btn btn-primary">ส่งรายงาน</button>
-            </div>
-          </form>
-        </main>
+      <div class="page-head">
+        <div>
+          <h1>แจ้งปัญหาสุขภาพต้นไม้</h1>
+          <p>บอกอาการที่พบ ผู้ดูแลระบบจะตอบกลับพร้อมคำแนะนำ</p>
+        </div>
       </div>
-    </div>
 
-    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
-    <script>
-      // พรีวิวรูปจาก URL
-      (function () {
-        var input = document.getElementById("image_url");
-        var box = document.getElementById("image-preview");
-        var empty = box.textContent;
-        input.addEventListener("input", function () {
-          var url = input.value.trim();
-          if (!url) {
-            box.textContent = empty;
-            return;
-          }
-          if (!/^https?:\/\//i.test(url)) {
-            box.textContent = "URL ต้องขึ้นต้นด้วย http:// หรือ https://";
-            return;
-          }
-          var img = new Image();
-          img.alt = "พรีวิวรูปที่แนบ";
-          img.onload = function () {
-            box.textContent = "";
-            box.appendChild(img);
-          };
-          img.onerror = function () {
-            box.textContent = "โหลดรูปจาก URL นี้ไม่ได้";
-          };
-          img.src = url;
-        });
-      })();
-    </script>
-  </body>
+      <form class="card rp-form" method="post" th:action="@{/reports}" action="/reports">
+        <div class="field">
+          <label for="plant_id">ต้นไม้ที่มีปัญหา</label>
+          <!-- มาจากหน้ารายละเอียดต้นไม้ (/reports/new?plantId=ID) ให้เลือกต้นนั้นไว้: th:selected="${param.plantId != null and param.plantId[0] == p.id}" -->
+          <select class="select" id="plant_id" name="plant_id" data-field="health_reports.plant_id" required>
+            <option value="" disabled>เลือกต้นไม้</option>
+            <option value="1" selected>ฟิโลหัวใจ</option>
+            <option value="2">ยางดำ</option>
+            <option value="3">บอสตันฟู</option>
+            <option value="4">ม่อนม่อน</option>
+            <option value="5">น้องหนาม</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="title">หัวข้อ</label>
+          <input class="input" type="text" id="title" name="title" data-field="health_reports.title"
+                 maxlength="150" placeholder="เช่น ใบเหลือง, ใบเหี่ยว" required>
+        </div>
+
+        <div class="field">
+          <label for="description">รายละเอียด</label>
+          <textarea class="textarea" id="description" name="description" data-field="health_reports.description"
+                    placeholder="อาการที่เห็น เริ่มเป็นเมื่อไร ดูแลอะไรไปแล้วบ้าง"></textarea>
+        </div>
+
+        <fieldset class="rp-fieldset">
+          <legend>ความรุนแรง</legend>
+          <div class="seg rp-seg" data-field="health_reports.severity">
+            <label><input type="radio" name="severity" value="LOW"><span>เล็กน้อย</span></label>
+            <label><input type="radio" name="severity" value="MEDIUM" checked><span class="rp-opt-MEDIUM">ปานกลาง</span></label>
+            <label><input type="radio" name="severity" value="HIGH"><span class="rp-opt-HIGH">รุนแรง</span></label>
+          </div>
+        </fieldset>
+
+        <div class="field">
+          <label for="image_url">URL รูป</label>
+          <input class="input" type="url" id="image_url" name="image_url" data-field="health_reports.image_url"
+                 maxlength="500" placeholder="https://...">
+          <span class="hint">ไม่บังคับ ใส่ลิงก์รูปต้นไม้ที่เห็นอาการชัดๆ</span>
+          <div class="rp-preview" id="image-preview" aria-live="polite">พรีวิวรูปจะแสดงที่นี่</div>
+        </div>
+
+        <div class="form-actions">
+          <a class="btn" th:href="@{/reports}" href="/reports">ยกเลิก</a>
+          <button type="submit" class="btn btn-primary">ส่งรายงาน</button>
+        </div>
+      </form>
+    </main>
+  </div>
+</div>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<script>
+  // พรีวิวรูปจาก URL
+  (function () {
+    var input = document.getElementById("image_url");
+    var box = document.getElementById("image-preview");
+    var empty = box.textContent;
+    input.addEventListener("input", function () {
+      var url = input.value.trim();
+      if (!url) { box.textContent = empty; return; }
+      if (!/^https?:\/\//i.test(url)) { box.textContent = "URL ต้องขึ้นต้นด้วย http:// หรือ https://"; return; }
+      var img = new Image();
+      img.alt = "พรีวิวรูปที่แนบ";
+      img.onload = function () { box.textContent = ""; box.appendChild(img); };
+      img.onerror = function () { box.textContent = "โหลดรูปจาก URL นี้ไม่ได้"; };
+      img.src = url;
+    });
+  })();
+</script>
+</body>
 </html>
