@@ -1,0 +1,16 @@
+/* PlantPal — หน้าต้นไม้และสายพันธุ์ (มุกดา) */
+
+/* กล่อง "ยังไม่มีต้นไม้" จัดกึ่งกลาง */
+.empty-state {
+  padding: 48px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+.empty-state .plant-tile { color: var(--primary); }
+.empty-state .btn { margin-top: 6px; }
+
+/* กล่องการ์ดว่าง ให้ซ่อนไว้ก่อน */
+#plant-grid:empty { display: none; }
