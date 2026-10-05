@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="th" xmlns:th="http://www.thymeleaf.org">
+
+<!-- ดึง <head> จาก layout แล้วส่งชื่อหน้าเข้าไป -->
+<head th:replace="~{fragments/layout :: head('หน้าตัวอย่าง')}"></head>
+
+<body>
+<div class="app">
+
+  <!-- ดึง sidebar แล้วบอกว่าเมนูไหน active -->
+  <aside th:replace="~{fragments/layout :: sidebar('dashboard')}"></aside>
+
+  <div class="main">
+    <header th:replace="~{fragments/layout :: topbar}"></header>
+
+    <main class="content">
+      <!-- ===== เนื้อหาของแต่ละหน้าใส่ตรงนี้อย่างเดียว ===== -->
+      <div class="page-head">
+        <div>
+          <h1>หน้าตัวอย่าง</h1>
+          <p>หน้าเปล่าสำหรับดูการ include sidebar และ topbar</p>
+        </div>
+      </div>
+      <!-- ================================================== -->
+    </main>
+  </div>
+</div>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>
