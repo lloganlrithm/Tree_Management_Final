@@ -1,167 +1,374 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="th" xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{fragments/layout :: head('จัดการรายงานสุขภาพ')}"></head>
 
-<head th:replace="~{fragments/layout :: head('จัดการรายงานสุขภาพ')}"></head>
+  <body>
+    <div class="app">
+      <aside th:replace="~{fragments/layout :: sidebar('reports')}"></aside>
 
-<body>
-<div class="app">
+      <div class="main">
+        <header th:replace="~{fragments/layout :: topbar}"></header>
 
-  <aside th:replace="~{fragments/layout :: sidebar('reports')}"></aside>
+        <main class="content">
+          <link
+            rel="stylesheet"
+            th:href="@{/css/reports.css}"
+            href="/css/reports.css"
+          />
 
-  <div class="main">
-    <header th:replace="~{fragments/layout :: topbar}"></header>
+          <div class="page-head">
+            <div>
+              <h1>รายงานสุขภาพจากผู้ใช้</h1>
+              <p>กดแถวเพื่อเปลี่ยนสถานะและเขียนคำตอบ</p>
+            </div>
+          </div>
 
-    <main class="content">
-      <link rel="stylesheet" th:href="@{/css/reports.css}" href="/css/reports.css">
+          <!-- ตอนต่อ Service เปลี่ยนเป็นลิงก์ ?status=...&severity=... แทนการกรองในหน้า -->
+          <div class="card rp-filters" id="report-filters">
+            <div class="chips" data-target="#admin-reports">
+              <span class="label">สถานะ</span>
+              <button type="button" class="chip" data-filter="all">
+                ทั้งหมด
+              </button>
+              <button type="button" class="chip active" data-filter="PENDING">
+                รอตรวจ
+              </button>
+              <button type="button" class="chip" data-filter="IN_PROGRESS">
+                กำลังดำเนินการ
+              </button>
+              <button type="button" class="chip" data-filter="RESOLVED">
+                แก้ไขแล้ว
+              </button>
+              <button type="button" class="chip" data-filter="REJECTED">
+                ปฏิเสธ
+              </button>
+            </div>
+            <div class="chips" data-target="#admin-reports">
+              <span class="label">ความรุนแรง</span>
+              <button type="button" class="chip active" data-filter="all">
+                ทั้งหมด
+              </button>
+              <button type="button" class="chip" data-filter="HIGH">
+                รุนแรง
+              </button>
+              <button type="button" class="chip" data-filter="MEDIUM">
+                ปานกลาง
+              </button>
+              <button type="button" class="chip" data-filter="LOW">
+                เล็กน้อย
+              </button>
+            </div>
+          </div>
 
-      <div class="page-head">
-        <div>
-          <h1>รายงานสุขภาพจากผู้ใช้</h1>
-          <p>กดแถวเพื่อเปลี่ยนสถานะและเขียนคำตอบ</p>
-        </div>
+          <div class="card table-wrap">
+            <table class="data" id="admin-reports">
+              <thead>
+                <tr>
+                  <th>หัวข้อ</th>
+                  <th>ต้นไม้</th>
+                  <th>ความรุนแรง</th>
+                  <th>สถานะ</th>
+                  <th>วันที่แจ้ง</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  class="rp-row"
+                  tabindex="0"
+                  data-tags="PENDING MEDIUM"
+                  data-open="reply-modal"
+                  data-fill-title="ใบเหี่ยวแม้รดน้ำแล้ว"
+                  data-fill-status="PENDING"
+                >
+                  <td>
+                    <b data-field="health_reports.title"
+                      >ใบเหี่ยวแม้รดน้ำแล้ว</b
+                    >
+                  </td>
+                  <td data-field="plants.nickname">บอสตันฟู</td>
+                  <td>
+                    <span
+                      class="badge sev-MEDIUM"
+                      data-field="health_reports.severity"
+                      >ปานกลาง</span
+                    >
+                  </td>
+                  <td>
+                    <span
+                      class="badge st-PENDING"
+                      data-field="health_reports.status"
+                      >รอตรวจ</span
+                    >
+                  </td>
+                  <td class="num">
+                    <time
+                      datetime="2026-10-05T18:40"
+                      data-field="health_reports.created_at"
+                      >5 ต.ค. 2026</time
+                    >
+                  </td>
+                </tr>
+                <tr
+                  class="rp-row"
+                  tabindex="0"
+                  data-tags="PENDING HIGH"
+                  data-open="reply-modal"
+                  data-fill-title="รากเน่า มีกลิ่นจากดิน"
+                  data-fill-status="PENDING"
+                >
+                  <td>
+                    <b data-field="health_reports.title"
+                      >รากเน่า มีกลิ่นจากดิน</b
+                    >
+                  </td>
+                  <td data-field="plants.nickname">น้องหนาม</td>
+                  <td>
+                    <span
+                      class="badge sev-HIGH"
+                      data-field="health_reports.severity"
+                      >รุนแรง</span
+                    >
+                  </td>
+                  <td>
+                    <span
+                      class="badge st-PENDING"
+                      data-field="health_reports.status"
+                      >รอตรวจ</span
+                    >
+                  </td>
+                  <td class="num">
+                    <time
+                      datetime="2026-10-05T08:15"
+                      data-field="health_reports.created_at"
+                      >5 ต.ค. 2026</time
+                    >
+                  </td>
+                </tr>
+                <tr
+                  class="rp-row"
+                  tabindex="0"
+                  data-tags="IN_PROGRESS HIGH"
+                  data-open="reply-modal"
+                  data-fill-title="ใบเหลืองและมีจุดสีน้ำตาล"
+                  data-fill-status="IN_PROGRESS"
+                >
+                  <td>
+                    <b data-field="health_reports.title"
+                      >ใบเหลืองและมีจุดสีน้ำตาล</b
+                    >
+                  </td>
+                  <td data-field="plants.nickname">ฟิโลหัวใจ</td>
+                  <td>
+                    <span
+                      class="badge sev-HIGH"
+                      data-field="health_reports.severity"
+                      >รุนแรง</span
+                    >
+                  </td>
+                  <td>
+                    <span
+                      class="badge st-IN_PROGRESS"
+                      data-field="health_reports.status"
+                      >กำลังดำเนินการ</span
+                    >
+                  </td>
+                  <td class="num">
+                    <time
+                      datetime="2026-10-04T09:12"
+                      data-field="health_reports.created_at"
+                      >4 ต.ค. 2026</time
+                    >
+                  </td>
+                </tr>
+                <tr
+                  class="rp-row"
+                  tabindex="0"
+                  data-tags="RESOLVED LOW"
+                  data-open="reply-modal"
+                  data-fill-title="มีแมลงตัวเล็กใต้ใบ"
+                  data-fill-status="RESOLVED"
+                >
+                  <td>
+                    <b data-field="health_reports.title">มีแมลงตัวเล็กใต้ใบ</b>
+                  </td>
+                  <td data-field="plants.nickname">ยางดำ</td>
+                  <td>
+                    <span
+                      class="badge sev-LOW"
+                      data-field="health_reports.severity"
+                      >เล็กน้อย</span
+                    >
+                  </td>
+                  <td>
+                    <span
+                      class="badge st-RESOLVED"
+                      data-field="health_reports.status"
+                      >แก้ไขแล้ว</span
+                    >
+                  </td>
+                  <td class="num">
+                    <time
+                      datetime="2026-09-21T10:05"
+                      data-field="health_reports.created_at"
+                      >21 ก.ย. 2026</time
+                    >
+                  </td>
+                </tr>
+                <tr
+                  class="rp-row"
+                  tabindex="0"
+                  data-tags="REJECTED LOW"
+                  data-open="reply-modal"
+                  data-fill-title="กระถางมีกลิ่น"
+                  data-fill-status="REJECTED"
+                >
+                  <td>
+                    <b data-field="health_reports.title">กระถางมีกลิ่น</b>
+                  </td>
+                  <td data-field="plants.nickname">ม่อนม่อน</td>
+                  <td>
+                    <span
+                      class="badge sev-LOW"
+                      data-field="health_reports.severity"
+                      >เล็กน้อย</span
+                    >
+                  </td>
+                  <td>
+                    <span
+                      class="badge st-REJECTED"
+                      data-field="health_reports.status"
+                      >ปฏิเสธ</span
+                    >
+                  </td>
+                  <td class="num">
+                    <time
+                      datetime="2026-09-10T15:30"
+                      data-field="health_reports.created_at"
+                      >10 ก.ย. 2026</time
+                    >
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <nav class="rp-pager" aria-label="แบ่งหน้า">
+            <span class="is-disabled">ก่อนหน้า</span>
+            <span class="is-current" aria-current="page">1</span>
+            <span class="is-disabled">ถัดไป</span>
+          </nav>
+        </main>
       </div>
-
-      <!-- ตอนต่อ Service เปลี่ยนเป็นลิงก์ ?status=...&severity=... แทนการกรองในหน้า -->
-      <div class="card rp-filters" id="report-filters">
-        <div class="chips" data-target="#admin-reports">
-          <span class="label">สถานะ</span>
-          <button type="button" class="chip" data-filter="all">ทั้งหมด</button>
-          <button type="button" class="chip active" data-filter="PENDING">รอตรวจ</button>
-          <button type="button" class="chip" data-filter="IN_PROGRESS">กำลังดำเนินการ</button>
-          <button type="button" class="chip" data-filter="RESOLVED">แก้ไขแล้ว</button>
-          <button type="button" class="chip" data-filter="REJECTED">ปฏิเสธ</button>
-        </div>
-        <div class="chips" data-target="#admin-reports">
-          <span class="label">ความรุนแรง</span>
-          <button type="button" class="chip active" data-filter="all">ทั้งหมด</button>
-          <button type="button" class="chip" data-filter="HIGH">รุนแรง</button>
-          <button type="button" class="chip" data-filter="MEDIUM">ปานกลาง</button>
-          <button type="button" class="chip" data-filter="LOW">เล็กน้อย</button>
-        </div>
-      </div>
-
-      <div class="card table-wrap">
-        <table class="data" id="admin-reports">
-          <thead>
-            <tr><th>หัวข้อ</th><th>ต้นไม้</th><th>ความรุนแรง</th><th>สถานะ</th><th>วันที่แจ้ง</th></tr>
-          </thead>
-          <tbody>
-            <tr class="rp-row" tabindex="0" data-tags="PENDING MEDIUM" data-open="reply-modal"
-                data-fill-title="ใบเหี่ยวแม้รดน้ำแล้ว" data-fill-status="PENDING">
-              <td><b data-field="health_reports.title">ใบเหี่ยวแม้รดน้ำแล้ว</b></td>
-              <td data-field="plants.nickname">บอสตันฟู</td>
-              <td><span class="badge sev-MEDIUM" data-field="health_reports.severity">ปานกลาง</span></td>
-              <td><span class="badge st-PENDING" data-field="health_reports.status">รอตรวจ</span></td>
-              <td class="num"><time datetime="2026-10-05T18:40" data-field="health_reports.created_at">5 ต.ค. 2026</time></td>
-            </tr>
-            <tr class="rp-row" tabindex="0" data-tags="PENDING HIGH" data-open="reply-modal"
-                data-fill-title="รากเน่า มีกลิ่นจากดิน" data-fill-status="PENDING">
-              <td><b data-field="health_reports.title">รากเน่า มีกลิ่นจากดิน</b></td>
-              <td data-field="plants.nickname">น้องหนาม</td>
-              <td><span class="badge sev-HIGH" data-field="health_reports.severity">รุนแรง</span></td>
-              <td><span class="badge st-PENDING" data-field="health_reports.status">รอตรวจ</span></td>
-              <td class="num"><time datetime="2026-10-05T08:15" data-field="health_reports.created_at">5 ต.ค. 2026</time></td>
-            </tr>
-            <tr class="rp-row" tabindex="0" data-tags="IN_PROGRESS HIGH" data-open="reply-modal"
-                data-fill-title="ใบเหลืองและมีจุดสีน้ำตาล" data-fill-status="IN_PROGRESS">
-              <td><b data-field="health_reports.title">ใบเหลืองและมีจุดสีน้ำตาล</b></td>
-              <td data-field="plants.nickname">ฟิโลหัวใจ</td>
-              <td><span class="badge sev-HIGH" data-field="health_reports.severity">รุนแรง</span></td>
-              <td><span class="badge st-IN_PROGRESS" data-field="health_reports.status">กำลังดำเนินการ</span></td>
-              <td class="num"><time datetime="2026-10-04T09:12" data-field="health_reports.created_at">4 ต.ค. 2026</time></td>
-            </tr>
-            <tr class="rp-row" tabindex="0" data-tags="RESOLVED LOW" data-open="reply-modal"
-                data-fill-title="มีแมลงตัวเล็กใต้ใบ" data-fill-status="RESOLVED">
-              <td><b data-field="health_reports.title">มีแมลงตัวเล็กใต้ใบ</b></td>
-              <td data-field="plants.nickname">ยางดำ</td>
-              <td><span class="badge sev-LOW" data-field="health_reports.severity">เล็กน้อย</span></td>
-              <td><span class="badge st-RESOLVED" data-field="health_reports.status">แก้ไขแล้ว</span></td>
-              <td class="num"><time datetime="2026-09-21T10:05" data-field="health_reports.created_at">21 ก.ย. 2026</time></td>
-            </tr>
-            <tr class="rp-row" tabindex="0" data-tags="REJECTED LOW" data-open="reply-modal"
-                data-fill-title="กระถางมีกลิ่น" data-fill-status="REJECTED">
-              <td><b data-field="health_reports.title">กระถางมีกลิ่น</b></td>
-              <td data-field="plants.nickname">ม่อนม่อน</td>
-              <td><span class="badge sev-LOW" data-field="health_reports.severity">เล็กน้อย</span></td>
-              <td><span class="badge st-REJECTED" data-field="health_reports.status">ปฏิเสธ</span></td>
-              <td class="num"><time datetime="2026-09-10T15:30" data-field="health_reports.created_at">10 ก.ย. 2026</time></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <nav class="rp-pager" aria-label="แบ่งหน้า">
-        <span class="is-disabled">ก่อนหน้า</span>
-        <span class="is-current" aria-current="page">1</span>
-        <span class="is-disabled">ถัดไป</span>
-      </nav>
-    </main>
-  </div>
-</div>
-
-<!-- แผงตอบรายงาน: แถวในตารางเติมหัวข้อและสถานะผ่าน data-fill-* (app.js) -->
-<div class="modal-backdrop" id="reply-modal" hidden>
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="reply-title">
-    <div class="modal-head">
-      <div>
-        <h2 id="reply-title">ตอบรายงาน</h2>
-        <p data-fill="title">หัวข้อรายงาน</p>
-      </div>
-      <button type="button" class="btn btn-icon" data-close aria-label="ปิด"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
     </div>
-    <form method="post" th:action="@{/admin/reports/reply}" action="/admin/reports/reply">
-      <div class="modal-body">
-        <div class="field">
-          <label for="status">สถานะ</label>
-          <select class="select" id="status" name="status" data-fill="status" data-field="health_reports.status">
-            <option value="PENDING">รอตรวจ</option>
-            <option value="IN_PROGRESS">กำลังดำเนินการ</option>
-            <option value="RESOLVED">แก้ไขแล้ว</option>
-            <option value="REJECTED">ปฏิเสธ</option>
-          </select>
-          <span class="hint">เลือก "แก้ไขแล้ว" หรือ "ปฏิเสธ" ระบบจะบันทึกวันที่ปิดเรื่อง (resolved_at) ให้</span>
+
+    <!-- แผงตอบรายงาน: แถวในตารางเติมหัวข้อและสถานะผ่าน data-fill-* (app.js) -->
+    <div class="modal-backdrop" id="reply-modal" hidden>
+      <div
+        class="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="reply-title"
+      >
+        <div class="modal-head">
+          <div>
+            <h2 id="reply-title">ตอบรายงาน</h2>
+            <p data-fill="title">หัวข้อรายงาน</p>
+          </div>
+          <button
+            type="button"
+            class="btn btn-icon"
+            data-close
+            aria-label="ปิด"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
+          </button>
         </div>
-        <div class="field">
-          <label for="admin_reply">คำตอบ</label>
-          <textarea class="textarea" id="admin_reply" name="admin_reply" data-field="health_reports.admin_reply"
-                    placeholder="คำแนะนำสำหรับเจ้าของต้นไม้"></textarea>
-        </div>
+        <form
+          method="post"
+          th:action="@{/admin/reports/reply}"
+          action="/admin/reports/reply"
+        >
+          <div class="modal-body">
+            <div class="field">
+              <label for="status">สถานะ</label>
+              <select
+                class="select"
+                id="status"
+                name="status"
+                data-fill="status"
+                data-field="health_reports.status"
+              >
+                <option value="PENDING">รอตรวจ</option>
+                <option value="IN_PROGRESS">กำลังดำเนินการ</option>
+                <option value="RESOLVED">แก้ไขแล้ว</option>
+                <option value="REJECTED">ปฏิเสธ</option>
+              </select>
+              <span class="hint"
+                >เลือก "แก้ไขแล้ว" หรือ "ปฏิเสธ" ระบบจะบันทึกวันที่ปิดเรื่อง
+                (resolved_at) ให้</span
+              >
+            </div>
+            <div class="field">
+              <label for="admin_reply">คำตอบ</label>
+              <textarea
+                class="textarea"
+                id="admin_reply"
+                name="admin_reply"
+                data-field="health_reports.admin_reply"
+                placeholder="คำแนะนำสำหรับเจ้าของต้นไม้"
+              ></textarea>
+            </div>
+          </div>
+          <div class="modal-foot form-actions">
+            <button type="button" class="btn" data-close>ยกเลิก</button>
+            <button type="submit" class="btn btn-primary">บันทึกคำตอบ</button>
+          </div>
+        </form>
       </div>
-      <div class="modal-foot form-actions">
-        <button type="button" class="btn" data-close>ยกเลิก</button>
-        <button type="submit" class="btn btn-primary">บันทึกคำตอบ</button>
-      </div>
-    </form>
-  </div>
-</div>
+    </div>
 
-<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
-<script>
-  (function () {
-    var rows = document.querySelectorAll("#admin-reports .rp-row");
-    var groups = document.querySelectorAll("#report-filters .chips");
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+    <script>
+      (function () {
+        var rows = document.querySelectorAll("#admin-reports .rp-row");
+        var groups = document.querySelectorAll("#report-filters .chips");
 
-    // app.js กรองทีละกลุ่ม หน้านี้มี 2 กลุ่ม (สถานะ + ความรุนแรง) เลยกรองซ้ำให้ตรงทั้งสองกลุ่ม
-    function applyFilters() {
-      var active = Array.prototype.map.call(groups, function (g) {
-        var chip = g.querySelector(".chip.active");
-        return chip ? chip.dataset.filter : "all";
-      });
-      rows.forEach(function (row) {
-        var tags = row.dataset.tags.split(" ");
-        row.hidden = !active.every(function (f) { return f === "all" || tags.indexOf(f) !== -1; });
-      });
-    }
-    document.addEventListener("click", function (e) {
-      if (e.target.closest("#report-filters .chip")) applyFilters();
-    });
-    applyFilters();
+        // app.js กรองทีละกลุ่ม หน้านี้มี 2 กลุ่ม (สถานะ + ความรุนแรง) เลยกรองซ้ำให้ตรงทั้งสองกลุ่ม
+        function applyFilters() {
+          var active = Array.prototype.map.call(groups, function (g) {
+            var chip = g.querySelector(".chip.active");
+            return chip ? chip.dataset.filter : "all";
+          });
+          rows.forEach(function (row) {
+            var tags = row.dataset.tags.split(" ");
+            row.hidden = !active.every(function (f) {
+              return f === "all" || tags.indexOf(f) !== -1;
+            });
+          });
+        }
+        document.addEventListener("click", function (e) {
+          if (e.target.closest("#report-filters .chip")) applyFilters();
+        });
+        applyFilters();
 
-    // กด Enter บนแถวเพื่อเปิดแผงตอบเหมือนคลิก
-    rows.forEach(function (row) {
-      row.addEventListener("keydown", function (e) { if (e.key === "Enter") row.click(); });
-    });
-  })();
-</script>
-</body>
+        // กด Enter บนแถวเพื่อเปิดแผงตอบเหมือนคลิก
+        rows.forEach(function (row) {
+          row.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") row.click();
+          });
+        });
+      })();
+    </script>
+  </body>
 </html>
