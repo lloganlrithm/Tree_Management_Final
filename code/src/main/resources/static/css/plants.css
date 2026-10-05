@@ -26,3 +26,16 @@
 
 /* กล่องว่างรองานเพื่อน: เส้นประ */
 .slot { border-style: dashed; box-shadow: none; }
+
+
+/* ===== Admin จัดการพันธุ์ไม้ ===== */
+/* สีป้ายแสง ตาม enum SunlightRequirement */
+.sun-LOW { background: var(--recover-soft); color: var(--recover); }
+.sun-MEDIUM { background: var(--warn-soft); color: var(--warn); }
+.sun-HIGH { background: #fdf0d6; color: #a8641c; }
+
+.desc-cell { color: var(--muted); font-size: .88rem; max-width: 36ch; }
+.row-actions { display: flex; gap: 6px; justify-content: flex-end; white-space: nowrap; }
+
+/* ซ่อนข้อความไว้ให้โปรแกรมอ่านหน้าจอ แต่ไม่แสดงบนจอ */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
