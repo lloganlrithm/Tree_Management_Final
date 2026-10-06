@@ -2,6 +2,7 @@
 <html lang="th" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head('สมัครสมาชิก')}"></head>
 <body>
+<link rel="stylesheet" th:href="@{/css/users.css}">
 <div class="auth">
 
   <section class="auth-art">
@@ -14,7 +15,7 @@
     <form class="auth-box" id="signup-form" th:action="@{/register}" method="post" novalidate>
       <div>
         <h1>สมัครสมาชิก</h1>
-        <p class="muted">เริ่มดูแลต้นไม้ของคุณอย่างเป็นระบบ</p>
+        <p class="muted subtitle">เริ่มดูแลต้นไม้ของคุณอย่างเป็นระบบ</p>
       </div>
 
       <div class="form-grid">
@@ -30,11 +31,6 @@
         </div>
       </div>
 
-      <div class="field">
-        <label for="g-phone">เบอร์โทรศัพท์ (ไม่บังคับ)</label>
-        <input class="input" id="g-phone" name="phoneNumber" type="tel" maxlength="20" placeholder="08x-xxx-xxxx">
-        <span class="error-text" data-error-for="g-phone" hidden></span>
-      </div>
 
       <div class="field">
         <label for="g-email">อีเมล</label>
@@ -47,8 +43,7 @@
         <div class="pw-wrap">
           <input class="input" id="g-pw" name="password" type="password" minlength="8"
                  autocomplete="new-password" required>
-          <button type="button" class="pw-toggle" data-toggle-pw="g-pw">แสดง</button>
-        </div>
+                  </div>
         <span class="hint">อย่างน้อย 8 ตัวอักษร</span>
         <span class="error-text" data-error-for="g-pw" hidden></span>
       </div>
@@ -58,12 +53,11 @@
         <div class="pw-wrap">
           <input class="input" id="g-pw2" name="confirmPassword" type="password"
                  autocomplete="new-password" required>
-          <button type="button" class="pw-toggle" data-toggle-pw="g-pw2">แสดง</button>
-        </div>
+                  </div>
         <span class="error-text" data-error-for="g-pw2" hidden></span>
       </div>
 
-      <p class="info-box">บัญชีที่สมัครใหม่เป็นผู้ใช้ทั่วไป (USER) เสมอ ผู้ดูแลระบบเป็นคนกำหนดสิทธิ์ ADMIN</p>
+      <div class="info-box"><span class="icon icon-info"></span><span>บัญชีที่สมัครใหม่เป็น <b>ผู้ใช้ทั่วไป (USER)</b> เสมอ แอดมินเป็นคนกำหนดสิทธิ์ผู้ดูแลระบบให้ที่หน้าจัดการผู้ใช้</span></div>
 
       <button type="submit" class="btn btn-primary btn-block">สร้างบัญชี</button>
 
