@@ -13,7 +13,6 @@ document.querySelectorAll("[data-toggle-pw]").forEach(function (btn) {
 var form = document.getElementById("signup-form");
 if (form) {
   var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  var PHONE = /^[0-9\-\s+]{9,20}$/;
 
   function showError(id, msg) {
     var input = document.getElementById(id);
@@ -29,7 +28,6 @@ if (form) {
   var rules = {
     "g-first": function () { return val("g-first") ? "" : "กรุณากรอกชื่อ"; },
     "g-last":  function () { return val("g-last") ? "" : "กรุณากรอกนามสกุล"; },
-    "g-phone": function () { var v = val("g-phone"); return !v || PHONE.test(v) ? "" : "รูปแบบเบอร์โทรไม่ถูกต้อง"; },
     "g-email": function () { return EMAIL.test(val("g-email")) ? "" : "รูปแบบอีเมลไม่ถูกต้อง"; },
     "g-pw":    function () { return document.getElementById("g-pw").value.length >= 8 ? "" : "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร"; },
     "g-pw2":   function () { return document.getElementById("g-pw2").value === document.getElementById("g-pw").value ? "" : "รหัสผ่านไม่ตรงกัน"; }

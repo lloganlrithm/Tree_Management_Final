@@ -20,38 +20,38 @@
       <!-- ข้อมูลตัวอย่าง: รอเชื่อม UserService -->
       <section class="card profile-head">
         <div class="avatar-lg">
-          <img id="avatar-preview" th:src="@{/img/mascot.svg}" alt="รูปโปรไฟล์">
+          <img th:src="@{/img/mascot.svg}" alt="รูปโปรไฟล์">
         </div>
         <div class="grow">
           <div class="profile-title">
             <div>
-              <h2>พรีมภัทร ภาวัฒนวคุณ</h2>
-              <span class="muted small">prim@example.com</span>
+              <h2>มุกดา บุญประจันทร์</h2>
+              <span class="muted small">mukda@example.com</span>
             </div>
             <span class="badge plain s-HEALTHY">สมาชิก</span>
           </div>
           <div class="profile-stats">
-            <div><div class="k">อีเมล</div><div class="v">prim@example.com</div></div>
-            <div><div class="k">สิทธิ์</div><div class="v">USER</div></div>
-            <div><div class="k">เริ่มใช้งาน</div><div class="v">1 พ.ค. 2026</div></div>
+            <div><div class="k">ต้นไม้ในครอบครอง</div><div class="v">8 ต้น</div></div>
+            <div><div class="k">บันทึกการดูแลสะสม</div><div class="v v-primary">10 ครั้ง</div></div>
+            <div><div class="k">เริ่มใช้งาน</div><div class="v">พ.ค. 2026</div></div>
           </div>
         </div>
       </section>
 
-      <form class="card card-pad stack" th:action="@{/profile}" method="post">
+      <form class="card card-pad stack" th:action="@{/profile}" method="post" enctype="multipart/form-data">
         <h2>ข้อมูลส่วนตัว</h2>
         <div class="form-grid">
           <div class="field">
             <label for="f-first">ชื่อ</label>
-            <input class="input" id="f-first" name="firstName" maxlength="100" value="พรีมภัทร" required>
+            <input class="input" id="f-first" name="firstName" maxlength="100" value="มุกดา">
           </div>
           <div class="field">
             <label for="f-last">นามสกุล</label>
-            <input class="input" id="f-last" name="lastName" maxlength="100" value="ภาวัฒนวคุณ" required>
+            <input class="input" id="f-last" name="lastName" maxlength="100" value="บุญประจันทร์">
           </div>
           <div class="field">
             <label for="f-email">อีเมล</label>
-            <input class="input" id="f-email" value="prim@example.com" readonly>
+            <input class="input" id="f-email" value="mukda@example.com" readonly>
             <span class="hint">ใช้เข้าสู่ระบบ เปลี่ยนไม่ได้</span>
           </div>
           <div class="field">
@@ -59,10 +59,12 @@
             <input class="input" id="f-phone" name="phoneNumber" type="tel" maxlength="20" placeholder="08x-xxx-xxxx">
           </div>
           <div class="field full">
-            <label for="f-avatar">ลิงก์รูปโปรไฟล์</label>
-            <input class="input" id="f-avatar" name="avatarUrl" type="url" maxlength="500"
-                   placeholder="https://..." data-preview="#avatar-preview">
-            <span class="hint">ถ้าไม่ใส่ ระบบจะแสดงน้องปุยแทน</span>
+            <span class="field-label">รูปโปรไฟล์</span>
+            <label class="drop" for="f-avatar">
+              <span class="icon icon-upload"></span><br>
+              อัปโหลดรูปใหม่ · ถ้าไม่มีรูป ระบบจะแสดงน้องปุยแทน
+              <input type="file" id="f-avatar" name="avatar" accept="image/*" hidden>
+            </label>
           </div>
         </div>
         <div class="form-actions">
@@ -70,17 +72,32 @@
         </div>
       </form>
 
-      <div class="form-actions">
-        <form th:action="@{/logout}" method="post">
-          <button type="submit" class="btn btn-danger">ออกจากระบบ</button>
-        </form>
-      </div>
+      <form class="card card-pad stack" th:action="@{/profile/password}" method="post">
+        <h2>เปลี่ยนรหัสผ่าน</h2>
+        <div class="form-grid">
+          <div class="field full">
+            <label for="pw-old">รหัสผ่านปัจจุบัน</label>
+            <input class="input" id="pw-old" name="currentPassword" type="password" autocomplete="current-password">
+          </div>
+          <div class="field">
+            <label for="pw-new">รหัสผ่านใหม่</label>
+            <input class="input" id="pw-new" name="newPassword" type="password" autocomplete="new-password">
+          </div>
+          <div class="field">
+            <label for="pw-new2">ยืนยันรหัสผ่านใหม่</label>
+            <input class="input" id="pw-new2" name="confirmPassword" type="password" autocomplete="new-password">
+          </div>
+        </div>
+        <div class="form-actions between">
+          <a class="btn btn-danger" th:href="@{/logout}"><span class="icon icon-logout"></span>ออกจากระบบ</a>
+          <button type="submit" class="btn btn-primary"><span class="icon icon-lock"></span>เปลี่ยนรหัสผ่าน</button>
+        </div>
+      </form>
     </main>
     <footer th:replace="~{fragments/layout :: footer}"></footer>
   </div>
 </div>
 
 <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
-<script th:src="@{/js/users.js}"></script>
 </body>
 </html>
