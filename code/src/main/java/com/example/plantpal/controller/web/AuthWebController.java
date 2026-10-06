@@ -9,6 +9,12 @@ public class AuthWebController {
     // E2: หน้าเข้าสู่ระบบ (POST /login ให้ Spring Security จัดการ)
     @GetMapping("/login")
     public String login() {
-        return "login";
+        return "auth/login";
+    }
+
+    // E3: หน้าสมัครสมาชิก (POST /register รอทำตอนเชื่อม UserService)
+    @GetMapping("/register")
+    public String register() {
+        return "auth/register";
     }
 }
