@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="th" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/layout :: head('ยินดีต้อนรับ')}"></head>
+
+<body>
+<link rel="stylesheet" th:href="@{/css/plants.css}">
+
+<!-- หน้าแรกก่อน login: ไม่มี Sidebar เพราะยังไม่ได้เข้าสู่ระบบ -->
+<div class="landing">
+
+  <header class="landing-top">
+    <span class="brand">
+      <span class="brand-mark">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19c0-9 6-15 15-15 0 9-6 15-15 15z"/><path d="M5 19 13 11"/></svg>
+      </span>
+      <span class="brand-name">PlantPal</span>
+    </span>
+    <a class="btn btn-sm" th:href="@{/login}">เข้าสู่ระบบ</a>
+  </header>
+
+  <main class="landing-hero">
+    <div class="landing-copy">
+      <h1>รู้ว่าต้นไม้ต้นไหน<br>ต้องดูแลวันนี้</h1>
+      <p>บันทึกต้นไม้ของคุณ ตั้งรอบรดน้ำตามพันธุ์ไม้ แล้วให้ระบบเตือนเมื่อถึงเวลา ถ้าต้นไม้ป่วยก็แจ้งให้ผู้ดูแลช่วยดูได้</p>
+      <div class="landing-actions">
+        <a class="btn btn-primary" th:href="@{/register}">สมัครสมาชิก</a>
+        <a class="btn" th:href="@{/login}">มีบัญชีแล้ว เข้าสู่ระบบ</a>
+      </div>
+    </div>
+
+    <!-- การ์ดตัวอย่าง ให้เห็นว่าระบบหน้าตาเป็นยังไง -->
+    <div class="landing-preview" aria-hidden="true">
+      <div class="card plant-card">
+        <div class="row">
+          <span class="plant-tile">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-8"/><path d="M12 12c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 14c0-3-2-5-6-5 0 3 2 5 6 5z"/><path d="M7 20h10"/></svg>
+          </span>
+          <span class="badge s-HEALTHY">ปกติดี</span>
+        </div>
+        <span class="name">ม่อนม่อน</span>
+        <span class="species">มอนสเตอร่า</span>
+        <div class="foot"><span>รดน้ำทุก 7 วัน</span><span class="date-chip today">วันนี้</span></div>
+      </div>
+      <div class="card plant-card">
+        <div class="row">
+          <span class="plant-tile t-RECOVERING">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--recover)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-8"/><path d="M12 12c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 14c0-3-2-5-6-5 0 3 2 5 6 5z"/><path d="M7 20h10"/></svg>
+          </span>
+          <span class="badge s-RECOVERING">กำลังฟื้นตัว</span>
+        </div>
+        <span class="name">ใบใหญ่</span>
+        <span class="species">ไทรใบสัก</span>
+        <div class="foot"><span>รดน้ำทุก 7 วัน</span><span class="date-chip">อีก 3 วัน</span></div>
+      </div>
+    </div>
+  </main>
+
+  <section class="landing-points">
+    <div class="card card-pad">
+      <h3>ตารางดูแลตามพันธุ์ไม้</h3>
+      <p class="muted small">เลือกพันธุ์ไม้แล้วได้รอบรดน้ำและแสงที่เหมาะสมทันที</p>
+    </div>
+    <div class="card card-pad">
+      <h3>แจ้งเตือนเมื่อถึงเวลา</h3>
+      <p class="muted small">เห็นงานดูแลของวันนี้และวันพรุ่งนี้ในหน้าเดียว</p>
+    </div>
+    <div class="card card-pad">
+      <h3>แจ้งปัญหาสุขภาพ</h3>
+      <p class="muted small">ต้นไม้ใบเหลืองหรือเหี่ยว แจ้งพร้อมรูปให้ผู้ดูแลตอบกลับ</p>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

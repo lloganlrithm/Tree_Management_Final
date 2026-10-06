@@ -91,7 +91,8 @@ if (registerForm) {
 }
 
 // ฟอร์มอื่นยังไม่ส่งไปไหน (รอเชื่อม controller)
-document.querySelectorAll("form:not(#login-form):not(#register-form)").forEach(function (f) {
+// ฟอร์มที่ต่อ backend แล้ว ให้ใส่ data-live ในแท็ก <form> จะส่งข้อมูลไป controller ได้จริง
+document.querySelectorAll("form:not(#login-form):not(#register-form):not([data-live])").forEach(function (f) {
   f.addEventListener("submit", function (e) {
     e.preventDefault();
     var bd = f.closest(".modal-backdrop");

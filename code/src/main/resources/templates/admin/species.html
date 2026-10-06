@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="th" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/layout :: head('จัดการพันธุ์ไม้')}"></head>
+
+<body>
+<link rel="stylesheet" th:href="@{/css/plants.css}">
+<div class="app">
+
+  <!-- sidebar ยังไม่มีเมนู admin เลยส่งค่าว่าง ไม่ไฮไลต์เมนูไหน -->
+  <aside th:replace="~{fragments/layout :: sidebar('admin-species')}"></aside>
+
+  <div class="main">
+    <header th:replace="~{fragments/layout :: topbar}"></header>
+
+    <main class="content">
+
+      <!-- ===== หัวหน้า + ปุ่มเพิ่ม ===== -->
+      <div class="page-head">
+        <div>
+          <h1>จัดการพันธุ์ไม้</h1>
+          <p>พันธุ์ไม้ที่ผู้ใช้เลือกได้ตอนเพิ่มต้นไม้ ทั้งหมด <span th:text="${#lists.size(speciesList)}">5</span> พันธุ์</p>
+        </div>
+        <!-- data-fill-* = ล้างค่าในฟอร์มให้ว่างตอนเพิ่มใหม่ -->
+        <button class="btn btn-primary" type="button" data-open="species-modal"
+                data-fill-mode="เพิ่มพันธุ์ไม้" data-fill-id="" data-fill-name="" data-fill-water="" data-fill-fertilize="" data-fill-repot="" data-fill-sun="MEDIUM" data-fill-desc="">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          เพิ่มพันธุ์ไม้
+        </button>
+      </div>
+
+      <!-- ===== ข้อความผลลัพธ์หลังบันทึก/ลบ (มาจาก RedirectAttributes) ===== -->
+      <div class="flash ok" th:if="${success}" th:text="${success}">บันทึกแล้ว</div>
+      <div class="flash err" th:if="${error}" th:text="${error}">เกิดข้อผิดพลาด</div>
+
+      <!-- ===== ตาราง species (ดึงจาก DB ผ่าน th:each) ===== -->
+      <section class="card table-wrap">
+        <table class="data">
+          <thead>
+            <tr>
+              <th>ชื่อพันธุ์ไม้</th>
+              <th>รดน้ำทุก (วัน)</th>
+              <th>ใส่ปุ๋ยทุก (วัน)</th>
+              <th>เปลี่ยนกระถางทุก (วัน)</th>
+              <th>แสง</th>
+              <th>คำอธิบาย</th>
+              <th><span class="sr-only">จัดการ</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="sp : ${speciesList}">
+              <td><b th:text="${sp.name}">มอนสเตอร่า</b></td>
+              <td class="num" th:text="${sp.waterIntervalDays}">7</td>
+              <td class="num" th:text="${sp.fertilizeIntervalDays} ?: '-'">30</td>
+              <td class="num" th:text="${sp.repotIntervalDays} ?: '-'">365</td>
+              <td th:switch="${sp.sunlightRequirement?.name()}">
+                <span th:case="'LOW'" class="badge plain sun-LOW">แดดรำไร</span>
+                <span th:case="'MEDIUM'" class="badge plain sun-MEDIUM">แดดปานกลาง</span>
+                <span th:case="'HIGH'" class="badge plain sun-HIGH">แดดจัด</span>
+                <span th:case="*">-</span>
+              </td>
+              <td class="desc-cell" th:text="${sp.description}">ชอบแดดรำไร ใบใหญ่มีรอยแยกสวยงาม</td>
+              <td class="row-actions">
+                <!-- ?: '' ทำให้ค่าว่างถูกส่งไปล้างช่องในฟอร์มด้วย -->
+                <button class="btn btn-sm btn-soft" type="button" data-open="species-modal" data-fill-mode="แก้ไขพันธุ์ไม้"
+                        th:data-fill-id="${sp.id}"
+                        th:data-fill-name="${sp.name}"
+                        th:data-fill-water="${sp.waterIntervalDays}"
+                        th:data-fill-fertilize="${sp.fertilizeIntervalDays} ?: ''"
+                        th:data-fill-repot="${sp.repotIntervalDays} ?: ''"
+                        th:data-fill-sun="${sp.sunlightRequirement} ?: 'MEDIUM'"
+                        th:data-fill-desc="${sp.description} ?: ''">แก้ไข</button>
+                <button class="btn btn-sm btn-danger" type="button" data-open="species-delete"
+                        th:data-fill-id="${sp.id}"
+                        th:data-fill-target="${sp.name}">ลบ</button>
+              </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(speciesList)}">
+              <td colspan="7" class="empty-row">ยังไม่มีพันธุ์ไม้ กด "เพิ่มพันธุ์ไม้" เพื่อเริ่มต้น</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ===== Popup เพิ่ม / แก้ไขพันธุ์ไม้ (ใช้ร่วมกัน ปุ่มส่งค่าเข้ามาผ่าน data-fill-*) ===== -->
+<div class="modal-backdrop" id="species-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="species-modal-title">
+    <div class="modal-head">
+      <div>
+        <h2 id="species-modal-title" data-fill="mode">เพิ่มพันธุ์ไม้</h2>
+        <p>ค่าเหล่านี้จะแสดงให้ผู้ใช้เห็นตอนเลือกพันธุ์ไม้</p>
+      </div>
+      <button class="btn btn-icon" type="button" data-close aria-label="ปิด">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <form method="post" th:action="@{/admin/species}" data-live>
+      <div class="modal-body">
+        <div class="field">
+          <label for="sp-name">ชื่อพันธุ์ไม้</label>
+          <input class="input" id="sp-name" name="name" maxlength="100" required data-fill="name">
+          <span class="hint">ห้ามซ้ำกับพันธุ์ไม้ที่มีอยู่</span>
+        </div>
+        <div class="form-grid">
+          <div class="field">
+            <label for="sp-water">รดน้ำทุกกี่วัน</label>
+            <input class="input" id="sp-water" name="waterIntervalDays" type="number" min="1" max="365" required data-fill="water">
+          </div>
+          <div class="field">
+            <label for="sp-sun">แสงที่ต้องการ</label>
+            <select class="select" id="sp-sun" name="sunlightRequirement" data-fill="sun">
+              <option value="LOW">แดดรำไร</option>
+              <option value="MEDIUM">แดดปานกลาง</option>
+              <option value="HIGH">แดดจัด</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="field">
+            <label for="sp-fertilize">ใส่ปุ๋ยทุกกี่วัน</label>
+            <input class="input" id="sp-fertilize" name="fertilizeIntervalDays" type="number" min="1" max="365" data-fill="fertilize">
+            <span class="hint">เว้นว่าง = ใช้ค่าตั้งต้น</span>
+          </div>
+          <div class="field">
+            <label for="sp-repot">เปลี่ยนกระถางทุกกี่วัน</label>
+            <input class="input" id="sp-repot" name="repotIntervalDays" type="number" min="1" max="1095" data-fill="repot">
+            <span class="hint">เว้นว่าง = ใช้ค่าตั้งต้น</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="sp-desc">คำอธิบาย</label>
+          <textarea class="textarea" id="sp-desc" name="description" data-fill="desc"></textarea>
+        </div>
+      </div>
+      <div class="modal-foot form-actions">
+        <button class="btn" type="button" data-close>ยกเลิก</button>
+        <button class="btn btn-primary" type="submit">บันทึก</button>
+      </div>
+      <!-- id ว่าง = เพิ่มใหม่, มี id = แก้ไข (วางท้ายฟอร์ม เพื่อให้ช่องชื่อได้ focus ก่อน) -->
+      <input type="hidden" name="id" data-fill="id">
+    </form>
+  </div>
+</div>
+
+<!-- ===== Popup ยืนยันลบ ===== -->
+<div class="modal-backdrop" id="species-delete" hidden>
+  <div class="modal sm" role="dialog" aria-modal="true" aria-labelledby="species-delete-title">
+    <div class="modal-head">
+      <div>
+        <h2 id="species-delete-title">ลบพันธุ์ไม้ “<span data-fill="target">มอนสเตอร่า</span>” ?</h2>
+        <p>ลบได้เฉพาะพันธุ์ไม้ที่ยังไม่มีต้นไม้ของผู้ใช้คนไหนใช้อยู่</p>
+      </div>
+    </div>
+    <form class="modal-foot form-actions" method="post" th:action="@{/admin/species/delete}" data-live>
+      <input type="hidden" name="id" data-fill="id">
+      <button class="btn" type="button" data-close>ยกเลิก</button>
+      <button class="btn btn-danger-solid" type="submit">ลบพันธุ์ไม้</button>
+    </form>
+  </div>
+</div>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>
