@@ -6,7 +6,29 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
     margin-bottom: 28px;
+}
+
+.care-history-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--primary);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: 0.2s;
+}
+
+.care-history-btn:hover {
+    background: var(--soft);
+    border-color: var(--primary);
 }
 
 .care-page-header h1 {
@@ -214,4 +236,5 @@
         padding: 8px 12px;
         font-size: 13px;
     }
+
 }
