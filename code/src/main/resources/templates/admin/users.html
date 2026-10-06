@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="th" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('จัดการผู้ใช้')}"></head>
+<body>
+<link rel="stylesheet" th:href="@{/css/users.css}">
+<div class="app">
+  <aside th:replace="~{fragments/layout :: sidebar('admin-users')}"></aside>
+
+  <div class="main">
+    <header th:replace="~{fragments/layout :: topbar}"></header>
+
+    <main class="content">
+      <div class="page-head">
+        <div>
+          <h1>ผู้ใช้</h1>
+          <p>กำหนดบทบาท และระงับหรือเปิดใช้งานบัญชี</p>
+        </div>
+      </div>
+
+      <!-- ข้อมูลตัวอย่าง: รอเชื่อม UserService (ตอนเชื่อม ให้เหลือ <tr> เดียวแล้วใช้ th:each) -->
+      <section class="card table-wrap">
+        <table class="data">
+          <thead>
+            <tr><th>ผู้ใช้</th><th>บทบาท</th><th>ต้นไม้</th><th>สมัครเมื่อ</th><th>ใช้งาน</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="plant-cell">
+                  <span class="avatar"><img th:src="@{/img/mascot.svg}" alt=""></span>
+                  <span><b>มุกดา บุญประจันทร์</b><small>mukda@example.com</small></span>
+                </div>
+              </td>
+              <td>
+                <select class="select role-select" aria-label="บทบาท">
+                  <option value="USER" selected>สมาชิก</option>
+                  <option value="ADMIN">ผู้ดูแลระบบ</option>
+                </select>
+              </td>
+              <td class="num">8 ต้น</td>
+              <td class="num">3 พ.ค. 2026</td>
+              <td>
+                <label class="switch" aria-label="เปิดใช้งานบัญชี"><input type="checkbox" checked><span></span></label>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="plant-cell">
+                  <span class="avatar"><img th:src="@{/img/mascot.svg}" alt=""></span>
+                  <span><b>พรีมภัทร ภาวัฒนวคุณ</b><small>prim@example.com</small></span>
+                </div>
+              </td>
+              <td>
+                <select class="select role-select" aria-label="บทบาท">
+                  <option value="USER">สมาชิก</option>
+                  <option value="ADMIN" selected>ผู้ดูแลระบบ</option>
+                </select>
+              </td>
+              <td class="num">3 ต้น</td>
+              <td class="num">1 พ.ค. 2026</td>
+              <td>
+                <label class="switch" aria-label="เปิดใช้งานบัญชี"><input type="checkbox" checked><span></span></label>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="plant-cell">
+                  <span class="avatar"><img th:src="@{/img/mascot.svg}" alt=""></span>
+                  <span><b>กมลพร เกตุแก้ว</b><small>kamonporn@example.com</small></span>
+                </div>
+              </td>
+              <td>
+                <select class="select role-select" aria-label="บทบาท">
+                  <option value="USER" selected>สมาชิก</option>
+                  <option value="ADMIN">ผู้ดูแลระบบ</option>
+                </select>
+              </td>
+              <td class="num">5 ต้น</td>
+              <td class="num">11 มิ.ย. 2026</td>
+              <td>
+                <label class="switch" aria-label="เปิดใช้งานบัญชี"><input type="checkbox" checked><span></span></label>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="plant-cell">
+                  <span class="avatar"><img th:src="@{/img/mascot.svg}" alt=""></span>
+                  <span><b>สรนันท์ บุสดี</b><small>soranan@example.com</small></span>
+                </div>
+              </td>
+              <td>
+                <select class="select role-select" aria-label="บทบาท">
+                  <option value="USER" selected>สมาชิก</option>
+                  <option value="ADMIN">ผู้ดูแลระบบ</option>
+                </select>
+              </td>
+              <td class="num">1 ต้น</td>
+              <td class="num">20 ก.ค. 2026</td>
+              <td>
+                <label class="switch" aria-label="เปิดใช้งานบัญชี"><input type="checkbox"><span></span></label>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+  </div>
+</div>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>
