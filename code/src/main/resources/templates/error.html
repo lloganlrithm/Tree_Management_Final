@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="th" xmlns:th="http://www.thymeleaf.org">
+
+<!-- Spring Boot ใช้ไฟล์นี้แสดง error เอง และส่งค่า status (เลข error) กับ path มาให้ -->
+<head th:replace="~{fragments/layout :: head('เกิดข้อผิดพลาด')}"></head>
+
+<body>
+<link rel="stylesheet" th:href="@{/css/plants.css}">
+
+<main class="error-page">
+  <section class="card error-box">
+    <span class="plant-tile lg t-SICK">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--crit)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20v-8"/><path d="M12 12c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 14c0-3-2-5-6-5 0 3 2 5 6 5z"/><path d="M7 20h10"/></svg>
+    </span>
+
+    <!-- เลข error เช่น 404, 403, 500 -->
+    <p class="error-code" th:text="${status}">404</p>
+
+    <!-- เลือกหัวข้อตามเลข error -->
+    <th:block th:switch="${status}">
+      <h1 th:case="404">ไม่พบหน้าที่ต้องการ</h1>
+      <h1 th:case="403">ไม่มีสิทธิ์เข้าหน้านี้</h1>
+      <h1 th:case="500">ระบบขัดข้อง</h1>
+      <h1 th:case="*">เกิดข้อผิดพลาด</h1>
+    </th:block>
+
+    <th:block th:switch="${status}">
+      <p class="muted" th:case="404">ลิงก์อาจผิด หรือข้อมูลนี้ถูกลบไปแล้ว ลองกลับไปหน้าหลักแล้วเลือกใหม่อีกครั้ง</p>
+      <p class="muted" th:case="403">หน้านี้สำหรับผู้ดูแลระบบเท่านั้น ถ้าคิดว่าควรเข้าได้ ให้ติดต่อผู้ดูแลระบบ</p>
+      <p class="muted" th:case="500">ระบบทำงานผิดพลาดชั่วคราว ลองใหม่อีกครั้งในอีกสักครู่</p>
+      <p class="muted" th:case="*">ลองกลับไปหน้าหลักแล้วทำรายการใหม่อีกครั้ง</p>
+    </th:block>
+
+    <p class="muted small" th:if="${path}">ที่อยู่: <code th:text="${path}">/abc</code></p>
+
+    <div class="landing-actions">
+            <a class="btn btn-primary" th:href="@{/}">กลับหน้าแรก</a>
+    </div>
+  </section>
+</main>
+</body>
+</html>
