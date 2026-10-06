@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="th" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('จัดการผู้ใช้')}"></head>
+<body>
+<link rel="stylesheet" th:href="@{/css/users.css}">
+<div class="app">
+  <aside th:replace="~{fragments/layout :: sidebar('admin-users')}"></aside>
+
+  <div class="main">
+    <header th:replace="~{fragments/layout :: topbar}"></header>
+
+    <main class="content">
+      <div class="page-head">
+        <div>
+          <h1>ผู้ใช้</h1>
+          <p>กำหนดบทบาท และระงับหรือเปิดใช้งานบัญชี</p>
+        </div>
+      </div>
+
+      <!-- ค้นหา: ส่ง GET /admin/users?q=...&page=... -->
+      <form class="admin-toolbar" th:action="@{/admin/users}" method="get">
+        <label class="search">
+          <input type="search" name="q" th:value="${param.q}" placeholder="ค้นหาอีเมลหรือชื่อ">
+        </label>
+        <button type="submit" class="btn">ค้นหา</button>
+      </form>
+
+      <!-- ข้อมูลตัวอย่าง: รอเชื่อม UserService (ตอนเชื่อม ให้เหลือ <tr> เดียวแล้วใช้ th:each) -->
+      <section class="card table-wrap">
+        <table class="table">
+          <thead>
+            <tr><th>ผู้ใช้</th><th>บทบาท</th><th>สถานะ</th><th>สมัครเมื่อ</th><th></th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <b>มุกดา บุญประจันทร์</b><br>
+                <small class="muted">mukda@example.com</small>
+              </td>
+              <td>
+                <select class="select role-select" aria-label="บทบาท">
+                  <option value="USER" selected>สมาชิก</option>
+                  <option value="ADMIN">ผู้ดูแลระบบ</option>
+                </select>
+              </td>
+              <td><span class="badge plain s-HEALTHY">ใช้งานอยู่</span></td>
+              <td class="num">3 พ.ค. 2026</td>
+              <td>
+                <button type="button" class="btn btn-danger" data-open="confirm-suspend"
+                        data-fill-name="mukda@example.com">ระงับ</button>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <b>สรนันท์ บุสดี</b><br>
+                <small class="muted">soranan@example.com</small>
+              </td>
+              <td>
+                <select class="select role-select" aria-label="บทบาท">
+                  <option value="USER" selected>สมาชิก</option>
+                  <option value="ADMIN">ผู้ดูแลระบบ</option>
+                </select>
+              </td>
+              <td><span class="badge plain s-DEAD">ถูกระงับ</span></td>
+              <td class="num">20 ก.ค. 2026</td>
+              <td>
+                <button type="button" class="btn" data-open="confirm-activate"
+                        data-fill-name="soranan@example.com">เปิดใช้</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <nav class="pagination" aria-label="แบ่งหน้า">
+        <span class="disabled">ก่อนหน้า</span>
+        <span class="current">1</span>
+        <a href="?page=1">2</a>
+        <a href="?page=1">ถัดไป</a>
+      </nav>
+    </main>
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+  </div>
+</div>
+
+
+<div class="modal-backdrop" id="confirm-suspend" hidden>
+  <form class="modal sm" method="post">
+    <div class="modal-head"><h2>ระงับบัญชี?</h2></div>
+    <div class="modal-body"><p>บัญชี <b data-fill="name"></b> จะเข้าสู่ระบบไม่ได้จนกว่าจะเปิดใช้อีกครั้ง</p></div>
+    <div class="modal-foot form-actions">
+      <button type="button" class="btn" data-close>ยกเลิก</button>
+      <button type="submit" class="btn btn-danger">ระงับ</button>
+    </div>
+  </form>
+</div>
+
+<div class="modal-backdrop" id="confirm-activate" hidden>
+  <form class="modal sm" method="post">
+    <div class="modal-head"><h2>เปิดใช้บัญชี?</h2></div>
+    <div class="modal-body"><p>บัญชี <b data-fill="name"></b> จะกลับมาเข้าสู่ระบบได้</p></div>
+    <div class="modal-foot form-actions">
+      <button type="button" class="btn" data-close>ยกเลิก</button>
+      <button type="submit" class="btn btn-primary">เปิดใช้</button>
+    </div>
+  </form>
+</div>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>
