@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="th" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('สมัครสมาชิก')}"></head>
+<body>
+<div class="auth">
+
+  <section class="auth-art">
+    <img th:src="@{/img/mascot.svg}" alt="" width="150" height="150">
+    <h1 class="brand-title">PlantPal</h1>
+    <p>บันทึกการรดน้ำ ใส่ปุ๋ย และสุขภาพของต้นไม้ทุกต้นไว้ในที่เดียว มีน้องปุยคอยเตือนเมื่อถึงรอบ</p>
+  </section>
+
+  <section class="auth-form">
+    <form class="auth-box" id="signup-form" th:action="@{/register}" method="post" novalidate>
+      <div>
+        <h1>สมัครสมาชิก</h1>
+        <p class="muted">เริ่มดูแลต้นไม้ของคุณอย่างเป็นระบบ</p>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="g-first">ชื่อ</label>
+          <input class="input" id="g-first" name="firstName" maxlength="100" required>
+          <span class="error-text" data-error-for="g-first" hidden></span>
+        </div>
+        <div class="field">
+          <label for="g-last">นามสกุล</label>
+          <input class="input" id="g-last" name="lastName" maxlength="100" required>
+          <span class="error-text" data-error-for="g-last" hidden></span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="g-phone">เบอร์โทรศัพท์ (ไม่บังคับ)</label>
+        <input class="input" id="g-phone" name="phoneNumber" type="tel" maxlength="20" placeholder="08x-xxx-xxxx">
+        <span class="error-text" data-error-for="g-phone" hidden></span>
+      </div>
+
+      <div class="field">
+        <label for="g-email">อีเมล</label>
+        <input class="input" id="g-email" name="email" type="email" autocomplete="email" required>
+        <span class="error-text" data-error-for="g-email" hidden></span>
+      </div>
+
+      <div class="field">
+        <label for="g-pw">รหัสผ่าน</label>
+        <div class="pw-wrap">
+          <input class="input" id="g-pw" name="password" type="password" minlength="8"
+                 autocomplete="new-password" required>
+          <button type="button" class="pw-toggle" data-toggle-pw="g-pw">แสดง</button>
+        </div>
+        <span class="hint">อย่างน้อย 8 ตัวอักษร</span>
+        <span class="error-text" data-error-for="g-pw" hidden></span>
+      </div>
+
+      <div class="field">
+        <label for="g-pw2">ยืนยันรหัสผ่าน</label>
+        <div class="pw-wrap">
+          <input class="input" id="g-pw2" name="confirmPassword" type="password"
+                 autocomplete="new-password" required>
+          <button type="button" class="pw-toggle" data-toggle-pw="g-pw2">แสดง</button>
+        </div>
+        <span class="error-text" data-error-for="g-pw2" hidden></span>
+      </div>
+
+      <p class="info-box">บัญชีที่สมัครใหม่เป็นผู้ใช้ทั่วไป (USER) เสมอ ผู้ดูแลระบบเป็นคนกำหนดสิทธิ์ ADMIN</p>
+
+      <button type="submit" class="btn btn-primary btn-block">สร้างบัญชี</button>
+
+      <p class="auth-switch">มีบัญชีแล้ว? <a th:href="@{/login}">เข้าสู่ระบบ</a></p>
+    </form>
+  </section>
+
+</div>
+<script th:src="@{/js/users.js}"></script>
+</body>
+</html>
