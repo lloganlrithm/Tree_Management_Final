@@ -6,7 +6,7 @@
 <body>
 <div class="app">
 
-  <aside th:replace="~{fragments/layout :: sidebar('reports')}"></aside>
+  <aside th:replace="~{fragments/layout :: sidebar('admin-reports')}"></aside>
 
   <div class="main">
     <header th:replace="~{fragments/layout :: topbar}"></header>
@@ -96,6 +96,7 @@
         <span class="is-disabled">ถัดไป</span>
       </nav>
     </main>
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
   </div>
 </div>
 
