@@ -7,6 +7,7 @@ import com.example.plantpal.service.CurrentUserService;
 import com.example.plantpal.service.HealthReportService;
 import com.example.plantpal.service.PlantService;
 import jakarta.validation.Valid;
+import com.example.plantpal.exception.InvalidRequestException;
 import com.example.plantpal.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -61,7 +62,7 @@ public class ReportController {
             HealthReport report = healthReportService.create(request, currentEmail());
             redirect.addFlashAttribute("success", "ส่งรายงานแล้ว ผู้ดูแลระบบจะตอบกลับเร็วๆ นี้");
             return "redirect:/reports/" + report.getId();
-        } catch (IllegalArgumentException | ResourceNotFoundException e) {
+        } catch (IllegalArgumentException | ResourceNotFoundException | InvalidRequestException | IllegalStateException e) {
             redirect.addFlashAttribute("error", e.getMessage());
             return backToForm(request);
         }
