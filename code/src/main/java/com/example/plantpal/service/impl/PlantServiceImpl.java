@@ -1,14 +1,16 @@
-package com.example.plantpal.service.impl;   // ← แก้ให้ตรงกับ SpeciesServiceImpl
+package com.example.plantpal.service.impl;
 
 import com.example.plantpal.domain.entity.Plant;
 import com.example.plantpal.domain.entity.Species;
 import com.example.plantpal.domain.entity.User;
 import com.example.plantpal.dto.request.PlantRequest;
+import com.example.plantpal.event.PlantCreatedEvent;
 import com.example.plantpal.repository.PlantRepository;
 import com.example.plantpal.repository.SpeciesRepository;
 import com.example.plantpal.repository.UserRepository;
 import com.example.plantpal.service.PlantService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +24,7 @@ public class PlantServiceImpl implements PlantService {
     private final PlantRepository plantRepository;
     private final SpeciesRepository speciesRepository;
     private final UserRepository userRepository;
+    private final ApplicationEventPublisher eventPublisher;   // ส่ง event ให้คนที่ฟัง (Observer)
 
     @Override
     @Transactional(readOnly = true)
@@ -49,7 +52,10 @@ public class PlantServiceImpl implements PlantService {
         Plant plant = new Plant();
         plant.setUser(owner);
         applyForm(plant, request);   // healthStatus = HEALTHY ตาม default ใน entity
-        return plantRepository.save(plant);
+
+        Plant saved = plantRepository.save(plant);
+        eventPublisher.publishEvent(new PlantCreatedEvent(saved.getId()));   // แจ้งว่ามีต้นไม้ใหม่ (care ของเปียโนรับไปสร้างตารางดูแล)
+        return saved;
     }
 
     @Override
