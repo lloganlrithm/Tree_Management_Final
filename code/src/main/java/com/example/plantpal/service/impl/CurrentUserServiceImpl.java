@@ -23,15 +23,11 @@ public class CurrentUserServiceImpl implements CurrentUserService {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !(auth instanceof AnonymousAuthenticationToken)) {
             // username ที่ login = อีเมลในตาราง users
-            var user = userRepository.findByEmail(auth.getName());
-            if (user.isPresent()) {
-                return user.get();
-            }
+            return userRepository.findByEmail(auth.getName())
+                    .orElseThrow(() -> new IllegalStateException("ไม่พบผู้ใช้ที่ login อยู่ในตาราง users"));
         }
-        // TODO(U2): fallback ชั่วคราว ระหว่างที่ยังไม่มี login จริง ให้ใช้ user คนแรกในตาราง
-        //           ต้องลบออกตอนทำ SecurityConfig แล้วโยน exception แทน
-        return userRepository.findFirstByOrderByIdAsc()
-                .orElseThrow(() -> new IllegalStateException("ยังไม่มีผู้ใช้ในตาราง users"));
+        // SecurityConfig บังคับ login ทุกหน้าที่เรียก service อยู่แล้ว ถ้ามาถึงตรงนี้แปลว่าเรียกผิดที่
+        throw new IllegalStateException("ยังไม่ได้ login");
     }
 
     @Override
