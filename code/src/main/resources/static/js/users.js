@@ -55,3 +55,17 @@ document.querySelectorAll("[data-preview]").forEach(function (input) {
   });
   img.addEventListener("error", function () { img.src = fallback; });
 });
+// U4: เปลี่ยน select/checkbox ที่มี data-autosubmit แล้วส่งฟอร์มทันที (หน้า admin จัดการผู้ใช้)
+document.querySelectorAll("[data-autosubmit]").forEach(function (el) {
+  el.addEventListener("change", function () { el.form.submit(); });
+});
+
+// U4: แสดงชื่อไฟล์รูปที่เลือก (input file ซ่อนอยู่ในกรอบ .drop)
+document.querySelectorAll('input[type="file"]').forEach(function (input) {
+  var label = input.closest("label");
+  var out = label && label.querySelector("[data-file-name]");
+  if (!out) return;
+  input.addEventListener("change", function () {
+    out.textContent = input.files.length ? "เลือกแล้ว: " + input.files[0].name : "";
+  });
+});
