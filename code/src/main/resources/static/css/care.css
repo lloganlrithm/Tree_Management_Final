@@ -1,118 +1,48 @@
-.care-content {
-    padding-bottom: 40px;
+/* PlantPal — หน้าตารางและการดูแล (C1)
+   ใช้ตัวแปรสี/ฟอนต์จาก base.css แบบเดียวกับ plants.css
+   ส่วนหัว ปุ่ม chip badge card ใช้ class กลางใน base.css (page-head, card, toolbar, chips, badge) */
+
+/* ===== กลุ่ม เลยกำหนด / วันนี้ / ถัดไป ===== */
+.care-group+.care-group {
+    margin-top: 24px;
 }
 
-.care-page-header {
+.care-group-header {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 16px;
-    flex-wrap: wrap;
-    margin-bottom: 28px;
-}
-
-.care-history-btn {
-    display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 18px;
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    background: var(--surface);
-    color: var(--primary);
-    font-size: 14px;
-    font-weight: 600;
-    text-decoration: none;
-    transition: 0.2s;
+    margin-bottom: 12px;
 }
 
-.care-history-btn:hover {
-    background: var(--soft);
-    border-color: var(--primary);
+.care-group-header h3 {
+    font-size: 1rem;
 }
 
-.care-page-header h1 {
-    margin: 0 0 8px;
-    font-family: "Prompt", sans-serif;
-    font-size: 30px;
-    font-weight: 700;
-    color: var(--fg);
-}
-
-.care-page-header p {
-    margin: 0;
-    color: var(--muted);
-    font-size: 15px;
-}
-
-.care-toolbar {
-    margin-bottom: 28px;
-}
-
-.care-filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.care-filter-btn {
-    border: 1px solid var(--line);
-    background: var(--surface);
-    color: var(--muted);
-    padding: 10px 18px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-family: inherit;
-    font-size: 14px;
-    transition: 0.2s;
-}
-
-.care-filter-btn:hover {
-    border-color: var(--primary);
-    color: var(--primary);
-}
-
-.care-filter-btn.active {
+.care-group-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
     background: var(--primary);
-    border-color: var(--primary);
-    color: white;
+    flex: none;
 }
 
-.care-section {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    padding: 24px;
+.care-group.overdue .care-group-dot {
+    background: var(--crit);
 }
 
-.care-section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
+.care-group.today .care-group-dot {
+    background: var(--warn);
 }
 
-.care-section-header h2 {
-    margin: 0 0 5px;
-    font-family: "Prompt", sans-serif;
-    font-size: 21px;
-    color: var(--fg);
-}
-
-.care-section-header p {
-    margin: 0;
-    color: var(--muted);
-    font-size: 14px;
-}
-
-.care-count {
+.care-group-count {
+    padding: 0 9px;
+    border-radius: 999px;
     background: var(--soft);
-    color: var(--primary);
-    padding: 7px 12px;
-    border-radius: 20px;
-    font-size: 13px;
+    color: var(--muted);
+    font-size: .78rem;
 }
 
+/* ===== การ์ดงานดูแล ===== */
 .care-task-list {
     display: flex;
     flex-direction: column;
@@ -125,116 +55,121 @@
     gap: 16px;
     padding: 16px;
     border: 1px solid var(--line);
-    border-radius: 13px;
+    border-radius: var(--radius-md);
     background: var(--surface);
-    transition: 0.2s;
+    transition: border-color .2s;
 }
 
 .care-task-card:hover {
     border-color: var(--soft-strong);
-    transform: translateY(-1px);
 }
 
+.care-task-card.overdue {
+    border-color: #f3cfcb;
+}
+
+/* ไอคอน ใช้ทรงเดียวกับ .plant-tile แต่เล็กลง */
 .care-task-icon {
     width: 48px;
     height: 48px;
-    min-width: 48px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
     border-radius: 12px;
+    flex: none;
+    display: grid;
+    place-items: center;
     background: var(--soft);
-    font-size: 23px;
+    font-size: 1.4rem;
+}
+
+.care-task-card.overdue .care-task-icon {
+    background: var(--crit-soft);
+}
+
+.care-task-card.today .care-task-icon {
+    background: var(--warn-soft);
 }
 
 .care-task-info {
     flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
 .care-task-info h3 {
-    margin: 0 0 5px;
-    font-family: "Prompt", sans-serif;
-    font-size: 16px;
-    color: var(--fg);
+    font-size: 1rem;
+}
+
+.care-task-species {
+    margin-left: 6px;
+    font-family: var(--font-body);
+    font-size: .82rem;
+    font-weight: 400;
+    color: var(--muted);
 }
 
 .care-task-type {
     color: var(--primary);
-    font-size: 14px;
-    margin-bottom: 5px;
+    font-size: .9rem;
+    font-weight: 500;
 }
 
 .care-task-date {
     color: var(--muted);
-    font-size: 13px;
+    font-size: .82rem;
 }
 
 .care-task-date strong {
     color: var(--fg);
+    font-weight: 600;
 }
 
-.care-status {
-    padding: 6px 10px;
-    border-radius: 20px;
-    font-size: 12px;
+/* ป้ายสถานะ + ปุ่ม "ทำแล้ว" ด้านขวาของการ์ด */
+.care-task-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
-.care-status.active {
-    background: var(--soft);
-    color: var(--primary);
+/* ข้อความผลลัพธ์หลังบันทึก (คัดลอกจาก plants.css เพราะหน้านี้ไม่ได้โหลด plants.css) */
+.flash {
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    font-weight: 500;
 }
 
-.care-empty {
-    text-align: center;
-    padding: 55px 20px;
-    color: var(--muted);
+.flash.ok {
+    background: #e6f2e9;
+    color: var(--primary-strong);
 }
 
+.flash.err {
+    background: #fbe8e8;
+    color: #a33a3a;
+}
+
+/* กล่องว่าง (.empty มาจาก base.css) */
 .care-empty-icon {
-    font-size: 48px;
-    margin-bottom: 12px;
+    font-size: 2.6rem;
+    line-height: 1;
 }
 
-.care-empty h3 {
-    margin: 0 0 7px;
-    font-family: "Prompt", sans-serif;
-    color: var(--fg);
+.care-empty[hidden] {
+    display: none;
 }
 
-.care-empty p {
-    margin: 0;
-    font-size: 14px;
-}
-
+/* จอแคบ: ป้ายสถานะลงไปอยู่ใต้ข้อมูล */
 @media (max-width: 700px) {
-    .care-page-header h1 {
-        font-size: 25px;
-    }
-
-    .care-section {
-        padding: 16px;
-    }
-
-    .care-section-header {
-        align-items: flex-start;
-        gap: 10px;
-    }
-
     .care-task-card {
+        flex-wrap: wrap;
         align-items: flex-start;
     }
 
     .care-task-status {
-        display: none;
+        width: 100%;
+        padding-left: 64px;
+        justify-content: space-between;
     }
-
-    .care-filters {
-        gap: 7px;
-    }
-
-    .care-filter-btn {
-        padding: 8px 12px;
-        font-size: 13px;
-    }
-
 }
