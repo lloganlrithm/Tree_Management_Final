@@ -20,6 +20,7 @@
       <p class="error-text" th:if="${param.error}">อีเมลหรือรหัสผ่านไม่ถูกต้อง ลองใหม่อีกครั้ง</p>
       <p class="error-text" th:if="${param.disabled}">บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ</p>
       <p class="info-box" th:if="${param.logout}">ออกจากระบบเรียบร้อยแล้ว</p>
+      <p class="info-box" th:if="${param.registered}">สมัครสมาชิกสำเร็จ เข้าสู่ระบบได้เลย</p>
 
       <div class="field">
         <label for="l-email">อีเมล</label>
