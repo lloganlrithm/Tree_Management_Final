@@ -1,0 +1,32 @@
+package com.example.plantpal.dto.request;
+
+import com.example.plantpal.domain.enums.Severity;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
+
+// ข้อมูลที่รับมาจากฟอร์มแจ้งปัญหาสุขภาพต้นไม้ (ชื่อ field ต้องตรงกับ name="" ใน report-form.html)
+@Getter
+@Setter
+public class HealthReportRequest {
+
+    @NotNull(message = "กรุณาเลือกต้นไม้")
+    private Long plantId;
+
+    @NotBlank(message = "กรุณากรอกหัวข้อ")
+    @Size(max = 150, message = "หัวข้อยาวได้ไม่เกิน 150 ตัวอักษร")
+    private String title;
+
+    private String description;
+
+    @NotNull(message = "กรุณาเลือกความรุนแรง")
+    private Severity severity;
+
+    // เว้นว่างได้ ถ้ากรอกต้องเป็นลิงก์ http/https
+    @Size(max = 500, message = "URL รูปยาวได้ไม่เกิน 500 ตัวอักษร")
+    @Pattern(regexp = "^$|^https?://.+", message = "URL รูปต้องขึ้นต้นด้วย http:// หรือ https://")
+    private String imageUrl;
+}
