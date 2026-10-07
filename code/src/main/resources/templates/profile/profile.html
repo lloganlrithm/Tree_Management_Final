@@ -89,10 +89,13 @@
           </div>
         </div>
         <div class="form-actions between">
-          <a class="btn btn-danger" th:href="@{/logout}"><span class="icon icon-logout"></span>ออกจากระบบ</a>
+          <button type="submit" form="logout-form" class="btn btn-danger"><span class="icon icon-logout"></span>ออกจากระบบ</button>
           <button type="submit" class="btn btn-primary"><span class="icon icon-lock"></span>เปลี่ยนรหัสผ่าน</button>
         </div>
       </form>
+
+     
+      <form id="logout-form" th:action="@{/logout}" method="post" data-live hidden></form>
     </main>
     <footer th:replace="~{fragments/layout :: footer}"></footer>
   </div>
