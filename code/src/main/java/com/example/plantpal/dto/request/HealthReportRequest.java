@@ -1,6 +1,7 @@
 package com.example.plantpal.dto.request;
 
 import com.example.plantpal.domain.enums.Severity;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -26,5 +27,7 @@ public class HealthReportRequest {
     private Severity severity;
 
     // ไฟล์รูปที่ผู้ใช้อัปโหลด (ไม่บังคับ) Service จะส่งขึ้น Cloudinary แล้วเก็บแค่ URL ลง image_url
+    // @JsonIgnore: ส่งไฟล์ผ่าน JSON ของ REST API ไม่ได้ ให้ข้าม field นี้ไป (ฟอร์มหน้าเว็บยังใช้ได้ปกติ)
+    @JsonIgnore
     private MultipartFile image;
 }
