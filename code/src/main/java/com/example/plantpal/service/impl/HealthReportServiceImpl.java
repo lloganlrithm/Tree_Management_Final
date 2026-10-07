@@ -8,6 +8,7 @@ import com.example.plantpal.dto.request.HealthReportRequest;
 import com.example.plantpal.event.ReportResolvedEvent;
 import com.example.plantpal.repository.HealthReportRepository;
 import com.example.plantpal.service.HealthReportService;
+import com.example.plantpal.service.ImageStorageService;
 import com.example.plantpal.service.PlantService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -29,6 +30,7 @@ public class HealthReportServiceImpl implements HealthReportService {
     // เรียกผ่าน Service ไม่เรียก PlantRepository ตรงๆ 
     private final PlantService plantService;
     private final ApplicationEventPublisher eventPublisher;
+    private final ImageStorageService imageStorageService;
 
     @Override
     public HealthReport create(HealthReportRequest request, String email) {
@@ -40,7 +42,10 @@ public class HealthReportServiceImpl implements HealthReportService {
         report.setTitle(request.getTitle().trim());
         report.setDescription(blankToNull(request.getDescription()));
         report.setSeverity(request.getSeverity());
-        report.setImageUrl(blankToNull(request.getImageUrl()));
+        // แนบรูปมา = อัปโหลดขึ้น Cloudinary ก่อน แล้วเก็บแค่ลิงก์ลง DB (ถ้าอัปไม่ผ่านจะ error และไม่บันทึกรายงาน)
+        if (request.getImage() != null && !request.getImage().isEmpty()) {
+            report.setImageUrl(imageStorageService.upload(request.getImage(), "reports"));
+        }
         // status = PENDING ตาม default ใน entity
         return healthReportRepository.save(report);
     }

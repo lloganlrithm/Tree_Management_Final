@@ -33,7 +33,9 @@
       </div>
 
       <!-- data-live: ฟอร์มนี้ต่อ Controller แล้ว ให้ app.js ปล่อยส่งข้อมูลจริง -->
+      <!-- enctype multipart = ส่งไฟล์รูปไปพร้อมฟอร์มได้ -->
       <form class="card rp-form" method="post" th:action="@{/reports}" action="/reports" data-live
+            enctype="multipart/form-data"
             th:unless="${#lists.isEmpty(plants)}">
         <div class="field">
           <label for="plantId">ต้นไม้ที่มีปัญหา</label>
@@ -69,10 +71,10 @@
         </fieldset>
 
         <div class="field">
-          <label for="imageUrl">URL รูป</label>
-          <input class="input" type="url" id="imageUrl" name="imageUrl" data-field="health_reports.image_url"
-                 maxlength="500" placeholder="https://...">
-          <span class="hint">ไม่บังคับ ใส่ลิงก์รูปต้นไม้ที่เห็นอาการชัดๆ</span>
+          <label for="image">รูปอาการ</label>
+          <!-- อัปโหลดขึ้น Cloudinary แล้วเก็บลิงก์ลง health_reports.image_url -->
+          <input class="input" type="file" id="image" name="image" accept="image/*" data-field="health_reports.image_url">
+          <span class="hint">ไม่บังคับ รูปต้นไม้ที่เห็นอาการชัดๆ ไม่เกิน 5MB</span>
           <div class="rp-preview" id="image-preview" aria-live="polite">พรีวิวรูปจะแสดงที่นี่</div>
         </div>
 
@@ -88,21 +90,26 @@
 
 <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
 <script>
-  // พรีวิวรูปจาก URL
+  // พรีวิวรูปที่เลือกจากเครื่อง (ยังไม่ได้อัปโหลด แค่แสดงในหน้า) + เช็คขนาดก่อนส่ง
   (function () {
-    var input = document.getElementById("imageUrl");
+    var input = document.getElementById("image");
     var box = document.getElementById("image-preview");
     if (!input || !box) return;
     var empty = box.textContent;
-    input.addEventListener("input", function () {
-      var url = input.value.trim();
-      if (!url) { box.textContent = empty; return; }
-      if (!/^https?:\/\//i.test(url)) { box.textContent = "URL ต้องขึ้นต้นด้วย http:// หรือ https://"; return; }
+    var MAX = 5 * 1024 * 1024;
+    input.addEventListener("change", function () {
+      var file = input.files[0];
+      if (!file) { box.textContent = empty; return; }
+      if (file.size > MAX) {
+        input.value = "";
+        box.textContent = "ไฟล์ใหญ่เกิน 5MB เลือกรูปใหม่";
+        return;
+      }
       var img = new Image();
       img.alt = "พรีวิวรูปที่แนบ";
-      img.onload = function () { box.textContent = ""; box.appendChild(img); };
-      img.onerror = function () { box.textContent = "โหลดรูปจาก URL นี้ไม่ได้"; };
-      img.src = url;
+      img.src = URL.createObjectURL(file);
+      box.textContent = "";
+      box.appendChild(img);
     });
   })();
 </script>
