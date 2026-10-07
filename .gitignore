@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# รูปที่ผู้ใช้อัปโหลด (U4) ไม่ต้องขึ้น git
+uploads/
