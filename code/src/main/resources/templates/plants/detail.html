@@ -4,122 +4,164 @@
 <head th:replace="~{fragments/layout :: head('รายละเอียดต้นไม้')}"></head>
 
 <body>
-<link rel="stylesheet" th:href="@{/css/plants.css}">
-<div class="app">
+  <link rel="stylesheet" th:href="@{/css/plants.css}">
+  <div class="app">
 
-  <aside th:replace="~{fragments/layout :: sidebar('plants')}"></aside>
+    <aside th:replace="~{fragments/layout :: sidebar('plants')}"></aside>
 
-  <div class="main">
-    <header th:replace="~{fragments/layout :: topbar}"></header>
+    <div class="main">
+      <header th:replace="~{fragments/layout :: topbar}"></header>
 
-    <main class="content">
+      <main class="content">
 
-      <a class="back" th:href="@{/plants}">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-        กลับไปต้นไม้ของฉัน
-      </a>
+        <a class="back" th:href="@{/plants}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" aria-hidden="true">
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+          กลับไปต้นไม้ของฉัน
+        </a>
+        <div class="flash ok" th:if="${success}" th:text="${success}">บันทึกแล้ว</div>
+        <div class="flash err" th:if="${error}" th:text="${error}">เกิดข้อผิดพลาด</div>
 
-      <!-- ===== ข้อมูลต้นไม้ (ตาราง plants) ข้อมูลตัวอย่าง ===== -->
-      <section class="card">
-        <div class="detail-head">
-          <span class="plant-tile lg">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20v-8"/><path d="M12 12c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 14c0-3-2-5-6-5 0 3 2 5 6 5z"/><path d="M7 20h10"/></svg>
-          </span>
-          <div class="grow">
-            <h1>ม่อนม่อน</h1>
-            <div class="chips">
-              <span class="badge s-HEALTHY">ปกติดี</span>
-              <span class="muted small">มอนสเตอร่า</span>
+        <!-- ===== ข้อมูลต้นไม้ (ตาราง plants) ===== -->
+        <section class="card">
+          <div class="detail-head">
+            <span class="plant-tile lg" th:classappend="'t-' + ${plant.healthStatus}">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.6"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 20v-8" />
+                <path d="M12 12c0-4 3-6 7-6 0 4-3 6-7 6z" />
+                <path d="M12 14c0-3-2-5-6-5 0 3 2 5 6 5z" />
+                <path d="M7 20h10" />
+              </svg>
+            </span>
+            <div class="grow">
+              <h1 th:text="${plant.nickname ?: plant.species.name}">ม่อนม่อน</h1>
+              <div class="chips">
+                <span class="badge" th:classappend="'s-' + ${plant.healthStatus}"
+                  th:switch="${plant.healthStatus.name()}">
+                  <th:block th:case="'HEALTHY'">ปกติดี</th:block>
+                  <th:block th:case="'SICK'">ป่วย</th:block>
+                  <th:block th:case="'RECOVERING'">กำลังฟื้นตัว</th:block>
+                  <th:block th:case="'DEAD'">ตายแล้ว</th:block>
+                </span>
+                <span class="muted small" th:text="${plant.species.name}">มอนสเตอร่า</span>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn btn-soft" type="button" data-open="edit-plant">แก้ไข</button>
+              <a class="btn" th:href="@{/reports/new(plantId=${plant.id})}">แจ้งปัญหา</a>
+              <button class="btn btn-danger" type="button" data-open="delete-plant">ลบ</button>
             </div>
           </div>
-          <div class="actions">
-            <button class="btn btn-soft" type="button" data-open="edit-plant">แก้ไข</button>
-            <a class="btn" th:href="@{/reports/new(plantId=1)}">แจ้งปัญหา</a>
-            <button class="btn btn-danger" type="button" data-open="delete-plant">ลบ</button>
+          <div class="facts">
+            <div class="fact">
+              <div class="k">วันที่ปลูก</div>
+              <div class="v"
+                th:text="${plant.plantedDate != null} ? ${#temporals.format(plant.plantedDate, 'dd/MM/yyyy')} : '-'">
+                19/09/2026</div>
+            </div>
+            <div class="fact">
+              <div class="k">เพิ่มในระบบเมื่อ</div>
+              <div class="v" th:text="${#temporals.format(plant.createdAt, 'dd/MM/yyyy')}">19/09/2026</div>
+            </div>
+            <div class="fact">
+              <div class="k">ฟื้นตัวมาแล้ว</div>
+              <div class="v">
+                <th:block th:text="${plant.recoveryCount}">0</th:block> ครั้ง
+              </div>
+            </div>
           </div>
-        </div>
-        <div class="facts">
-          <div class="fact"><div class="k">วันที่ปลูก</div><div class="v">19 ก.ย. 2026</div></div>
-          <div class="fact"><div class="k">เพิ่มในระบบเมื่อ</div><div class="v">19 ก.ย. 2026</div></div>
-          <div class="fact"><div class="k">ฟื้นตัวมาแล้ว</div><div class="v">0 ครั้ง</div></div>
-        </div>
-      </section>
+        </section>
 
-      <!-- ===== ข้อมูลสายพันธุ์ (ตาราง species) ===== -->
-      <section class="card card-pad">
-        <div class="section-head"><h2>ข้อมูลพันธุ์ไม้</h2></div>
-        <div class="species-facts">
-          <div class="sp-item">
-            <span class="k">รดน้ำทุก</span>
-            <span class="v"><b>7</b> วัน</span>
+        <!-- ===== ข้อมูลสายพันธุ์ (ตาราง species) ===== -->
+        <section class="card card-pad">
+          <div class="section-head">
+            <h2>ข้อมูลพันธุ์ไม้</h2>
           </div>
-          <div class="sp-item">
-            <span class="k">แสงที่ต้องการ</span>
-            <span class="v">แดดปานกลาง</span>
+          <div class="species-facts">
+            <div class="sp-item">
+              <span class="k">รดน้ำทุก</span>
+              <span class="v"><b th:text="${plant.species.waterIntervalDays}">7</b> วัน</span>
+            </div>
+            <div class="sp-item" th:if="${plant.species.fertilizeIntervalDays}">
+              <span class="k">ใส่ปุ๋ยทุก</span>
+              <span class="v"><b th:text="${plant.species.fertilizeIntervalDays}">30</b> วัน</span>
+            </div>
+            <div class="sp-item" th:if="${plant.species.repotIntervalDays}">
+              <span class="k">เปลี่ยนกระถางทุก</span>
+              <span class="v"><b th:text="${plant.species.repotIntervalDays}">365</b> วัน</span>
+            </div>
+            <div class="sp-item" th:if="${plant.species.sunlightRequirement}">
+              <span class="k">แสงที่ต้องการ</span>
+              <span class="v" th:switch="${plant.species.sunlightRequirement.name()}">
+                <th:block th:case="'LOW'">แดดน้อย</th:block>
+                <th:block th:case="'MEDIUM'">แดดปานกลาง</th:block>
+                <th:block th:case="'HIGH'">แดดจัด</th:block>
+              </span>
+            </div>
           </div>
-        </div>
-        <p class="sp-desc">ชอบแดดรำไร ใบใหญ่มีรอยแยกสวยงาม รดน้ำเมื่อดินด้านบนแห้งประมาณ 2-3 เซนติเมตร</p>
-      </section>
+          <p class="sp-desc" th:if="${plant.species.description}" th:text="${plant.species.description}">
+            คำอธิบายพันธุ์ไม้</p>
+        </section>
 
-      <!-- ===== กล่องว่างรองานเพื่อน =====
+        <!-- ===== กล่องว่างรองานเพื่อน =====
            เปียโน: fragments/care.html   เปรม: fragments/reports.html -->
-      <div class="two-col">
-        <section class="card card-pad slot">
-          <div class="section-head"><h2>การดูแล</h2></div>
-          <p class="muted small">ตารางดูแลและประวัติการดูแลของต้นนี้ (รองานเปียโน)</p>
-        </section>
-        <section class="card card-pad slot">
-          <div class="section-head"><h2>รายงานสุขภาพ</h2></div>
-          <p class="muted small">รายงานปัญหาของต้นนี้ (รองานเปรม)</p>
-        </section>
-      </div>
+        <div class="two-col">
+          <section class="card card-pad slot">
+            <div class="section-head">
+              <h2>การดูแล</h2>
+            </div>
+            <p class="muted small">ตารางดูแลและประวัติการดูแลของต้นนี้ (รองานเปียโน)</p>
+          </section>
+          <section class="card card-pad slot">
+            <div class="section-head">
+              <h2>รายงานสุขภาพ</h2>
+            </div>
+            <p class="muted small">รายงานปัญหาของต้นนี้ (รองานเปรม)</p>
+          </section>
+        </div>
 
-    </main>
-  </div>
-</div>
-
-<!-- ===== Popup แก้ไขต้นไม้ (ใส่ข้อมูลเดิมไว้แล้ว) ===== -->
-<div class="modal-backdrop" id="edit-plant" hidden>
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="edit-plant-title">
-    <div class="modal-head">
-      <div>
-        <h2 id="edit-plant-title">แก้ไขต้นไม้</h2>
-        <p>แก้ไขข้อมูลของม่อนม่อน</p>
-      </div>
-      <button class="btn btn-icon" type="button" data-close aria-label="ปิด">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
-      </button>
+      </main>
     </div>
-    <form method="post" th:action="@{/plants/1}">
+  </div>
+
+  <!-- ===== Popup แก้ไขต้นไม้ (ใส่ข้อมูลเดิมไว้แล้ว) ===== -->
+  <div class="modal-backdrop" id="edit-plant" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="edit-plant-title">
+      <div class="modal-head">
+        <div>
+          <h2 id="edit-plant-title">แก้ไขต้นไม้</h2>
+          <p>แก้ไขข้อมูลของ <span th:text="${plant.nickname ?: plant.species.name}">ม่อนม่อน</span></p>
+        </div>
+        <button class="btn btn-icon" type="button" data-close aria-label="ปิด">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" aria-hidden="true">
+            <path d="M6 6l12 12M18 6 6 18" />
+          </svg>
+        </button>
+      </div>
+          <form method="post" th:action="@{/plants}" data-live>
+      <!-- มี id = แก้ไขต้นเดิม (PlantController.save ดูจาก id นี้) -->
+      <input type="hidden" name="id" th:value="${plant.id}">
       <div class="modal-body">
         <div class="field">
           <label for="nickname">ชื่อเล่นต้นไม้</label>
-          <input class="input" id="nickname" name="nickname" maxlength="100" value="ม่อนม่อน">
+          <input class="input" id="nickname" name="nickname" maxlength="100" th:value="${plant.nickname}">
         </div>
         <div class="field">
           <label for="speciesId">พันธุ์ไม้</label>
           <select class="select" id="speciesId" name="speciesId" required>
-            <option value="1" selected>มอนสเตอร่า</option>
-            <option value="2">ลิ้นมังกร</option>
-            <option value="3">ปอทอส</option>
-            <option value="4">ไทรใบสัก</option>
-            <option value="5">กระบองเพชร</option>
+            <option th:each="sp : ${speciesList}"
+                    th:value="${sp.id}"
+                    th:text="${sp.name}"
+                    th:selected="${sp.id == plant.species.id}">มอนสเตอร่า</option>
           </select>
         </div>
-        <div class="form-grid">
-          <div class="field">
-            <label for="plantedDate">วันที่ปลูก</label>
-            <input class="input" type="date" id="plantedDate" name="plantedDate" value="2026-09-19">
-          </div>
-          <div class="field">
-            <label for="healthStatus">สถานะสุขภาพ</label>
-            <select class="select" id="healthStatus" name="healthStatus">
-              <option value="HEALTHY" selected>ปกติดี</option>
-              <option value="SICK">ป่วย</option>
-              <option value="RECOVERING">กำลังฟื้นตัว</option>
-              <option value="DEAD">ตายแล้ว</option>
-            </select>
-          </div>
+        <div class="field">
+          <label for="plantedDate">วันที่ปลูก</label>
+          <input class="input" type="date" id="plantedDate" name="plantedDate" th:value="${plant.plantedDate}">
         </div>
       </div>
       <div class="modal-foot form-actions">
@@ -127,25 +169,27 @@
         <button class="btn btn-primary" type="submit">บันทึกการแก้ไข</button>
       </div>
     </form>
-  </div>
-</div>
-
-<!-- ===== Popup ยืนยันลบ ===== -->
-<div class="modal-backdrop" id="delete-plant" hidden>
-  <div class="modal sm" role="dialog" aria-modal="true" aria-labelledby="delete-plant-title">
-    <div class="modal-head">
-      <div>
-        <h2 id="delete-plant-title">ลบ “ม่อนม่อน” ?</h2>
-        <p>ตารางดูแล ประวัติการดูแล และรายงานสุขภาพของต้นนี้จะถูกลบไปด้วย ย้อนกลับไม่ได้</p>
-      </div>
     </div>
-    <form class="modal-foot form-actions" method="post" th:action="@{/plants/1/delete}">
-      <button class="btn" type="button" data-close>ยกเลิก</button>
-      <button class="btn btn-danger-solid" type="submit">ลบต้นไม้</button>
-    </form>
   </div>
-</div>
 
-<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+  <!-- ===== Popup ยืนยันลบ ===== -->
+  <div class="modal-backdrop" id="delete-plant" hidden>
+    <div class="modal sm" role="dialog" aria-modal="true" aria-labelledby="delete-plant-title">
+      <div class="modal-head">
+        <div>
+                    <h2 id="delete-plant-title">ลบ “<span th:text="${plant.nickname ?: plant.species.name}">ม่อนม่อน</span>” ?</h2>
+          <p>ตารางดูแล ประวัติการดูแล และรายงานสุขภาพของต้นนี้จะถูกลบไปด้วย ย้อนกลับไม่ได้</p>
+        </div>
+      </div>
+      <form class="modal-foot form-actions" method="post" th:action="@{/plants/delete}" data-live>
+        <input type="hidden" name="id" th:value="${plant.id}">
+        <button class="btn" type="button" data-close>ยกเลิก</button>
+        <button class="btn btn-danger-solid" type="submit">ลบต้นไม้</button>
+      </form>
+    </div>
+  </div>
+
+  <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
 </body>
+
 </html>
