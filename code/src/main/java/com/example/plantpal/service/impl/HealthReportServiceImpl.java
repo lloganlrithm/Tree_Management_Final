@@ -5,10 +5,12 @@ import com.example.plantpal.domain.entity.Plant;
 import com.example.plantpal.domain.enums.ReportStatus;
 import com.example.plantpal.domain.enums.Severity;
 import com.example.plantpal.dto.request.HealthReportRequest;
+import com.example.plantpal.event.ReportResolvedEvent;
 import com.example.plantpal.repository.HealthReportRepository;
 import com.example.plantpal.service.HealthReportService;
 import com.example.plantpal.service.PlantService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -24,8 +26,9 @@ import java.util.List;
 public class HealthReportServiceImpl implements HealthReportService {
 
     private final HealthReportRepository healthReportRepository;
-    // ต้นไม้เป็นโมดูลของมุกดา เรียกผ่าน Service ไม่เรียก PlantRepository ตรงๆ (ตามกติกาทีม)
+    // เรียกผ่าน Service ไม่เรียก PlantRepository ตรงๆ 
     private final PlantService plantService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public HealthReport create(HealthReportRequest request, String email) {
@@ -88,7 +91,13 @@ public class HealthReportServiceImpl implements HealthReportService {
         // RESOLVED / REJECTED = ปิดเรื่อง บันทึกเวลาปิด ถ้าเปิดกลับมาให้ล้างเวลาปิดออก
         boolean closed = status == ReportStatus.RESOLVED || status == ReportStatus.REJECTED;
         report.setResolvedAt(closed ? LocalDateTime.now() : null);
-        return healthReportRepository.save(report);
+        HealthReport saved = healthReportRepository.save(report);
+
+        // Observer: ประกาศว่ามีการตอบรายงาน ใครฟังอยู่ก็ทำงานของตัวเองต่อ (เช่น สร้างแจ้งเตือนให้เจ้าของ)
+        Plant plant = saved.getPlant();
+        eventPublisher.publishEvent(new ReportResolvedEvent(
+                saved.getId(), plant.getUser().getId(), plant.getId(), saved.getTitle(), status));
+        return saved;
     }
 
     private String blankToNull(String value) {
