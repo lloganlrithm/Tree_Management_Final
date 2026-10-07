@@ -106,8 +106,7 @@
             คำอธิบายพันธุ์ไม้</p>
         </section>
 
-        <!-- ===== กล่องว่างรองานเพื่อน =====
-           เปียโน: fragments/care.html   เปรม: fragments/reports.html -->
+        <!-- ===== การดูแล (รอ fragments/care.html ของเปียโน) + รายงานสุขภาพ (fragments/reports.html ของเปรม) ===== -->
         <div class="two-col">
           <section class="card card-pad slot">
             <div class="section-head">
@@ -115,12 +114,7 @@
             </div>
             <p class="muted small">ตารางดูแลและประวัติการดูแลของต้นนี้ (รองานเปียโน)</p>
           </section>
-          <section class="card card-pad slot">
-            <div class="section-head">
-              <h2>รายงานสุขภาพ</h2>
-            </div>
-            <p class="muted small">รายงานปัญหาของต้นนี้ (รองานเปรม)</p>
-          </section>
+          <section th:replace="~{fragments/reports :: plantReports}"></section>
         </div>
 
       </main>
@@ -142,33 +136,31 @@
           </svg>
         </button>
       </div>
-          <form method="post" th:action="@{/plants}" data-live>
-      <!-- มี id = แก้ไขต้นเดิม (PlantController.save ดูจาก id นี้) -->
-      <input type="hidden" name="id" th:value="${plant.id}">
-      <div class="modal-body">
-        <div class="field">
-          <label for="nickname">ชื่อเล่นต้นไม้</label>
-          <input class="input" id="nickname" name="nickname" maxlength="100" th:value="${plant.nickname}">
+      <form method="post" th:action="@{/plants}" data-live>
+        <!-- มี id = แก้ไขต้นเดิม (PlantController.save ดูจาก id นี้) -->
+        <input type="hidden" name="id" th:value="${plant.id}">
+        <div class="modal-body">
+          <div class="field">
+            <label for="nickname">ชื่อเล่นต้นไม้</label>
+            <input class="input" id="nickname" name="nickname" maxlength="100" th:value="${plant.nickname}">
+          </div>
+          <div class="field">
+            <label for="speciesId">พันธุ์ไม้</label>
+            <select class="select" id="speciesId" name="speciesId" required>
+              <option th:each="sp : ${speciesList}" th:value="${sp.id}" th:text="${sp.name}"
+                th:selected="${sp.id == plant.species.id}">มอนสเตอร่า</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="plantedDate">วันที่ปลูก</label>
+            <input class="input" type="date" id="plantedDate" name="plantedDate" th:value="${plant.plantedDate}">
+          </div>
         </div>
-        <div class="field">
-          <label for="speciesId">พันธุ์ไม้</label>
-          <select class="select" id="speciesId" name="speciesId" required>
-            <option th:each="sp : ${speciesList}"
-                    th:value="${sp.id}"
-                    th:text="${sp.name}"
-                    th:selected="${sp.id == plant.species.id}">มอนสเตอร่า</option>
-          </select>
+        <div class="modal-foot form-actions">
+          <button class="btn" type="button" data-close>ยกเลิก</button>
+          <button class="btn btn-primary" type="submit">บันทึกการแก้ไข</button>
         </div>
-        <div class="field">
-          <label for="plantedDate">วันที่ปลูก</label>
-          <input class="input" type="date" id="plantedDate" name="plantedDate" th:value="${plant.plantedDate}">
-        </div>
-      </div>
-      <div class="modal-foot form-actions">
-        <button class="btn" type="button" data-close>ยกเลิก</button>
-        <button class="btn btn-primary" type="submit">บันทึกการแก้ไข</button>
-      </div>
-    </form>
+      </form>
     </div>
   </div>
 
@@ -177,7 +169,8 @@
     <div class="modal sm" role="dialog" aria-modal="true" aria-labelledby="delete-plant-title">
       <div class="modal-head">
         <div>
-                    <h2 id="delete-plant-title">ลบ “<span th:text="${plant.nickname ?: plant.species.name}">ม่อนม่อน</span>” ?</h2>
+          <h2 id="delete-plant-title">ลบ “<span th:text="${plant.nickname ?: plant.species.name}">ม่อนม่อน</span>” ?
+          </h2>
           <p>ตารางดูแล ประวัติการดูแล และรายงานสุขภาพของต้นนี้จะถูกลบไปด้วย ย้อนกลับไม่ได้</p>
         </div>
       </div>
