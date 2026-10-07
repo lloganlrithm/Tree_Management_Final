@@ -36,3 +36,14 @@
 .icon-lock   { --icon: url("../img/icons/lock.svg"); width: 16px; height: 16px; }
 .icon-info { --icon: url("../img/icons/info.svg"); flex: none; }
 .subtitle { margin-top: 4px; }
+/* U4: ข้อความผลลัพธ์ (เหมือน .flash ใน plants.css) */
+.flash { padding: 12px 16px; border-radius: var(--radius-md); margin-bottom: 16px; font-weight: 500; }
+.flash.ok  { background: #e6f2e9; color: var(--primary-strong); }
+.flash.err { background: #fbe8e8; color: #a33a3a; }
+
+/* U4: แถบย้อนกลับคำสั่งล่าสุด (Command pattern) */
+.undo-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: var(--soft); color: var(--primary-strong); border-radius: var(--radius-md);
+  padding: 10px 14px; margin-bottom: 16px; font-size: .9rem; }
+.table-wrap form { margin: 0; }
+.switch input:disabled + span, .role-select:disabled { opacity: .5; cursor: not-allowed; }
