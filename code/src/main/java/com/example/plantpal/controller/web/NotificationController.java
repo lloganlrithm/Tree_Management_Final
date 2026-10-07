@@ -2,6 +2,7 @@ package com.example.plantpal.controller.web;
 
 import com.example.plantpal.service.CurrentUserService;
 import com.example.plantpal.service.NotificationService;
+import com.example.plantpal.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -38,7 +39,7 @@ public class NotificationController {
     public String markAsRead(@PathVariable Long id, RedirectAttributes redirect) {
         try {
             notificationService.markAsRead(id, currentUserService.getCurrentUserId());
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | ResourceNotFoundException e) {
             redirect.addFlashAttribute("error", e.getMessage());
         }
         return "redirect:/notifications";

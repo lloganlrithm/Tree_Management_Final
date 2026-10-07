@@ -3,6 +3,7 @@ package com.example.plantpal.controller.web;
 import com.example.plantpal.domain.enums.ReportStatus;
 import com.example.plantpal.domain.enums.Severity;
 import com.example.plantpal.service.HealthReportService;
+import com.example.plantpal.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -45,7 +46,7 @@ public class AdminReportController {
         try {
             healthReportService.reply(id, status, adminReply);
             redirect.addFlashAttribute("success", "บันทึกคำตอบแล้ว ระบบแจ้งเตือนเจ้าของต้นไม้ให้แล้ว");
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | ResourceNotFoundException e) {
             redirect.addFlashAttribute("error", e.getMessage());
         }
         // back = query string ของตัวกรองเดิม เช่น status=PENDING&page=1

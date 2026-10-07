@@ -19,10 +19,18 @@ public interface HealthReportService {
 
     HealthReport findMyReport(Long id, String email);
 
+    // ลบได้เฉพาะรายงานของตัวเอง
+    void deleteMyReport(Long id, String email);
+
+    // จำนวนรายงานที่ยังรอ admin ตอบ (โป้ยใช้ใน dashboard)
+    long countPending(String email);
+
     // รายงานของต้นไม้ 1 ต้น ใช้ใน fragment หน้ารายละเอียดต้นไม้
     List<HealthReport> findByPlant(Long plantId, String email);
 
     // ---- Admin ----
+    HealthReport findById(Long id);
+
     // status / severity = null คือไม่กรอง
     Page<HealthReport> findAll(ReportStatus status, Severity severity, Pageable pageable);
 

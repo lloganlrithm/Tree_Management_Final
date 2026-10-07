@@ -27,6 +27,8 @@ public interface HealthReportRepository extends JpaRepository<HealthReport, Long
     @EntityGraph(attributePaths = "plant")
     Optional<HealthReport> findByIdAndPlantUserEmail(Long id, String email);
 
+    long countByPlantUserEmailAndStatus(String email, ReportStatus status);
+
     @EntityGraph(attributePaths = "plant")
     List<HealthReport> findByPlantIdAndPlantUserEmailOrderByCreatedAtDesc(Long plantId, String email);
 

@@ -4,6 +4,7 @@ import com.example.plantpal.domain.entity.Notification;
 import com.example.plantpal.domain.entity.Plant;
 import com.example.plantpal.domain.entity.User;
 import com.example.plantpal.domain.enums.NotificationType;
+import com.example.plantpal.exception.ResourceNotFoundException;
 import com.example.plantpal.repository.NotificationRepository;
 import com.example.plantpal.service.NotificationService;
 import jakarta.persistence.EntityManager;
@@ -66,7 +67,7 @@ public class NotificationServiceImpl implements NotificationService {
     public void markAsRead(Long id, Long userId) {
         // หาด้วย id + userId = อ่านได้เฉพาะแจ้งเตือนของตัวเอง
         Notification notification = notificationRepository.findByIdAndUserId(id, userId)
-                .orElseThrow(() -> new IllegalArgumentException("ไม่พบการแจ้งเตือนนี้"));
+                .orElseThrow(() -> new ResourceNotFoundException("ไม่พบการแจ้งเตือนนี้"));
         notification.setIsRead(true);
     }
 

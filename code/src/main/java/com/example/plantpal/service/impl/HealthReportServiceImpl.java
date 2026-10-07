@@ -6,6 +6,7 @@ import com.example.plantpal.domain.enums.ReportStatus;
 import com.example.plantpal.domain.enums.Severity;
 import com.example.plantpal.dto.request.HealthReportRequest;
 import com.example.plantpal.event.ReportResolvedEvent;
+import com.example.plantpal.exception.ResourceNotFoundException;
 import com.example.plantpal.repository.HealthReportRepository;
 import com.example.plantpal.service.HealthReportService;
 import com.example.plantpal.service.ImageStorageService;
@@ -61,8 +62,20 @@ public class HealthReportServiceImpl implements HealthReportService {
     @Override
     @Transactional(readOnly = true)
     public HealthReport findMyReport(Long id, String email) {
+        // หาด้วย id + อีเมลเจ้าของ: รายงานของคนอื่นจะได้ "ไม่พบ" เหมือนไม่มีอยู่ (ไม่บอกว่ามีแต่ห้ามดู)
         return healthReportRepository.findByIdAndPlantUserEmail(id, email)
-                .orElseThrow(() -> new IllegalArgumentException("ไม่พบรายงานนี้"));
+                .orElseThrow(() -> new ResourceNotFoundException("ไม่พบรายงานนี้"));
+    }
+
+    @Override
+    public void deleteMyReport(Long id, String email) {
+        healthReportRepository.delete(findMyReport(id, email));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countPending(String email) {
+        return healthReportRepository.countByPlantUserEmailAndStatus(email, ReportStatus.PENDING);
     }
 
     @Override
@@ -87,9 +100,15 @@ public class HealthReportServiceImpl implements HealthReportService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public HealthReport findById(Long id) {
+        return healthReportRepository.findWithPlantById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("ไม่พบรายงานนี้"));
+    }
+
+    @Override
     public HealthReport reply(Long id, ReportStatus status, String adminReply) {
-        HealthReport report = healthReportRepository.findWithPlantById(id)
-                .orElseThrow(() -> new IllegalArgumentException("ไม่พบรายงานนี้"));
+        HealthReport report = findById(id);
 
         report.setStatus(status);
         report.setAdminReply(blankToNull(adminReply));
