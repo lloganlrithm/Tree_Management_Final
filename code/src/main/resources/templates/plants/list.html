@@ -18,7 +18,7 @@
         <div class="page-head">
           <div>
             <h1>ต้นไม้ของฉัน</h1>
-            <p>จัดการและติดตามการเติบโตของเพื่อนตัวเขียวทั้งหมด 0 ต้น</p>
+            <p>จัดการและติดตามการเติบโตของเพื่อนตัวเขียวทั้งหมด <span th:text="${#lists.size(plants)}">0</span> ต้น</p>
           </div>
           <button class="btn btn-primary" type="button" data-open="add-plant">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -58,10 +58,34 @@
         </section>
 
         <!-- ===== กล่องการ์ดต้นไม้ (เว้นว่างไว้ รอบต่อ Service ใช้ th:each) ===== -->
-        <section class="grid" id="plant-grid"></section>
+              <!-- ===== การ์ดต้นไม้ (1 การ์ด ต่อ 1 ต้น จาก DB) ===== -->
+      <section class="grid" id="plant-grid" th:unless="${#lists.isEmpty(plants)}">
+        <a class="card plant-card" th:each="p : ${plants}"
+           th:href="@{/plants/{id}(id=${p.id})}"
+           th:attr="data-tags=${p.healthStatus}, data-search=${(p.nickname ?: '') + ' ' + p.species.name}">
+          <div class="row">
+            <span class="plant-tile" th:classappend="'t-' + ${p.healthStatus}">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20v-8"/><path d="M12 12c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 14c0-3-2-5-6-5 0 3 2 5 6 5z"/><path d="M7 20h10"/></svg>
+            </span>
+            <span class="badge" th:classappend="'s-' + ${p.healthStatus}" th:switch="${p.healthStatus.name()}">
+              <th:block th:case="'HEALTHY'">ปกติดี</th:block>
+              <th:block th:case="'SICK'">ป่วย</th:block>
+              <th:block th:case="'RECOVERING'">กำลังฟื้นตัว</th:block>
+              <th:block th:case="'DEAD'">ตายแล้ว</th:block>
+            </span>
+          </div>
+          <span class="name" th:text="${p.nickname ?: p.species.name}">ม่อนม่อน</span>
+          <span class="species" th:text="${p.species.name}">มอนสเตอร่า</span>
+          <div class="foot">
+            <span>รดน้ำทุก <th:block th:text="${p.species.waterIntervalDays}">7</th:block> วัน</span>
+            <span th:if="${p.plantedDate}" th:text="${#temporals.format(p.plantedDate, 'dd/MM/yyyy')}">01/10/2026</span>
+          </div>
+        </a>
+      </section>
 
         <!-- ===== ยังไม่มีต้นไม้ (รอบต่อ Service ใช้ th:if) ===== -->
-        <section class="card empty-state">
+              <!-- ===== ยังไม่มีต้นไม้ ===== -->
+      <section class="card empty-state" th:if="${#lists.isEmpty(plants)}">
           <span class="plant-tile lg">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
