@@ -2,7 +2,7 @@ package com.example.plantpal.job;
 
 import com.example.plantpal.domain.entity.CareSchedule;
 import com.example.plantpal.event.CareDueEvent;
-import com.example.plantpal.repository.CareScheduleRepository;
+import com.example.plantpal.service.CareService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -16,16 +16,15 @@ import java.util.List;
 @Component
 public class CareDueReminderJob extends AbstractDailyJob<CareSchedule> {
 
-    // TODO: เปลี่ยนเป็น careService.findDueBetween(...) ของเปียโนเมื่อเสร็จ (ตามข้อตกลงทีม)
-    // ตอนนี้ใช้ method ที่มีอยู่แล้วใน repository แบบเดียวกับ dashboard ของโป้ย
-    private final CareScheduleRepository careScheduleRepository;
+    // เรียกผ่าน CareService ของเปียโน ไม่อ่าน repository ของโมดูลเพื่อนตรงๆ (ตามข้อตกลงทีม)
+    private final CareService careService;
     private final ApplicationEventPublisher eventPublisher;
 
     public CareDueReminderJob(PlatformTransactionManager transactionManager,
-                              CareScheduleRepository careScheduleRepository,
+                              CareService careService,
                               ApplicationEventPublisher eventPublisher) {
         super(transactionManager);
-        this.careScheduleRepository = careScheduleRepository;
+        this.careService = careService;
         this.eventPublisher = eventPublisher;
     }
 
@@ -43,9 +42,7 @@ public class CareDueReminderJob extends AbstractDailyJob<CareSchedule> {
     @Override
     protected List<CareSchedule> findTargets(LocalDate today) {
         LocalDate tomorrow = today.plusDays(1);
-        return careScheduleRepository.findByIsActiveTrueAndNextDueDateLessThanEqual(tomorrow).stream()
-                .filter(s -> s.getNextDueDate().equals(tomorrow))
-                .toList();
+        return careService.findDueBetween(tomorrow, tomorrow);
     }
 
     // ขั้นที่ 2: ประกาศ CareDueEvent ให้ NotificationListener สร้างแจ้งเตือน (Observer)

@@ -2,7 +2,7 @@ package com.example.plantpal.job;
 
 import com.example.plantpal.domain.entity.CareSchedule;
 import com.example.plantpal.event.CareDueEvent;
-import com.example.plantpal.repository.CareScheduleRepository;
+import com.example.plantpal.service.CareService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -16,15 +16,15 @@ import java.util.List;
 @Component
 public class OverdueCareReminderJob extends AbstractDailyJob<CareSchedule> {
 
-    // TODO: เปลี่ยนเป็น careService ของเปียโนเมื่อเสร็จ (ตามข้อตกลงทีม)
-    private final CareScheduleRepository careScheduleRepository;
+    // เรียกผ่าน CareService ของเปียโน ไม่อ่าน repository ของโมดูลเพื่อนตรงๆ (ตามข้อตกลงทีม)
+    private final CareService careService;
     private final ApplicationEventPublisher eventPublisher;
 
     public OverdueCareReminderJob(PlatformTransactionManager transactionManager,
-                                  CareScheduleRepository careScheduleRepository,
+                                  CareService careService,
                                   ApplicationEventPublisher eventPublisher) {
         super(transactionManager);
-        this.careScheduleRepository = careScheduleRepository;
+        this.careService = careService;
         this.eventPublisher = eventPublisher;
     }
 
@@ -41,7 +41,7 @@ public class OverdueCareReminderJob extends AbstractDailyJob<CareSchedule> {
     // ขั้นที่ 1: ตารางที่เปิดใช้อยู่และวันครบกำหนดผ่านไปแล้ว (ก่อนวันนี้)
     @Override
     protected List<CareSchedule> findTargets(LocalDate today) {
-        return careScheduleRepository.findByIsActiveTrueAndNextDueDateLessThanEqual(today.minusDays(1));
+        return careService.findOverdue(today);
     }
 
     // ขั้นที่ 2: ประกาศ CareDueEvent แบบเลยกำหนด
