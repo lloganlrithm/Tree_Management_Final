@@ -21,6 +21,8 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
+
 // หน้ารายงานสุขภาพฝั่งผู้ใช้: แจ้งปัญหา / รายงานของฉัน / รายละเอียดรายงาน
 @Controller
 @RequestMapping("/reports")
@@ -79,7 +81,14 @@ public class ReportController {
             HealthReport report = healthReportService.findMyReport(id, currentEmail());
             model.addAttribute("report", report);
             // ประวัติรายงานทุกรอบของต้นนี้ (รวมรอบติดตามผล) ใหม่สุดก่อน
-            model.addAttribute("plantHistory", healthReportService.findByPlant(report.getPlant().getId(), currentEmail()));
+            List<HealthReport> history = healthReportService.findByPlant(report.getPlant().getId(), currentEmail());
+            model.addAttribute("plantHistory", history);
+            // รอบถัดไป (ใหม่กว่ารายงานนี้ 1 รอบ) ใช้ทำลิงก์ "ดูรายงานรอบถัดไป" ตอนรายงานนี้ส่งต่อรอบใหม่
+            for (int i = 1; i < history.size(); i++) {
+                if (history.get(i).getId().equals(report.getId())) {
+                    model.addAttribute("nextRound", history.get(i - 1));
+                }
+            }
             return "reports/report-detail";
         } catch (IllegalArgumentException | ResourceNotFoundException e) {
             redirect.addFlashAttribute("error", e.getMessage());
@@ -92,14 +101,14 @@ public class ReportController {
     public String improved(@PathVariable Long id, RedirectAttributes redirect) {
         try {
             healthReportService.markImproved(id, currentEmail());
-            redirect.addFlashAttribute("success", "ปิดเรื่องแล้ว ดีใจด้วยที่ต้นไม้ดีขึ้น");
+            redirect.addFlashAttribute("success", "บันทึกแล้ว ดีใจด้วยที่ต้นไม้ดีขึ้น");
         } catch (IllegalArgumentException | ResourceNotFoundException | InvalidRequestException e) {
             redirect.addFlashAttribute("error", e.getMessage());
         }
         return "redirect:/reports/" + id;
     }
 
-    // ผู้ใช้กด "ยังไม่ดีขึ้น" + อาการ / รูปใหม่ -> ปิดรอบเดิม เปิดรายงานติดตามผล แล้วพาไปรายงานใหม่
+    // ผู้ใช้กด "ยังไม่ดีขึ้น" + อาการ / รูปใหม่ -> รอบเดิมเป็นส่งต่อรอบใหม่ เปิดรายงานติดตามผล แล้วพาไปรายงานใหม่
     @PostMapping("/{id}/follow-up")
     public String followUp(@PathVariable Long id,
                            @Valid @ModelAttribute ReportFollowUpRequest request,

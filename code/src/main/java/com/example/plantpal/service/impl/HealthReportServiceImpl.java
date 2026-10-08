@@ -26,7 +26,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -103,8 +107,8 @@ public class HealthReportServiceImpl implements HealthReportService {
             imageUrl = imageStorageService.upload(request.getImage(), "reports");
         }
 
-        // ปิดรอบเดิม (รอบนี้ admin ตอบแล้ว ผลไปต่อในรายงานใหม่) ทำใน transaction เดียวกับการสร้างรายงานใหม่
-        previous.setStatus(ReportStatus.RESOLVED);
+        // จบรอบเดิมเป็น "ส่งต่อรอบใหม่" (ไม่ใช่แก้ไขแล้ว เพราะยังไม่หาย) ทำใน transaction เดียวกับการสร้างรายงานใหม่
+        previous.setStatus(ReportStatus.FOLLOWED_UP);
         previous.setResolvedAt(LocalDateTime.now());
         healthReportRepository.save(previous);
 
@@ -127,8 +131,8 @@ public class HealthReportServiceImpl implements HealthReportService {
 
     @Override
     public void autoClose(HealthReport report, int staleDays) {
-        // ไม่แตะสถานะต้นไม้: ไม่รู้ว่าดีขึ้นหรือไม่ แค่ปิดเรื่องที่ค้าง ถ้ายังมีปัญหาผู้ใช้แจ้งใหม่ได้
-        report.setStatus(ReportStatus.RESOLVED);
+        // ไม่แตะสถานะต้นไม้: ไม่รู้ว่าดีขึ้นหรือไม่ แค่จบรายงานที่ค้าง ถ้ายังมีปัญหาผู้ใช้แจ้งใหม่ได้
+        report.setStatus(ReportStatus.AUTO_CLOSED);
         report.setResolvedAt(LocalDateTime.now());
         healthReportRepository.save(report);
 
@@ -166,6 +170,53 @@ public class HealthReportServiceImpl implements HealthReportService {
 
     @Override
     @Transactional(readOnly = true)
+    public Page<HealthReport> findLatestRounds(ReportStatus status, Severity severity, Pageable pageable) {
+        // เลือกสถานะเอง = แสดงสถานะนั้นตรงๆ (รวม "ส่งต่อรอบใหม่" ด้วย ถ้าเลือก)
+        if (status != null) {
+            return findAll(status, severity, pageable);
+        }
+        // ไม่เลือกสถานะ = ซ่อนรอบที่ส่งต่อไปแล้ว เหลือ 1 แถวต่อ 1 เรื่อง (แจ้งใหม่คนละเรื่องยังแยกแถวกัน)
+        return (severity == null)
+                ? healthReportRepository.findByStatusNot(ReportStatus.FOLLOWED_UP, pageable)
+                : healthReportRepository.findBySeverityAndStatusNot(severity, ReportStatus.FOLLOWED_UP, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Long, List<HealthReport>> findPreviousRounds(List<HealthReport> latest) {
+        Map<Long, List<HealthReport>> result = new HashMap<>();
+        if (latest.isEmpty()) return result;
+
+        // ดึงทุกรายงานของต้นในหน้านี้ทีเดียว แล้วแยกตามต้น (ใหม่สุดก่อน)
+        List<Long> plantIds = latest.stream().map(r -> r.getPlant().getId()).distinct().toList();
+        Map<Long, List<HealthReport>> byPlant = healthReportRepository.findByPlantIdInOrderByCreatedAtDesc(plantIds)
+                .stream()
+                .collect(Collectors.groupingBy(r -> r.getPlant().getId()));
+
+        for (HealthReport report : latest) {
+            result.put(report.getId(), chainBefore(report, byPlant.getOrDefault(report.getPlant().getId(), List.of())));
+        }
+        return result;
+    }
+
+    // รอบก่อนหน้าของเรื่องเดียวกัน: ย้อนจากรายงานนี้ไปเรื่อยๆ ตราบที่รอบก่อนเป็น "ส่งต่อรอบใหม่"
+    // เจอรอบที่จบแบบอื่น (ดีขึ้นแล้ว / ปฏิเสธ / หมดเวลา) = เป็นเรื่องเก่าคนละเรื่อง หยุด
+    private List<HealthReport> chainBefore(HealthReport report, List<HealthReport> plantReportsNewestFirst) {
+        List<HealthReport> chain = new ArrayList<>();
+        boolean found = false;
+        for (HealthReport r : plantReportsNewestFirst) {
+            if (!found) {
+                found = r.getId().equals(report.getId());
+                continue;
+            }
+            if (r.getStatus() != ReportStatus.FOLLOWED_UP) break;
+            chain.add(r);
+        }
+        return chain;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public HealthReport findById(Long id) {
         return healthReportRepository.findWithPlantById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("ไม่พบรายงานนี้"));
@@ -177,8 +228,8 @@ public class HealthReportServiceImpl implements HealthReportService {
         String reply = blankToNull(adminReply);
         validateAdminReply(report, status, reply);
 
-        // สถานะเดินเองตามสิ่งที่ admin ทำ: ส่งคำแนะนำ = กำลังดำเนินการ, ปฏิเสธ = ปิดเรื่องพร้อมเหตุผล
-        // (ปิดเป็น "แก้ไขแล้ว" ทำได้เฉพาะผู้ใช้กด "ต้นไม้ดีขึ้นแล้ว" หรือ job ปิดรายงานที่เงียบนาน)
+        // สถานะเดินเองตามสิ่งที่ admin ทำ: ส่งคำแนะนำ = กำลังดำเนินการ, ปฏิเสธ = จบพร้อมเหตุผล
+        // (สถานะจบแบบอื่นมาจากผู้ใช้บอกผล หรือ job รายงานที่เงียบนาน ไม่ใช่จาก admin)
         report.setStatus(status);
         report.setAdminReply(reply);
         report.setResolvedAt(status == ReportStatus.REJECTED ? LocalDateTime.now() : null);
@@ -200,8 +251,8 @@ public class HealthReportServiceImpl implements HealthReportService {
 
     // admin ทำได้ 2 อย่าง: ส่งคำแนะนำ (IN_PROGRESS) หรือปฏิเสธ (REJECTED) และต้องเขียนข้อความเสมอ
     private void validateAdminReply(HealthReport report, ReportStatus status, String reply) {
-        if (report.getStatus() == ReportStatus.RESOLVED || report.getStatus() == ReportStatus.REJECTED) {
-            throw new InvalidRequestException("รายงานนี้ปิดไปแล้ว ตอบเพิ่มไม่ได้");
+        if (!OPEN_STATUSES.contains(report.getStatus())) {
+            throw new InvalidRequestException("รายงานนี้จบไปแล้ว ตอบเพิ่มไม่ได้");
         }
         if (status != ReportStatus.IN_PROGRESS && status != ReportStatus.REJECTED) {
             throw new InvalidRequestException("ผู้ดูแลระบบทำได้แค่ส่งคำแนะนำ หรือปฏิเสธรายงาน");
@@ -215,14 +266,14 @@ public class HealthReportServiceImpl implements HealthReportService {
 
     // เปลี่ยนสถานะสุขภาพต้นไม้ตามผลการตรวจ ผ่าน State pattern ของโป้ย (ห้าม set healthStatus เอง)
     //   IN_PROGRESS = admin ยืนยันว่ามีปัญหา -> SICK
-    //   RESOLVED    = แก้แล้ว               -> RECOVERING
-    //   PENDING / REJECTED                  -> ไม่เปลี่ยน
+    //   RESOLVED    = ต้นไม้ดีขึ้นแล้ว         -> RECOVERING
+    //   อื่นๆ (รอตรวจ / ปฏิเสธ / ส่งต่อรอบใหม่ / หมดเวลา) -> ไม่เปลี่ยน
     // ถ้าสถานะปัจจุบันเปลี่ยนไปไม่ได้ (เช่น HEALTHY -> RECOVERING, ต้นที่ตายแล้ว) ให้ข้าม ไม่ทำให้การตอบรายงานล้ม
     private void updatePlantHealth(Plant plant, ReportStatus status) {
         HealthStatus target = switch (status) {
             case IN_PROGRESS -> HealthStatus.SICK;
             case RESOLVED -> HealthStatus.RECOVERING;
-            case PENDING, REJECTED -> null;
+            case PENDING, REJECTED, FOLLOWED_UP, AUTO_CLOSED -> null;
         };
         if (target != null && PlantHealthStates.of(plant.getHealthStatus()).canChangeTo(target)) {
             plantService.changeHealth(plant.getId(), target);

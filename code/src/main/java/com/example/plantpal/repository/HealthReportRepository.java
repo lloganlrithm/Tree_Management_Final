@@ -56,4 +56,14 @@ public interface HealthReportRepository extends JpaRepository<HealthReport, Long
 
     @EntityGraph(attributePaths = { "plant", "plant.user" })
     Optional<HealthReport> findWithPlantById(Long id);
+
+    // ---- Admin: ไม่กรองสถานะ = ทุกรายงานยกเว้นรอบที่ส่งต่อไปแล้ว (FOLLOWED_UP มีรอบใหม่แทนเสมอ) ----
+    @EntityGraph(attributePaths = "plant")
+    Page<HealthReport> findByStatusNot(ReportStatus status, Pageable pageable);
+
+    @EntityGraph(attributePaths = "plant")
+    Page<HealthReport> findBySeverityAndStatusNot(Severity severity, ReportStatus status, Pageable pageable);
+
+    // ทุกรอบของหลายต้นในครั้งเดียว (ใช้แสดง "รอบก่อนหน้า" ในแผงตอบ admin ไม่ต้องยิง query ทีละต้น)
+    List<HealthReport> findByPlantIdInOrderByCreatedAtDesc(Collection<Long> plantIds);
 }

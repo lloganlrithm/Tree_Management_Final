@@ -61,13 +61,15 @@
                 th:data-fill-status="${r.status}"
                 th:data-fill-reply="${r.adminReply != null ? r.adminReply : ''}"
                 th:data-image="${r.imageUrl}"
-                th:with="healthNow=${@reportLabels.health(r.plant.healthStatus)}, healthNext=${@reportLabels.nextHealthCsv(r.plant.healthStatus)}, statusNow=${@reportLabels.status(r.status)}"
+                th:with="healthNow=${@reportLabels.health(r.plant.healthStatus)}, healthNext=${@reportLabels.nextHealthCsv(r.plant.healthStatus)}, statusNow=${@reportLabels.status(r.status)}, prevCount=${previousRounds.get(r.id).size()}"
                 th:data-status-label="${statusNow}"
                 th:data-plant-health="${healthNow}"
                 th:data-plant-next="${healthNext}">
               <!-- th:data-* เรียก @bean ตรงๆ ไม่ได้ (Thymeleaf 3.1 กันไว้) เลยคำนวณใน th:with ก่อน -->
               <td>
                 <b th:text="${r.title}" data-field="health_reports.title">ใบเหี่ยวแม้รดน้ำแล้ว</b>
+                <!-- ต้นนี้มีรอบก่อนหน้า = บอกว่าเป็นรอบที่เท่าไร -->
+                <span class="badge rp-round" th:if="${prevCount > 0}" th:text="'รอบที่ ' + ${prevCount + 1}">รอบที่ 2</span>
                 <!-- มีรูปแนบ = แสดงรูปย่อ กดแถวแล้วดูรูปใหญ่ในแผงตอบ -->
                 <img class="rp-thumb" th:if="${r.imageUrl != null}" th:src="${r.imageUrl}" alt="มีรูปแนบ" loading="lazy">
               </td>
@@ -82,6 +84,23 @@
           </tbody>
         </table>
       </div>
+
+      <!-- รอบก่อนหน้าของแต่ละแถว ซ่อนไว้ใน <template> script ด้านล่างคัดลอกเข้าแผงตอบตอนกดแถว -->
+      <template th:each="r : ${reports.content}" th:id="'rounds-' + ${r.id}">
+        <li class="rp-round-item" th:each="p, st : ${previousRounds.get(r.id)}"
+            th:with="roundNo=${previousRounds.get(r.id).size() - st.index}">
+          <div class="rp-round-head">
+            <b th:text="'รอบที่ ' + ${roundNo}">รอบที่ 1</b>
+            <time class="muted small" th:datetime="${p.createdAt}" th:text="${#temporals.format(p.createdAt, 'd MMM yyyy')}">4 ต.ค. 2026</time>
+            <span class="badge" th:classappend="'st-' + ${p.status}" th:text="${@reportLabels.status(p.status)}">ส่งต่อรอบใหม่</span>
+          </div>
+          <p class="small"><span class="muted">อาการ:</span> <span th:text="${p.description != null ? p.description : p.title}">ใบล่างเริ่มเหลือง</span></p>
+          <p class="small"><span class="muted">คำตอบ admin:</span> <span th:text="${p.adminReply != null ? p.adminReply : 'ยังไม่ได้ตอบ'}">ลดการรดน้ำ</span></p>
+          <a th:if="${p.imageUrl != null}" th:href="${p.imageUrl}" target="_blank" rel="noopener">
+            <img class="rp-thumb" th:src="${p.imageUrl}" alt="รูปที่แนบในรอบนี้" loading="lazy">
+          </a>
+        </li>
+      </template>
 
       <div class="card card-pad muted" style="text-align:center" th:if="${reports.isEmpty()}">ไม่มีรายงานตามตัวกรองนี้</div>
 
@@ -122,9 +141,14 @@
                 <span class="hint">รูปที่แนบมา</span>
                 <img class="rp-reply-img" id="reply-image" alt="รูปอาการที่ผู้ใช้แนบมากับรายงาน">
               </div>
-              <!-- สถานะรายงานเดินเอง: ส่งคำแนะนำ = กำลังดำเนินการ, ปฏิเสธ = ปิดเรื่อง, ผู้ใช้กดดีขึ้นแล้ว = แก้ไขแล้ว -->
+              <!-- รอบก่อนหน้าของต้นนี้ (ซ่อนถ้าเป็นรอบแรก) admin จะเห็นว่าเคยแนะนำอะไรไปแล้ว -->
+              <div class="field" id="prev-rounds-box" hidden>
+                <span class="hint">รอบก่อนหน้า</span>
+                <ul class="rp-rounds" id="prev-rounds"></ul>
+              </div>
+              <!-- สถานะรายงานเดินเอง: ส่งคำแนะนำ = กำลังดำเนินการ, ปฏิเสธ = ปฏิเสธ, ผู้ใช้บอกผล = ต้นไม้ดีขึ้นแล้ว / ส่งต่อรอบใหม่ -->
               <p class="small muted">สถานะรายงานตอนนี้: <b id="report-status-now">รอตรวจ</b></p>
-              <p class="rp-flash err" id="report-closed-note" hidden>รายงานนี้ปิดแล้ว ดูได้อย่างเดียว ตอบเพิ่มไม่ได้</p>
+              <p class="rp-flash err" id="report-closed-note" hidden>รายงานนี้จบแล้ว ดูได้อย่างเดียว ตอบเพิ่มไม่ได้</p>
               <!-- สถานะสุขภาพต้นไม้: เปลี่ยนผ่าน State pattern ของโป้ย แสดงเฉพาะสถานะที่เปลี่ยนไปได้จริง (script ด้านล่างซ่อนตัวที่ไม่ได้) -->
               <div class="field">
                 <label for="plantHealthStatus">สถานะต้นไม้ <span class="muted small" id="plant-health-now"></span></label>
@@ -145,7 +169,7 @@
               <button type="button" class="btn" data-close>ยกเลิก</button>
               <!-- 2 ปุ่มส่ง status ต่างกัน: Controller ไม่ต้องให้ admin เลือกสถานะเอง -->
               <button type="submit" class="btn btn-danger" name="status" value="REJECTED" id="btn-reject"
-                      onclick="return confirm('ปฏิเสธรายงานนี้? รายงานจะถูกปิดและแจ้งเหตุผลให้เจ้าของต้นไม้')">ปฏิเสธรายงาน</button>
+                      onclick="return confirm('ปฏิเสธรายงานนี้? ระบบจะแจ้งเหตุผลให้เจ้าของต้นไม้')">ปฏิเสธรายงาน</button>
               <button type="submit" class="btn btn-primary" name="status" value="IN_PROGRESS" id="btn-answer">ส่งคำแนะนำ</button>
             </div>
           </form>
@@ -171,13 +195,20 @@
       imageBox.hidden = !url;
       if (url) { image.src = url; } else { image.removeAttribute("src"); }
 
+      // รอบก่อนหน้า: คัดลอกจาก <template id="rounds-{id}"> ของแถวนี้
+      var rounds = document.getElementById("prev-rounds");
+      var tpl = document.getElementById("rounds-" + row.dataset.fillId);
+      rounds.replaceChildren();
+      if (tpl) rounds.appendChild(tpl.content.cloneNode(true));
+      document.getElementById("prev-rounds-box").hidden = rounds.children.length === 0;
+
       // รายงานที่ยังไม่มีคำตอบ Thymeleaf จะไม่ใส่ data-fill-reply มาเลย app.js จึงไม่ล้างช่องให้
       // ตั้งค่าเองทุกครั้ง ไม่ให้คำตอบของรายงานที่เปิดก่อนหน้าค้างอยู่
       document.getElementById("adminReply").value = row.dataset.fillReply || "";
 
-      // สถานะรายงานตอนนี้ + รายงานที่ปิดแล้วซ่อนปุ่มส่ง (server ก็กันซ้ำอีกชั้น)
+      // สถานะรายงานตอนนี้ + รายงานที่จบแล้วซ่อนปุ่มส่ง (server ก็กันซ้ำอีกชั้น)
       document.getElementById("report-status-now").textContent = row.dataset.statusLabel;
-      var closed = row.dataset.fillStatus === "RESOLVED" || row.dataset.fillStatus === "REJECTED";
+      var closed = row.dataset.fillStatus !== "PENDING" && row.dataset.fillStatus !== "IN_PROGRESS";
       document.getElementById("report-closed-note").hidden = !closed;
       document.getElementById("btn-reject").hidden = closed;
       document.getElementById("btn-answer").hidden = closed;
