@@ -26,7 +26,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.mock.web.MockMultipartFile;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -381,5 +388,42 @@ class HealthReportServiceImplTest {
         assertThatThrownBy(() -> service.reply(99L, ReportStatus.IN_PROGRESS, "x"))
                 .isInstanceOf(ResourceNotFoundException.class);
         verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    // ---------- admin เห็นรอบล่าสุด + รอบก่อนหน้า ----------
+
+    @Test
+    void latestRoundsWithStatusFilterUsesStatusQuery() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<HealthReport> page = new PageImpl<>(List.of());
+        when(healthReportRepository.findLatestRoundsByStatus(ReportStatus.PENDING, pageable)).thenReturn(page);
+
+        assertThat(service.findLatestRounds(ReportStatus.PENDING, null, pageable)).isSameAs(page);
+    }
+
+    @Test
+    void previousRoundsExcludeLatestAndKeepNewestFirst() {
+        Plant plant = plant(HealthStatus.SICK);
+        HealthReport latest = report(plant, ReportStatus.PENDING);
+        latest.setId(3L);
+        HealthReport second = report(plant, ReportStatus.FOLLOWED_UP);
+        second.setId(2L);
+        HealthReport first = report(plant, ReportStatus.FOLLOWED_UP);
+        first.setId(1L);
+        // repository คืนใหม่สุดก่อน (รวมรอบล่าสุดด้วย)
+        when(healthReportRepository.findByPlantIdInOrderByCreatedAtDesc(List.of(10L)))
+                .thenReturn(List.of(latest, second, first));
+
+        Map<Long, List<HealthReport>> result = service.findPreviousRounds(List.of(latest));
+
+        assertThat(result.get(3L)).containsExactly(second, first);
+    }
+
+    @Test
+    void firstRoundHasNoPreviousRounds() {
+        HealthReport only = report(plant(HealthStatus.SICK), ReportStatus.PENDING);
+        when(healthReportRepository.findByPlantIdInOrderByCreatedAtDesc(List.of(10L))).thenReturn(List.of(only));
+
+        assertThat(service.findPreviousRounds(List.of(only)).get(1L)).isEmpty();
     }
 }

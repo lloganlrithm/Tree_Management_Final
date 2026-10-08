@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 public interface HealthReportService {
 
@@ -50,6 +51,12 @@ public interface HealthReportService {
 
     // status / severity = null คือไม่กรอง
     Page<HealthReport> findAll(ReportStatus status, Severity severity, Pageable pageable);
+
+    // หน้า admin: รอบล่าสุดของแต่ละต้นเท่านั้น (กรองตามสถานะ / ความรุนแรงของรอบล่าสุด)
+    Page<HealthReport> findLatestRounds(ReportStatus status, Severity severity, Pageable pageable);
+
+    // รอบก่อนหน้าของรายงานแต่ละอัน key = id รายงาน, value = รอบเก่าของต้นเดียวกัน ใหม่สุดก่อน (ไม่มี = list ว่าง)
+    Map<Long, List<HealthReport>> findPreviousRounds(List<HealthReport> latest);
 
     // plantHealth = null คือเปลี่ยนสถานะต้นไม้อัตโนมัติตามสถานะรายงาน, มีค่า = admin เลือกเอง
     HealthReport reply(Long id, ReportStatus status, String adminReply, HealthStatus plantHealth);

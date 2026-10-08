@@ -26,7 +26,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -162,6 +165,42 @@ public class HealthReportServiceImpl implements HealthReportService {
             return healthReportRepository.findBySeverity(severity, pageable);
         }
         return healthReportRepository.findAllBy(pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<HealthReport> findLatestRounds(ReportStatus status, Severity severity, Pageable pageable) {
+        if (status != null && severity != null) {
+            return healthReportRepository.findLatestRoundsByStatusAndSeverity(status, severity, pageable);
+        }
+        if (status != null) {
+            return healthReportRepository.findLatestRoundsByStatus(status, pageable);
+        }
+        if (severity != null) {
+            return healthReportRepository.findLatestRoundsBySeverity(severity, pageable);
+        }
+        return healthReportRepository.findLatestRounds(pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Long, List<HealthReport>> findPreviousRounds(List<HealthReport> latest) {
+        Map<Long, List<HealthReport>> result = new HashMap<>();
+        if (latest.isEmpty()) return result;
+
+        // ดึงทุกรอบของต้นในหน้านี้ทีเดียว แล้วแยกตามต้น
+        List<Long> plantIds = latest.stream().map(r -> r.getPlant().getId()).distinct().toList();
+        Map<Long, List<HealthReport>> byPlant = healthReportRepository.findByPlantIdInOrderByCreatedAtDesc(plantIds)
+                .stream()
+                .collect(Collectors.groupingBy(r -> r.getPlant().getId()));
+
+        for (HealthReport report : latest) {
+            List<HealthReport> previous = byPlant.getOrDefault(report.getPlant().getId(), List.of()).stream()
+                    .filter(r -> !r.getId().equals(report.getId()))
+                    .toList();
+            result.put(report.getId(), previous);
+        }
+        return result;
     }
 
     @Override
