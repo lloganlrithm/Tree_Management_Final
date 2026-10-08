@@ -1,6 +1,8 @@
 package com.example.plantpal.repository;
 
 import com.example.plantpal.domain.entity.Plant;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -24,4 +26,8 @@ public interface PlantRepository extends JpaRepository<Plant, Long> {
     // หาต้นไม้ 1 ต้น แต่ต้องเป็นของผู้ใช้คนนี้เท่านั้น
     @EntityGraph(attributePaths = "species")
     Optional<Plant> findByIdAndUserEmail(Long id, String email);
+
+    // ต้นไม้ของผู้ใช้คนนี้แบบแบ่งหน้า + เรียงตามที่ส่งมา (ใช้ใน REST API)
+    @EntityGraph(attributePaths = "species")
+    Page<Plant> findByUserEmail(String email, Pageable pageable);
 }
