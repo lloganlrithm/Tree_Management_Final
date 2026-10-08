@@ -6,6 +6,7 @@ import com.example.plantpal.dto.request.PlantRequest;
 import com.example.plantpal.plant.state.InvalidHealthTransitionException;
 import com.example.plantpal.plant.state.PlantHealthStates;
 import com.example.plantpal.service.CurrentUserService;
+import com.example.plantpal.service.HealthReportService;
 import com.example.plantpal.service.PlantService;
 import com.example.plantpal.service.SpeciesService;
 import jakarta.validation.Valid;
@@ -24,6 +25,7 @@ public class PlantController {
     private final PlantService plantService;
     private final SpeciesService speciesService;
     private final CurrentUserService currentUserService;
+    private final HealthReportService healthReportService;
 
     // หน้ารายการต้นไม้ของฉัน (+ ค้นหาด้วย ?keyword=...)
     @GetMapping
@@ -43,6 +45,8 @@ public class PlantController {
             model.addAttribute("speciesList", speciesService.findAll());   // ใช้ใน dropdown ของฟอร์มแก้ไข
             model.addAttribute("nextStatuses", PlantHealthStates.nextOf(plant.getHealthStatus()));   // ปุ่มเปลี่ยนสถานะ
             model.addAttribute("canUndo", plantService.canUndo(id));   // มีการแก้ไขให้ย้อนไหม (Memento)
+            // รายงานสุขภาพของต้นนี้ ใช้ใน fragments/reports :: plantReports (ของเปรม)
+            model.addAttribute("plantReports", healthReportService.findByPlant(id, currentEmail()));
             return "plants/detail";
         } catch (IllegalArgumentException e) {
             redirect.addFlashAttribute("error", e.getMessage());
