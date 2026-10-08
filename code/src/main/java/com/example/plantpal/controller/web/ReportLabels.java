@@ -48,9 +48,26 @@ public class ReportLabels {
         return switch (status) {
             case PENDING -> "รอตรวจ";
             case IN_PROGRESS -> "กำลังดำเนินการ";
-            case RESOLVED -> "แก้ไขแล้ว";
+            case RESOLVED -> "ต้นไม้ดีขึ้นแล้ว";
             case REJECTED -> "ปฏิเสธ";
+            case FOLLOWED_UP -> "ส่งต่อรอบใหม่";
+            case AUTO_CLOSED -> "หมดเวลาติดตามผล";
         };
+    }
+
+    // ขั้นสุดท้ายของ "ความคืบหน้า" ในหน้ารายละเอียด: ยังไม่จบ = รอผล, จบแล้วขึ้นตามผลจริง
+    public String outcome(ReportStatus status) {
+        if (status == null) return "";
+        return switch (status) {
+            case PENDING, IN_PROGRESS -> "รอผลการดูแล";
+            case REJECTED -> "ผู้ดูแลระบบปฏิเสธ";
+            case RESOLVED, FOLLOWED_UP, AUTO_CLOSED -> status(status);
+        };
+    }
+
+    // รายงานจบแล้วหรือยัง (จบ = ตอบ / อัปเดตผลเพิ่มไม่ได้)
+    public boolean closed(ReportStatus status) {
+        return status != null && status != ReportStatus.PENDING && status != ReportStatus.IN_PROGRESS;
     }
 
     public String severity(Severity severity) {

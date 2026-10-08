@@ -1,5 +1,6 @@
 package com.example.plantpal.controller.web;
 
+import com.example.plantpal.domain.entity.HealthReport;
 import com.example.plantpal.domain.enums.HealthStatus;
 import com.example.plantpal.domain.enums.ReportStatus;
 import com.example.plantpal.plant.state.InvalidHealthTransitionException;
@@ -8,6 +9,7 @@ import com.example.plantpal.service.HealthReportService;
 import com.example.plantpal.exception.InvalidRequestException;
 import com.example.plantpal.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -26,14 +28,17 @@ public class AdminReportController {
 
     private final HealthReportService healthReportService;
 
-    // ตารางรายงานทั้งหมด กรองด้วย ?status=...&severity=... แบ่งหน้าด้วย ?page=0
+    // ตารางรายงาน 1 แถวต่อ 1 เรื่อง กรองด้วย ?status=...&severity=... แบ่งหน้าด้วย ?page=0
+    // รอบที่ส่งต่อมาของเรื่องเดียวกันไปอยู่ในส่วน "รอบก่อนหน้า" ของแผงตอบ
     @GetMapping
     public String list(@RequestParam(required = false) ReportStatus status,
                        @RequestParam(required = false) Severity severity,
                        @RequestParam(defaultValue = "0") int page,
                        Model model) {
         Pageable pageable = PageRequest.of(Math.max(page, 0), PAGE_SIZE, Sort.by(Sort.Direction.DESC, "createdAt"));
-        model.addAttribute("reports", healthReportService.findAll(status, severity, pageable));
+        Page<HealthReport> reports = healthReportService.findLatestRounds(status, severity, pageable);
+        model.addAttribute("reports", reports);
+        model.addAttribute("previousRounds", healthReportService.findPreviousRounds(reports.getContent()));
         model.addAttribute("status", status);
         model.addAttribute("severity", severity);
         return "admin/admin-report-list";

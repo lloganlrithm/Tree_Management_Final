@@ -11,7 +11,7 @@
   <div class="main">
     <header th:replace="~{fragments/layout :: topbar}"></header>
 
-    <main class="content" th:with="closed=${report.status.name() == 'RESOLVED' or report.status.name() == 'REJECTED'}">
+    <main class="content" th:with="closed=${@reportLabels.closed(report.status)}">
       <link rel="stylesheet" th:href="@{/css/reports.css}" href="/css/reports.css">
 
       <a class="back" th:href="@{/reports}" href="/reports"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>รายงานของฉัน</a>
@@ -83,7 +83,7 @@
               </form>
               <button type="button" class="btn" data-open="followup-modal">ยังไม่ดีขึ้น</button>
             </div>
-            <span class="hint">"ดีขึ้นแล้ว" จะปิดเรื่อง / "ยังไม่ดีขึ้น" ส่งอาการและรูปใหม่ให้ผู้ดูแลระบบตรวจอีกรอบ</span>
+            <span class="hint">"ดีขึ้นแล้ว" จบรายงานนี้ / "ยังไม่ดีขึ้น" ส่งอาการและรูปใหม่ให้ผู้ดูแลระบบตรวจอีกรอบ</span>
           </section>
 
           <section class="card card-pad">
@@ -97,11 +97,14 @@
                 <b>ผู้ดูแลระบบรับเรื่อง</b>
                 <small th:text="${report.status.name() == 'PENDING'} ? 'รอตรวจ' : 'ตรวจแล้ว'">ตรวจแล้ว</small>
               </li>
+              <!-- ขั้นสุดท้ายขึ้นตามผลจริง: ยังไม่จบ = รอผลการดูแล (จาง) -->
               <li th:classappend="${closed} ? 'is-done'">
-                <b th:text="${report.status.name() == 'REJECTED'} ? 'ปิดเรื่อง (ปฏิเสธ)' : 'ปิดเรื่อง'">ปิดเรื่อง</b>
-                <time th:if="${report.resolvedAt != null}" th:datetime="${report.resolvedAt}"
+                <b th:text="${@reportLabels.outcome(report.status)}">ต้นไม้ดีขึ้นแล้ว</b>
+                <time th:if="${closed and report.resolvedAt != null}" th:datetime="${report.resolvedAt}"
                       th:text="${#temporals.format(report.resolvedAt, 'd MMM yyyy · HH:mm')}" data-field="health_reports.resolved_at">5 ต.ค. 2026</time>
-                <small th:if="${report.resolvedAt == null}">ยังไม่ปิด</small>
+                <small th:unless="${closed}">ยังไม่จบ</small>
+                <a th:if="${report.status.name() == 'FOLLOWED_UP' and nextRound != null}" class="small"
+                   th:href="@{/reports/{id}(id=${nextRound.id})}" href="/reports/2">ดูรายงานรอบถัดไป →</a>
               </li>
             </ol>
           </section>
@@ -131,7 +134,7 @@
           <div class="modal-head">
             <div>
               <h2 id="followup-title">ยังไม่ดีขึ้น</h2>
-              <p>ระบบจะปิดรอบนี้แล้วเปิดรายงานติดตามผลให้ผู้ดูแลระบบตรวจอีกรอบ</p>
+              <p>รอบนี้จะเป็น "ส่งต่อรอบใหม่" แล้วเปิดรายงานติดตามผลให้ผู้ดูแลระบบตรวจอีกรอบ</p>
             </div>
             <button type="button" class="btn btn-icon" data-close aria-label="ปิด"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
           </div>
