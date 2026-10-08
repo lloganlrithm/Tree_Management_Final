@@ -24,7 +24,11 @@
         </div>
       </div>
 
-      <div class="rp-flash err" th:if="${error}" th:text="${error}">กรุณากรอกหัวข้อ</div>
+      <div class="rp-flash err" th:if="${error}">
+        <span th:text="${error}">กรุณากรอกหัวข้อ</span>
+        <!-- แจ้งซ้ำ: มีรายงานเปิดอยู่แล้ว พาไปรายงานเดิม -->
+        <a th:if="${openReportId != null}" th:href="@{/reports/{id}(id=${openReportId})}" href="/reports/1">ดูรายงานเดิม</a>
+      </div>
 
       <!-- ยังไม่มีต้นไม้ แจ้งปัญหาไม่ได้ -->
       <div class="card card-pad" th:if="${#lists.isEmpty(plants)}">

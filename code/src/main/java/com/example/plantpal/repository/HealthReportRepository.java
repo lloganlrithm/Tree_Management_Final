@@ -1,5 +1,7 @@
 package com.example.plantpal.repository;
 
+import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,6 +30,13 @@ public interface HealthReportRepository extends JpaRepository<HealthReport, Long
     Optional<HealthReport> findByIdAndPlantUserEmail(Long id, String email);
 
     long countByPlantUserEmailAndStatus(String email, ReportStatus status);
+
+    // รายงานสถานะนี้ที่สร้างก่อนเวลาที่กำหนด (job ปิดรายงานที่เงียบนาน) ดึงต้นไม้ + เจ้าของมาด้วยเพื่อแจ้งเตือน
+    @EntityGraph(attributePaths = { "plant", "plant.user" })
+    List<HealthReport> findByStatusAndCreatedAtBefore(ReportStatus status, LocalDateTime before);
+
+    // รายงานล่าสุดของต้นนี้ที่ยังไม่ปิด (ใช้กันแจ้งซ้ำ)
+    Optional<HealthReport> findFirstByPlantIdAndStatusInOrderByCreatedAtDesc(Long plantId, Collection<ReportStatus> statuses);
 
     @EntityGraph(attributePaths = "plant")
     List<HealthReport> findByPlantIdAndPlantUserEmailOrderByCreatedAtDesc(Long plantId, String email);

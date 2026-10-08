@@ -59,10 +59,17 @@
                 th:data-fill-title="${r.title}"
                 th:data-fill-desc="${r.description != null ? r.description : 'ไม่มีรายละเอียด'}"
                 th:data-fill-status="${r.status}"
-                th:data-fill-reply="${r.adminReply != null ? r.adminReply : ''}">
+                th:data-fill-reply="${r.adminReply != null ? r.adminReply : ''}"
+                th:data-image="${r.imageUrl}"
+                th:with="healthNow=${@reportLabels.health(r.plant.healthStatus)}, healthNext=${@reportLabels.nextHealthCsv(r.plant.healthStatus)}, statusNow=${@reportLabels.status(r.status)}"
+                th:data-status-label="${statusNow}"
+                th:data-plant-health="${healthNow}"
+                th:data-plant-next="${healthNext}">
+              <!-- th:data-* เรียก @bean ตรงๆ ไม่ได้ (Thymeleaf 3.1 กันไว้) เลยคำนวณใน th:with ก่อน -->
               <td>
                 <b th:text="${r.title}" data-field="health_reports.title">ใบเหี่ยวแม้รดน้ำแล้ว</b>
-                <a class="muted small rp-photo-link" th:if="${r.imageUrl != null}" th:href="${r.imageUrl}" target="_blank" rel="noopener"> · ดูรูป</a>
+                <!-- มีรูปแนบ = แสดงรูปย่อ กดแถวแล้วดูรูปใหญ่ในแผงตอบ -->
+                <img class="rp-thumb" th:if="${r.imageUrl != null}" th:src="${r.imageUrl}" alt="มีรูปแนบ" loading="lazy">
               </td>
               <td th:text="${r.plant.nickname != null ? r.plant.nickname : 'ไม่มีชื่อเล่น'}" data-field="plants.nickname">บอสตันฟู</td>
               <td><span class="badge" th:classappend="${r.severity != null} ? ('sev-' + ${r.severity})"
@@ -110,23 +117,36 @@
                 <span class="hint">อาการที่ผู้ใช้แจ้ง</span>
                 <p class="reply wait" data-fill="desc">รายละเอียด</p>
               </div>
+              <!-- รูปที่ผู้ใช้แนบ (ซ่อนถ้าไม่มี) ใส่ src ด้วย script ด้านล่างตอนกดแถว -->
+              <div class="field" id="reply-image-box" hidden>
+                <span class="hint">รูปที่แนบมา</span>
+                <img class="rp-reply-img" id="reply-image" alt="รูปอาการที่ผู้ใช้แนบมากับรายงาน">
+              </div>
+              <!-- สถานะรายงานเดินเอง: ส่งคำแนะนำ = กำลังดำเนินการ, ปฏิเสธ = ปิดเรื่อง, ผู้ใช้กดดีขึ้นแล้ว = แก้ไขแล้ว -->
+              <p class="small muted">สถานะรายงานตอนนี้: <b id="report-status-now">รอตรวจ</b></p>
+              <p class="rp-flash err" id="report-closed-note" hidden>รายงานนี้ปิดแล้ว ดูได้อย่างเดียว ตอบเพิ่มไม่ได้</p>
+              <!-- สถานะสุขภาพต้นไม้: เปลี่ยนผ่าน State pattern ของโป้ย แสดงเฉพาะสถานะที่เปลี่ยนไปได้จริง (script ด้านล่างซ่อนตัวที่ไม่ได้) -->
               <div class="field">
-                <label for="status">สถานะ</label>
-                <select class="select" id="status" name="status" data-fill="status" data-field="health_reports.status">
-                  <option th:each="s : ${@reportLabels.statuses()}" th:value="${s}" th:text="${@reportLabels.status(s)}">รอตรวจ</option>
+                <label for="plantHealthStatus">สถานะต้นไม้ <span class="muted small" id="plant-health-now"></span></label>
+                <select class="select" id="plantHealthStatus" name="plantHealthStatus" data-field="plants.health_status">
+                  <option value="">อัตโนมัติตามสถานะรายงาน</option>
+                  <option th:each="h : ${@reportLabels.healthStatuses()}" th:value="${h}" th:text="${@reportLabels.health(h)}">ป่วย</option>
                 </select>
-                <span class="hint">เลือก "แก้ไขแล้ว" หรือ "ปฏิเสธ" ระบบจะบันทึกวันที่ปิดเรื่อง (resolved_at) ให้</span>
+                <span class="hint">อัตโนมัติ: ส่งคำแนะนำ = ป่วย (ผู้ใช้กดดีขึ้นแล้ว = กำลังฟื้นตัว)</span>
               </div>
               <div class="field">
-                <label for="adminReply">คำตอบ</label>
+                <label for="adminReply">คำแนะนำ / เหตุผลที่ปฏิเสธ</label>
                 <textarea class="textarea" id="adminReply" name="adminReply" data-fill="reply" data-field="health_reports.admin_reply"
-                          placeholder="คำแนะนำสำหรับเจ้าของต้นไม้"></textarea>
-                <span class="hint">บันทึกแล้วระบบจะส่งแจ้งเตือนให้เจ้าของต้นไม้</span>
+                          placeholder="ส่งคำแนะนำ: บอกวิธีดูแล / ปฏิเสธ: บอกเหตุผล เช่น ไม่ใช่อาการป่วย" required></textarea>
+                <span class="hint">ต้องเขียนทุกครั้ง ระบบจะส่งแจ้งเตือนให้เจ้าของต้นไม้</span>
               </div>
             </div>
             <div class="modal-foot form-actions">
               <button type="button" class="btn" data-close>ยกเลิก</button>
-              <button type="submit" class="btn btn-primary">บันทึกคำตอบ</button>
+              <!-- 2 ปุ่มส่ง status ต่างกัน: Controller ไม่ต้องให้ admin เลือกสถานะเอง -->
+              <button type="submit" class="btn btn-danger" name="status" value="REJECTED" id="btn-reject"
+                      onclick="return confirm('ปฏิเสธรายงานนี้? รายงานจะถูกปิดและแจ้งเหตุผลให้เจ้าของต้นไม้')">ปฏิเสธรายงาน</button>
+              <button type="submit" class="btn btn-primary" name="status" value="IN_PROGRESS" id="btn-answer">ส่งคำแนะนำ</button>
             </div>
           </form>
         </div>
@@ -142,9 +162,38 @@
   document.querySelectorAll(".rp-row").forEach(function (row) {
     row.addEventListener("keydown", function (e) { if (e.key === "Enter") row.click(); });
   });
-  // ลิงก์ "ดูรูป" อยู่ในแถว กดแล้วให้เปิดรูป ไม่ต้องเปิดแผงตอบ
-  document.querySelectorAll(".rp-photo-link").forEach(function (link) {
-    link.addEventListener("click", function (e) { e.stopPropagation(); });
+  // กดแถว: แสดงรูปของรายงานนั้นในแผงตอบ (app.js เติมข้อความ แต่ไม่ได้ใส่ src ให้รูป)
+  var imageBox = document.getElementById("reply-image-box");
+  var image = document.getElementById("reply-image");
+  document.querySelectorAll(".rp-row").forEach(function (row) {
+    row.addEventListener("click", function () {
+      var url = row.dataset.image;
+      imageBox.hidden = !url;
+      if (url) { image.src = url; } else { image.removeAttribute("src"); }
+
+      // รายงานที่ยังไม่มีคำตอบ Thymeleaf จะไม่ใส่ data-fill-reply มาเลย app.js จึงไม่ล้างช่องให้
+      // ตั้งค่าเองทุกครั้ง ไม่ให้คำตอบของรายงานที่เปิดก่อนหน้าค้างอยู่
+      document.getElementById("adminReply").value = row.dataset.fillReply || "";
+
+      // สถานะรายงานตอนนี้ + รายงานที่ปิดแล้วซ่อนปุ่มส่ง (server ก็กันซ้ำอีกชั้น)
+      document.getElementById("report-status-now").textContent = row.dataset.statusLabel;
+      var closed = row.dataset.fillStatus === "RESOLVED" || row.dataset.fillStatus === "REJECTED";
+      document.getElementById("report-closed-note").hidden = !closed;
+      document.getElementById("btn-reject").hidden = closed;
+      document.getElementById("btn-answer").hidden = closed;
+
+      // สถานะต้นไม้: บอกสถานะตอนนี้ + ให้เลือกได้แค่สถานะที่ State อนุญาต
+      document.getElementById("plant-health-now").textContent = "(ตอนนี้: " + row.dataset.plantHealth + ")";
+      var allowed = (row.dataset.plantNext || "").split(",");
+      var select = document.getElementById("plantHealthStatus");
+      Array.prototype.forEach.call(select.options, function (opt) {
+        if (!opt.value) return;
+        var ok = allowed.indexOf(opt.value) !== -1;
+        opt.hidden = !ok;
+        opt.disabled = !ok;
+      });
+      select.value = "";
+    });
   });
 </script>
 </body>
