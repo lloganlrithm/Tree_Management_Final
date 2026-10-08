@@ -3,6 +3,7 @@ package com.example.plantpal.event;
 import com.example.plantpal.domain.enums.ActionType;
 import com.example.plantpal.domain.enums.NotificationType;
 import com.example.plantpal.service.NotificationService;
+import com.example.plantpal.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -18,6 +19,8 @@ import java.time.format.DateTimeFormatter;
 public class NotificationListener {
 
     private final NotificationService notificationService;
+    // หารายชื่อ admin ผ่าน Service ของพรีม ไม่เรียก UserRepository ตรงๆ
+    private final UserService userService;
 
     // AFTER_COMMIT: สร้างแจ้งเตือนหลังบันทึกคำตอบสำเร็จแล้วเท่านั้น ถ้าบันทึกพังจะไม่มีแจ้งเตือนหลุดไป
     // REQUIRES_NEW: transaction เดิม commit ไปแล้ว ต้องเปิดใหม่ถึงจะบันทึกแจ้งเตือนลง DB ได้
@@ -53,6 +56,21 @@ public class NotificationListener {
         String message = "รายงาน \"" + event.getReportTitle() + "\" หมดเวลาติดตามผล เพราะไม่มีการบอกผลเกิน "
                 + event.getStaleDays() + " วัน ถ้ายังมีปัญหาแจ้งใหม่ได้เลย";
         notificationService.create(event.getOwnerId(), event.getPlantId(), NotificationType.SYSTEM, message);
+    }
+
+    // ผู้ฟังตัวที่ 4: ผู้ใช้ส่งรายงานเข้ามา -> แจ้ง admin ทุกคนที่ยังใช้งานอยู่ (ไม่แจ้งตัวเองถ้า admin เป็นคนแจ้ง)
+    // plantId = null เพราะ admin เปิดหน้าต้นไม้ของคนอื่นไม่ได้ กดแจ้งเตือนแล้วไปหน้ารวมแจ้งเตือนแทน
+    @TransactionalEventListener
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void onReportSubmitted(ReportSubmittedEvent event) {
+        String message = event.isFollowUp()
+                ? "ติดตามผล: \"" + event.getReportTitle() + "\" (" + event.getPlantName() + ") ผู้ใช้แจ้งว่ายังไม่ดีขึ้น รอตรวจอีกรอบ"
+                : "มีรายงานใหม่: \"" + event.getReportTitle() + "\" (" + event.getPlantName() + ") รอตรวจ";
+        for (Long adminId : userService.findAdminIds()) {
+            if (!adminId.equals(event.getOwnerId())) {
+                notificationService.create(adminId, null, NotificationType.SYSTEM, message);
+            }
+        }
     }
 
     private String actionLabel(ActionType type) {
