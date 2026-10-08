@@ -231,7 +231,18 @@ class HealthReportServiceImplTest {
 
         assertThatThrownBy(() -> service.reply(1L, ReportStatus.IN_PROGRESS, "x"))
                 .isInstanceOf(InvalidRequestException.class)
-                .hasMessage("รายงานนี้ปิดไปแล้ว ตอบเพิ่มไม่ได้");
+                .hasMessage("รายงานนี้จบไปแล้ว ตอบเพิ่มไม่ได้");
+    }
+
+    @Test
+    void replyToFollowedUpReportIsRefused() {
+        // รอบที่ส่งต่อไปแล้ว admin ต้องตอบในรายงานรอบใหม่ ไม่ใช่รอบเก่า
+        HealthReport report = report(plant(HealthStatus.SICK), ReportStatus.FOLLOWED_UP);
+        when(healthReportRepository.findWithPlantById(1L)).thenReturn(Optional.of(report));
+
+        assertThatThrownBy(() -> service.reply(1L, ReportStatus.IN_PROGRESS, "x"))
+                .isInstanceOf(InvalidRequestException.class);
+        verify(healthReportRepository, never()).save(any());
     }
 
     @Test
@@ -302,8 +313,8 @@ class HealthReportServiceImplTest {
 
         HealthReport next = service.followUp(1L, request, EMAIL);
 
-        // รอบเดิมปิด รูปเดิมยังอยู่ในแถวเดิม
-        assertThat(previous.getStatus()).isEqualTo(ReportStatus.RESOLVED);
+        // รอบเดิมเป็น "ส่งต่อรอบใหม่" (ไม่ใช่แก้ไขแล้ว) รูปเดิมยังอยู่ในแถวเดิม
+        assertThat(previous.getStatus()).isEqualTo(ReportStatus.FOLLOWED_UP);
         assertThat(previous.getResolvedAt()).isNotNull();
         // รอบใหม่: ต้นเดียวกัน รอ admin ตรวจ
         assertThat(next).isNotSameAs(previous);
@@ -347,12 +358,12 @@ class HealthReportServiceImplTest {
     // ---------- job ปิดรายงานที่เงียบนาน ----------
 
     @Test
-    void autoCloseResolvesReportKeepsPlantHealthAndNotifiesOwner() {
+    void autoCloseMarksReportAutoClosedKeepsPlantHealthAndNotifiesOwner() {
         HealthReport report = report(plant(HealthStatus.SICK), ReportStatus.IN_PROGRESS);
 
         service.autoClose(report, 14);
 
-        assertThat(report.getStatus()).isEqualTo(ReportStatus.RESOLVED);
+        assertThat(report.getStatus()).isEqualTo(ReportStatus.AUTO_CLOSED);
         assertThat(report.getResolvedAt()).isNotNull();
         verify(healthReportRepository).save(report);
         verify(plantService, never()).changeHealth(any(), any());   // ไม่รู้ผลจริง เลยไม่แตะสถานะต้นไม้

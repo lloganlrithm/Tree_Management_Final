@@ -4,6 +4,10 @@
    ไฟล์นี้เขียนเฉพาะสิ่งที่หน้าของเปรมมีเอง ทุก class ขึ้นต้นด้วย rp-
    ========================================================= */
 
+/* ---------- ป้ายสถานะที่เพิ่มทีหลัง (4 ตัวแรกอยู่ใน base.css) ---------- */
+.st-FOLLOWED_UP { background: #efe9f6; color: #7a5aa6; }
+.st-AUTO_CLOSED { background: #eceeec; color: var(--muted); }
+
 /* ---------- กล่องข้อความหลังบันทึก (flash จาก Controller) ---------- */
 .rp-flash { padding: 12px 16px; border-radius: var(--radius-md); font-weight: 500; }
 .rp-flash.ok  { background: var(--soft); color: var(--primary-strong); }

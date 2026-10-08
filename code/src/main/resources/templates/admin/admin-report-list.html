@@ -122,9 +122,9 @@
                 <span class="hint">รูปที่แนบมา</span>
                 <img class="rp-reply-img" id="reply-image" alt="รูปอาการที่ผู้ใช้แนบมากับรายงาน">
               </div>
-              <!-- สถานะรายงานเดินเอง: ส่งคำแนะนำ = กำลังดำเนินการ, ปฏิเสธ = ปิดเรื่อง, ผู้ใช้กดดีขึ้นแล้ว = แก้ไขแล้ว -->
+              <!-- สถานะรายงานเดินเอง: ส่งคำแนะนำ = กำลังดำเนินการ, ปฏิเสธ = ปฏิเสธ, ผู้ใช้บอกผล = ต้นไม้ดีขึ้นแล้ว / ส่งต่อรอบใหม่ -->
               <p class="small muted">สถานะรายงานตอนนี้: <b id="report-status-now">รอตรวจ</b></p>
-              <p class="rp-flash err" id="report-closed-note" hidden>รายงานนี้ปิดแล้ว ดูได้อย่างเดียว ตอบเพิ่มไม่ได้</p>
+              <p class="rp-flash err" id="report-closed-note" hidden>รายงานนี้จบแล้ว ดูได้อย่างเดียว ตอบเพิ่มไม่ได้</p>
               <!-- สถานะสุขภาพต้นไม้: เปลี่ยนผ่าน State pattern ของโป้ย แสดงเฉพาะสถานะที่เปลี่ยนไปได้จริง (script ด้านล่างซ่อนตัวที่ไม่ได้) -->
               <div class="field">
                 <label for="plantHealthStatus">สถานะต้นไม้ <span class="muted small" id="plant-health-now"></span></label>
@@ -145,7 +145,7 @@
               <button type="button" class="btn" data-close>ยกเลิก</button>
               <!-- 2 ปุ่มส่ง status ต่างกัน: Controller ไม่ต้องให้ admin เลือกสถานะเอง -->
               <button type="submit" class="btn btn-danger" name="status" value="REJECTED" id="btn-reject"
-                      onclick="return confirm('ปฏิเสธรายงานนี้? รายงานจะถูกปิดและแจ้งเหตุผลให้เจ้าของต้นไม้')">ปฏิเสธรายงาน</button>
+                      onclick="return confirm('ปฏิเสธรายงานนี้? ระบบจะแจ้งเหตุผลให้เจ้าของต้นไม้')">ปฏิเสธรายงาน</button>
               <button type="submit" class="btn btn-primary" name="status" value="IN_PROGRESS" id="btn-answer">ส่งคำแนะนำ</button>
             </div>
           </form>
@@ -175,9 +175,9 @@
       // ตั้งค่าเองทุกครั้ง ไม่ให้คำตอบของรายงานที่เปิดก่อนหน้าค้างอยู่
       document.getElementById("adminReply").value = row.dataset.fillReply || "";
 
-      // สถานะรายงานตอนนี้ + รายงานที่ปิดแล้วซ่อนปุ่มส่ง (server ก็กันซ้ำอีกชั้น)
+      // สถานะรายงานตอนนี้ + รายงานที่จบแล้วซ่อนปุ่มส่ง (server ก็กันซ้ำอีกชั้น)
       document.getElementById("report-status-now").textContent = row.dataset.statusLabel;
-      var closed = row.dataset.fillStatus === "RESOLVED" || row.dataset.fillStatus === "REJECTED";
+      var closed = row.dataset.fillStatus !== "PENDING" && row.dataset.fillStatus !== "IN_PROGRESS";
       document.getElementById("report-closed-note").hidden = !closed;
       document.getElementById("btn-reject").hidden = closed;
       document.getElementById("btn-answer").hidden = closed;
