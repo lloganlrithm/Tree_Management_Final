@@ -51,6 +51,18 @@ public class CareServiceImpl implements CareService {
         return careScheduleRepository.findActiveDueBetween(user.getId(), from, to);
     }
 
+    // ===== งานของทุกคนในระบบ (ให้ job แจ้งเตือนของเปรมใช้) =====
+
+    @Override
+    public List<CareSchedule> findDueBetween(LocalDate from, LocalDate to) {
+        return careScheduleRepository.findAllActiveDueBetween(from, to);
+    }
+
+    @Override
+    public List<CareSchedule> findOverdue(LocalDate today) {
+        return careScheduleRepository.findAllActiveDueBefore(today);
+    }
+
     @Override
     @Transactional
     public CareLog markDone(Long scheduleId, User user, String notes) {
