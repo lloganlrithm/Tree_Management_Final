@@ -2,11 +2,13 @@ package com.example.plantpal.service.impl;
 
 import com.example.plantpal.domain.entity.HealthReport;
 import com.example.plantpal.domain.entity.Plant;
+import com.example.plantpal.domain.enums.HealthStatus;
 import com.example.plantpal.domain.enums.ReportStatus;
 import com.example.plantpal.domain.enums.Severity;
 import com.example.plantpal.dto.request.HealthReportRequest;
 import com.example.plantpal.event.ReportResolvedEvent;
 import com.example.plantpal.exception.ResourceNotFoundException;
+import com.example.plantpal.plant.state.PlantHealthStates;
 import com.example.plantpal.repository.HealthReportRepository;
 import com.example.plantpal.service.HealthReportService;
 import com.example.plantpal.service.ImageStorageService;
@@ -117,11 +119,29 @@ public class HealthReportServiceImpl implements HealthReportService {
         report.setResolvedAt(closed ? LocalDateTime.now() : null);
         HealthReport saved = healthReportRepository.save(report);
 
-        // Observer: ประกาศว่ามีการตอบรายงาน ใครฟังอยู่ก็ทำงานของตัวเองต่อ (เช่น สร้างแจ้งเตือนให้เจ้าของ)
         Plant plant = saved.getPlant();
+        updatePlantHealth(plant, status);
+
+        // Observer: ประกาศว่ามีการตอบรายงาน ใครฟังอยู่ก็ทำงานของตัวเองต่อ (เช่น สร้างแจ้งเตือนให้เจ้าของ)
         eventPublisher.publishEvent(new ReportResolvedEvent(
                 saved.getId(), plant.getUser().getId(), plant.getId(), saved.getTitle(), status));
         return saved;
+    }
+
+    // เปลี่ยนสถานะสุขภาพต้นไม้ตามผลการตรวจ ผ่าน State pattern ของโป้ย (ห้าม set healthStatus เอง)
+    //   IN_PROGRESS = admin ยืนยันว่ามีปัญหา -> SICK
+    //   RESOLVED    = แก้แล้ว               -> RECOVERING
+    //   PENDING / REJECTED                  -> ไม่เปลี่ยน
+    // ถ้าสถานะปัจจุบันเปลี่ยนไปไม่ได้ (เช่น HEALTHY -> RECOVERING, ต้นที่ตายแล้ว) ให้ข้าม ไม่ทำให้การตอบรายงานล้ม
+    private void updatePlantHealth(Plant plant, ReportStatus status) {
+        HealthStatus target = switch (status) {
+            case IN_PROGRESS -> HealthStatus.SICK;
+            case RESOLVED -> HealthStatus.RECOVERING;
+            case PENDING, REJECTED -> null;
+        };
+        if (target != null && PlantHealthStates.of(plant.getHealthStatus()).canChangeTo(target)) {
+            plantService.changeHealth(plant.getId(), target);
+        }
     }
 
     private String blankToNull(String value) {
