@@ -14,7 +14,7 @@
     <main class="content" th:with="closed=${@reportLabels.closed(report.status)}">
       <link rel="stylesheet" th:href="@{/css/reports.css}" href="/css/reports.css">
 
-      <a class="back" th:href="@{/reports}" href="/reports"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>รายงานของฉัน</a>
+      <a class="back" th:href="@{/reports}" href="/reports"><span class="icon icon-chevron-left s16" aria-hidden="true"></span>รายงานของฉัน</a>
 
       <div class="rp-flash ok" th:if="${success}" th:text="${success}">ส่งรายงานแล้ว</div>
       <div class="rp-flash err" th:if="${error}" th:text="${error}">เกิดข้อผิดพลาด</div>
@@ -61,7 +61,7 @@
               </a>
             </div>
             <div class="rp-photo" th:if="${report.imageUrl == null}">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>
+              <span class="icon icon-image s28" aria-hidden="true"></span>
               <span>ไม่ได้แนบรูป</span>
             </div>
           </section>
@@ -136,7 +136,7 @@
               <h2 id="followup-title">ยังไม่ดีขึ้น</h2>
               <p>รอบนี้จะเป็น "ส่งต่อรอบใหม่" แล้วเปิดรายงานติดตามผลให้ผู้ดูแลระบบตรวจอีกรอบ</p>
             </div>
-            <button type="button" class="btn btn-icon" data-close aria-label="ปิด"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+            <button type="button" class="btn btn-icon" data-close aria-label="ปิด"><span class="icon icon-close" aria-hidden="true"></span></button>
           </div>
           <form method="post" th:action="@{/reports/{id}/follow-up(id=${report.id})}" data-live enctype="multipart/form-data">
             <div class="modal-body">

@@ -24,7 +24,7 @@
         <!-- data-fill-* = ล้างค่าในฟอร์มให้ว่างตอนเพิ่มใหม่ -->
         <button class="btn btn-primary" type="button" data-open="species-modal"
                 data-fill-mode="เพิ่มพันธุ์ไม้" data-fill-id="" data-fill-name="" data-fill-water="" data-fill-fertilize="" data-fill-repot="" data-fill-sun="MEDIUM" data-fill-desc="">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          <span class="icon icon-plus" aria-hidden="true"></span>
           เพิ่มพันธุ์ไม้
         </button>
       </div>
@@ -95,7 +95,7 @@
         <p>ค่าเหล่านี้จะแสดงให้ผู้ใช้เห็นตอนเลือกพันธุ์ไม้</p>
       </div>
       <button class="btn btn-icon" type="button" data-close aria-label="ปิด">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <span class="icon icon-close s20" aria-hidden="true"></span>
       </button>
     </div>
     <form method="post" th:action="@{/admin/species}" data-live>

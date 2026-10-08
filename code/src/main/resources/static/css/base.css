@@ -387,6 +387,49 @@ table.data td.num { font-variant-numeric: tabular-nums; }
 .admin-report .photo { border-radius: var(--radius-md); background: var(--bg); border: 1px solid var(--line); height: 120px; display: grid; place-items: center; color: var(--muted); font-size: .82rem; }
 .admin-report .right { display: flex; flex-direction: column; gap: 12px; border-left: 1px solid var(--line); padding-left: 24px; min-width: 0; }
 
+/* ---------- Icons ---------- */
+/* ไอคอนเป็นไฟล์ svg ใน img/icons ใช้เป็น mask เลยเปลี่ยนสีตามตัวอักษร (currentColor) ได้
+   ใช้: <span class="icon icon-home s20" aria-hidden="true"></span>  (ไม่ใส่ sXX = 18px) */
+.icon {
+  display: inline-block; width: 18px; height: 18px; vertical-align: middle; flex: none;
+  background: currentColor;
+  -webkit-mask: var(--icon) center / contain no-repeat;
+          mask: var(--icon) center / contain no-repeat;
+}
+.icon.s16 { width: 16px; height: 16px; }
+.icon.s20 { width: 20px; height: 20px; }
+.icon.s22 { width: 22px; height: 22px; }
+.icon.s26 { width: 26px; height: 26px; }
+.icon.s28 { width: 28px; height: 28px; }
+.icon.s36 { width: 36px; height: 36px; }
+.icon.s48 { width: 48px; height: 48px; }
+.icon-bell           { --icon: url("../img/icons/bell.svg"); }
+.icon-calendar       { --icon: url("../img/icons/calendar.svg"); }
+.icon-calendar-blank { --icon: url("../img/icons/calendar-blank.svg"); }
+.icon-calendar-check { --icon: url("../img/icons/calendar-check.svg"); }
+.icon-chat           { --icon: url("../img/icons/chat.svg"); }
+.icon-check          { --icon: url("../img/icons/check.svg"); }
+.icon-check-double   { --icon: url("../img/icons/check-double.svg"); }
+.icon-chevron-left   { --icon: url("../img/icons/chevron-left.svg"); }
+.icon-chevron-right  { --icon: url("../img/icons/chevron-right.svg"); }
+.icon-clock          { --icon: url("../img/icons/clock.svg"); }
+.icon-close          { --icon: url("../img/icons/close.svg"); }
+.icon-filter         { --icon: url("../img/icons/filter.svg"); }
+.icon-home           { --icon: url("../img/icons/home.svg"); }
+.icon-image          { --icon: url("../img/icons/image.svg"); }
+.icon-info           { --icon: url("../img/icons/info.svg"); }
+.icon-leaf           { --icon: url("../img/icons/leaf.svg"); }
+.icon-lock           { --icon: url("../img/icons/lock.svg"); }
+.icon-logout         { --icon: url("../img/icons/logout.svg"); }
+.icon-plus           { --icon: url("../img/icons/plus.svg"); }
+.icon-pulse          { --icon: url("../img/icons/pulse.svg"); }
+.icon-search         { --icon: url("../img/icons/search.svg"); }
+.icon-species        { --icon: url("../img/icons/species.svg"); }
+.icon-sprout         { --icon: url("../img/icons/sprout.svg"); }
+.icon-upload         { --icon: url("../img/icons/upload.svg"); }
+.icon-users          { --icon: url("../img/icons/users.svg"); }
+.icon-water          { --icon: url("../img/icons/water.svg"); }
+
 /* ---------- Responsive ---------- */
 @media (max-width: 1080px) {
   .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
