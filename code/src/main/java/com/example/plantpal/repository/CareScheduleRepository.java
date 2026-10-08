@@ -57,6 +57,34 @@ public interface CareScheduleRepository extends JpaRepository<CareSchedule, Long
             """)
     List<CareSchedule> findActiveDueAfter(@Param("userId") Long userId, @Param("date") LocalDate date);
 
+    // ===== งานของทุกคนในระบบ (ให้ job แจ้งเตือนของเปรมใช้) =====
+    // ดึง plant + user + species มาด้วย เพราะ job ต้องรู้ว่าต้นไม้เป็นของใครเพื่อส่งแจ้งเตือน
+    // และ job รันนอกหน้าเว็บ ถ้าไม่ fetch มาก่อนจะเรียก schedule.getPlant().getUser() ไม่ได้
+
+    // ทุกคน: ช่วงวันที่ from..to (รวมทั้งสองวัน)
+    @Query("""
+            select cs from CareSchedule cs
+            join fetch cs.plant p
+            join fetch p.user
+            join fetch p.species
+            where cs.isActive = true
+              and cs.nextDueDate between :from and :to
+            order by cs.nextDueDate asc, cs.id asc
+            """)
+    List<CareSchedule> findAllActiveDueBetween(@Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    // ทุกคน: เลยกำหนดแล้ว nextDueDate < date
+    @Query("""
+            select cs from CareSchedule cs
+            join fetch cs.plant p
+            join fetch p.user
+            join fetch p.species
+            where cs.isActive = true
+              and cs.nextDueDate < :date
+            order by cs.nextDueDate asc, cs.id asc
+            """)
+    List<CareSchedule> findAllActiveDueBefore(@Param("date") LocalDate date);
+
     // หาตาราง 1 อัน แต่ต้องเป็นของต้นไม้ของผู้ใช้คนนี้เท่านั้น
     // (กันกดบันทึกของคนอื่น)
     @Query("""
