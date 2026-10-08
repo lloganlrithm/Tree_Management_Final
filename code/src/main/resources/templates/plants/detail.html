@@ -52,7 +52,7 @@
             <div class="actions">
               <button class="btn btn-soft" type="button" data-open="edit-plant">แก้ไข</button>
               <!-- ย้อนการแก้ไขล่าสุด (Memento) แสดงเฉพาะตอนมีให้ย้อน -->
-               <form method="post" data-live th:action="@{/plants/{id}/undo(id=${plant.id})}" th:if="${canUndo}"
+              <form method="post" data-live th:action="@{/plants/{id}/undo(id=${plant.id})}" th:if="${canUndo}"
                 style="display:inline;">
                 <button class="btn btn-soft" type="submit">ย้อนการแก้ไขล่าสุด</button>
               </form>
@@ -129,14 +129,9 @@
             คำอธิบายพันธุ์ไม้</p>
         </section>
 
-        <!-- ===== การดูแล (รอ fragments/care.html ของเปียโน) + รายงานสุขภาพ (fragments/reports.html ของเปรม) ===== -->
+        <!-- ===== การดูแล (fragments/care-detail.html ของเปียโน) + รายงานสุขภาพ (fragments/reports.html ของเปรม) ===== -->
         <div class="two-col">
-          <section class="card card-pad slot">
-            <div class="section-head">
-              <h2>การดูแล</h2>
-            </div>
-            <p class="muted small">ตารางดูแลและประวัติการดูแลของต้นนี้ (รองานเปียโน)</p>
-          </section>
+          <section th:replace="~{fragments/care-detail :: plantCare}"></section>
           <section th:replace="~{fragments/reports :: plantReports}"></section>
         </div>
 
