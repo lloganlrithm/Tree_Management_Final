@@ -12,6 +12,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -43,5 +45,11 @@ public class UserServiceImpl implements UserService {
         user.setProfile(profile);
 
         return userRepository.save(user);   // cascade บันทึก user_profiles ให้ด้วย
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Long> findAdminIds() {
+        return userRepository.findActiveIdsByRole(Role.ADMIN);
     }
 }
