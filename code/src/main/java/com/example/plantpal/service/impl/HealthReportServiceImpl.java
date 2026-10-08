@@ -9,6 +9,7 @@ import com.example.plantpal.dto.request.HealthReportRequest;
 import com.example.plantpal.dto.request.ReportFollowUpRequest;
 import com.example.plantpal.event.ReportAutoClosedEvent;
 import com.example.plantpal.event.ReportResolvedEvent;
+import com.example.plantpal.event.ReportSubmittedEvent;
 import com.example.plantpal.exception.DuplicateReportException;
 import com.example.plantpal.exception.InvalidRequestException;
 import com.example.plantpal.exception.ResourceNotFoundException;
@@ -64,7 +65,9 @@ public class HealthReportServiceImpl implements HealthReportService {
             report.setImageUrl(imageStorageService.upload(request.getImage(), "reports"));
         }
         // status = PENDING ตาม default ใน entity
-        return healthReportRepository.save(report);
+        HealthReport saved = healthReportRepository.save(report);
+        publishSubmitted(saved, false);   // Observer: แจ้ง admin ว่ามีรายงานรอตรวจ
+        return saved;
     }
 
     @Override
@@ -120,7 +123,9 @@ public class HealthReportServiceImpl implements HealthReportService {
         next.setSeverity(previous.getSeverity());
         next.setImageUrl(imageUrl);
         // status = PENDING ตาม default ใน entity -> ขึ้นในหน้า admin เป็นรายงานรอตรวจ
-        return healthReportRepository.save(next);
+        HealthReport saved = healthReportRepository.save(next);
+        publishSubmitted(saved, true);
+        return saved;
     }
 
     @Override
@@ -287,6 +292,14 @@ public class HealthReportServiceImpl implements HealthReportService {
             throw new InvalidRequestException("อัปเดตผลได้เฉพาะรายงานที่กำลังดำเนินการ");
         }
         return report;
+    }
+
+    // ประกาศว่ามีรายงานรอ admin ตรวจ (ผู้ฟังทำงานหลังบันทึกสำเร็จ ถ้าบันทึกพังจะไม่มีแจ้งเตือนหลุด)
+    private void publishSubmitted(HealthReport report, boolean followUp) {
+        Plant plant = report.getPlant();
+        String plantName = plant.getNickname() != null ? plant.getNickname() : "ไม่มีชื่อเล่น";
+        eventPublisher.publishEvent(new ReportSubmittedEvent(
+                report.getId(), plant.getUser().getId(), plantName, report.getTitle(), followUp));
     }
 
     // "ติดตามผล: ใบเหลือง" ติดตามซ้ำหลายรอบไม่ต้องเติมคำนำหน้าซ้ำ และไม่เกิน 150 ตัวอักษรตามคอลัมน์ title
