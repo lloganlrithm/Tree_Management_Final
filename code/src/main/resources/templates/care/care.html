@@ -39,11 +39,7 @@
                     </div>
                     <!-- ปุ่มไปหน้าประวัติการดูแล (C3) -->
                     <a class="btn" th:href="@{/care/history}">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <circle cx="12" cy="12" r="9" />
-                            <path d="M12 7v5l3 2" />
-                        </svg>
+                        <span class="icon icon-clock" aria-hidden="true"></span>
                         ประวัติการดูแล
                     </a>
                 </div>
@@ -56,10 +52,7 @@
                 <section class="card toolbar">
                     <div class="chips care-filters">
                         <span class="label">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M3 5h18l-7 8v6l-4-2v-4z" />
-                            </svg>
+                            <span class="icon icon-filter s16" aria-hidden="true"></span>
                             ประเภท:
                         </span>
                         <button type="button" class="chip active" data-filter="ALL">ทั้งหมด</button>
@@ -207,10 +200,7 @@
                 <button type="button" class="btn btn-sm" th:classappend="${diff >= 0} ? 'btn-primary' : 'btn-soft'"
                     data-open="care-done"
                     th:attr="data-fill-id=${schedule.id},data-fill-title=${label} + ' · ' + ${plantName}">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="m5 12 5 5 9-10" />
-                    </svg>
+                    <span class="icon icon-check s16" aria-hidden="true"></span>
                     ทำแล้ว
                 </button>
             </div>
@@ -228,10 +218,7 @@
                     <p data-fill="title">รดน้ำ · น้องเขียว</p>
                 </div>
                 <button class="btn btn-icon" type="button" data-close aria-label="ปิด">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" aria-hidden="true">
-                        <path d="M6 6l12 12M18 6 6 18" />
-                    </svg>
+                    <span class="icon icon-close s20" aria-hidden="true"></span>
                 </button>
             </div>
 
@@ -246,11 +233,7 @@
                             placeholder="เช่น ใบเริ่มเหลือง ดินยังชื้นอยู่"></textarea>
                     </div>
                     <div class="info-box">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
-                            <circle cx="12" cy="12" r="9" />
-                            <path d="M12 11v5M12 8h.01" />
-                        </svg>
+                        <span class="icon icon-info" aria-hidden="true"></span>
                         ระบบจะบันทึกลงประวัติการดูแล แล้วเลื่อนวันกำหนดไปรอบถัดไปให้อัตโนมัติ
                     </div>
                 </div>

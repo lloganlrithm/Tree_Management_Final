@@ -21,10 +21,7 @@
             <p>จัดการและติดตามการเติบโตของเพื่อนตัวเขียวทั้งหมด <span th:text="${#lists.size(plants)}">0</span> ต้น</p>
           </div>
           <button class="btn btn-primary" type="button" data-open="add-plant">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" aria-hidden="true">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
+            <span class="icon icon-plus" aria-hidden="true"></span>
             เพิ่มต้นไม้
           </button>
         </div>
@@ -34,19 +31,12 @@
         <!-- ===== ค้นหา + กรองสถานะ ===== -->
         <section class="card toolbar">
           <label class="search" for="plant-search">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" aria-hidden="true">
-              <circle cx="11" cy="11" r="7" />
-              <path d="m20 20-3.5-3.5" />
-            </svg>
+            <span class="icon icon-search" aria-hidden="true"></span>
             <input id="plant-search" type="search" placeholder="ค้นหาตามชื่อเล่นหรือพันธุ์ไม้..." autocomplete="off">
           </label>
           <div class="chips" data-target="#plant-grid">
             <span class="label">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M3 5h18l-7 8v6l-4-2v-4z" />
-              </svg>
+              <span class="icon icon-filter s16" aria-hidden="true"></span>
               สถานะ:
             </span>
             <button type="button" class="chip active" data-filter="all">ทั้งหมด</button>
@@ -65,7 +55,7 @@
            th:attr="data-tags=${p.healthStatus}, data-search=${(p.nickname ?: '') + ' ' + p.species.name}">
           <div class="row">
             <span class="plant-tile" th:classappend="'t-' + ${p.healthStatus}">
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20v-8"/><path d="M12 12c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 14c0-3-2-5-6-5 0 3 2 5 6 5z"/><path d="M7 20h10"/></svg>
+              <span style="color: var(--primary)" class="icon icon-sprout s36" aria-hidden="true"></span>
             </span>
             <span class="badge" th:classappend="'s-' + ${p.healthStatus}" th:switch="${p.healthStatus.name()}">
               <th:block th:case="'HEALTHY'">ปกติดี</th:block>
@@ -87,13 +77,7 @@
               <!-- ===== ยังไม่มีต้นไม้ ===== -->
       <section class="card empty-state" th:if="${#lists.isEmpty(plants)}">
           <span class="plant-tile lg">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
-              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M12 20v-8" />
-              <path d="M12 12c0-4 3-6 7-6 0 4-3 6-7 6z" />
-              <path d="M12 14c0-3-2-5-6-5 0 3 2 5 6 5z" />
-              <path d="M7 20h10" />
-            </svg>
+            <span class="icon icon-sprout s48" aria-hidden="true"></span>
           </span>
           <h2>ยังไม่มีต้นไม้</h2>
           <p class="muted">เพิ่มต้นไม้ต้นแรกของคุณ แล้วระบบจะช่วยเตือนเวลาดูแลให้</p>
@@ -114,10 +98,7 @@
           <p>กรอกข้อมูลต้นไม้ต้นใหม่ของคุณ</p>
         </div>
         <button class="btn btn-icon" type="button" data-close aria-label="ปิด">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" aria-hidden="true">
-            <path d="M6 6l12 12M18 6 6 18" />
-          </svg>
+          <span class="icon icon-close s20" aria-hidden="true"></span>
         </button>
       </div>
 
@@ -148,11 +129,7 @@
           </div>
 
           <div class="info-box">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-              stroke-linecap="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="9" />
-              <path d="M12 11v5M12 8h.01" />
-            </svg>
+            <span class="icon icon-info" aria-hidden="true"></span>
             ระบบจะสร้างตารางรดน้ำให้อัตโนมัติ ตามรอบของพันธุ์ไม้ที่เลือก
           </div>
         </div>
