@@ -1,0 +1,11 @@
+# ไม่ส่งไฟล์เหล่านี้เข้า Docker (build เร็วขึ้น และไม่หลุดค่าลับเข้า image)
+target/
+.vscode/
+.idea/
+.github/
+.mvn/
+mvnw
+mvnw.cmd
+uploads/
+.env
+*.log
