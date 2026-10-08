@@ -60,12 +60,19 @@ document.querySelectorAll("[data-autosubmit]").forEach(function (el) {
   el.addEventListener("change", function () { el.form.submit(); });
 });
 
-// U4: แสดงชื่อไฟล์รูปที่เลือก (input file ซ่อนอยู่ในกรอบ .drop)
+// U4: แสดงชื่อไฟล์ + พรีวิวรูปที่เลือก (input file ซ่อนอยู่ในกรอบ .drop)
 document.querySelectorAll('input[type="file"]').forEach(function (input) {
   var label = input.closest("label");
   var out = label && label.querySelector("[data-file-name]");
   if (!out) return;
+  var preview = label.querySelector("[data-file-preview]");
+  var avatar = input.dataset.previewTarget && document.querySelector(input.dataset.previewTarget);
+  var avatarSrc = avatar && avatar.getAttribute("src");
   input.addEventListener("change", function () {
-    out.textContent = input.files.length ? "เลือกแล้ว: " + input.files[0].name : "";
+    var file = input.files[0];
+    out.textContent = file ? "เลือกแล้ว: " + file.name : "";
+    var url = file ? URL.createObjectURL(file) : null;
+    if (preview) { preview.hidden = !file; if (url) preview.src = url; }
+    if (avatar) avatar.src = url || avatarSrc;
   });
 });
