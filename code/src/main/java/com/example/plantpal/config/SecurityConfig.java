@@ -8,12 +8,15 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final RoleBasedLoginSuccessHandler loginSuccessHandler;
+    private final ApiSecurityErrorHandler apiSecurityErrorHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -22,6 +25,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        RequestMatcher api = PathPatternRequestMatcher.withDefaults().matcher("/api/**");
         http
             .authorizeHttpRequests(auth -> auth
                 // หน้าที่เข้าได้โดยไม่ต้อง login
@@ -39,7 +43,13 @@ public class SecurityConfig {
                 .permitAll())
             .logout(logout -> logout
                 .logoutSuccessUrl("/login?logout")
-                .permitAll());
+                .permitAll())
+            // REST API รับ JSON ไม่มีฟอร์มให้ใส่ CSRF token (หน้าเว็บยังป้องกัน CSRF เหมือนเดิม)
+            .csrf(csrf -> csrf.ignoringRequestMatchers(api))
+            // /api/** ที่ยังไม่ login -> 401 JSON, ไม่มีสิทธิ์ -> 403 JSON (ไม่ redirect ไปหน้า login)
+            .exceptionHandling(ex -> ex
+                .defaultAuthenticationEntryPointFor(apiSecurityErrorHandler, api)
+                .defaultAccessDeniedHandlerFor(apiSecurityErrorHandler, api));
         return http.build();
     }
 }
