@@ -5,7 +5,9 @@
      ข้อมูล unreadCount + latestNotifications ส่งมาให้ทุกหน้าอัตโนมัติจาก NotificationModelAdvice -->
 <body>
 
-<div class="rp-bell-wrap" th:fragment="bell">
+<!-- data-csrf: Spring Security ต้องมี token ทุกครั้งที่ POST ส่งให้ script ด้านล่างใช้ -->
+<div class="rp-bell-wrap" th:fragment="bell"
+     th:data-csrf-name="${_csrf?.parameterName}" th:data-csrf-token="${_csrf?.token}">
   <!-- layout ยังไม่ได้ลิงก์ reports.css เลยลิงก์ไว้ในตัว fragment -->
   <link rel="stylesheet" th:href="@{/css/reports.css}" href="/css/reports.css">
 
@@ -13,19 +15,21 @@
     <summary class="bell" th:aria-label="'แจ้งเตือน ยังไม่อ่าน ' + ${unreadCount} + ' รายการ'" aria-label="แจ้งเตือน">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></svg>
       <!-- จำนวนที่ยังไม่อ่าน เกิน 99 แสดง 99+ เป็น 0 ไม่แสดง -->
-      <span class="rp-bell-count" th:if="${unreadCount > 0}" th:text="${unreadCount > 99 ? '99+' : unreadCount}">3</span>
+      <span class="rp-bell-count" th:data-count="${unreadCount}" th:if="${unreadCount > 0}"
+            th:text="${unreadCount > 99 ? '99+' : unreadCount}">3</span>
     </summary>
 
     <div class="rp-bell-menu">
       <div class="rp-bell-head">
         <span>การแจ้งเตือน</span>
-        <span class="muted small" th:text="'ยังไม่อ่าน ' + ${unreadCount}">ยังไม่อ่าน 3</span>
+        <button type="button" class="rp-bell-readall" th:if="${unreadCount > 0}"
+                th:data-url="@{/notifications/read-all}">อ่านทั้งหมด</button>
       </div>
 
       <!-- 5 รายการล่าสุด ใหม่สุดก่อน -->
       <ul class="rp-bell-list" th:unless="${#lists.isEmpty(latestNotifications)}">
-        <li th:each="n : ${latestNotifications}">
-          <!-- มีต้นไม้ = ลิงก์ไปหน้าต้นไม้, ไม่มี (เช่น SYSTEM) = ไปหน้าแจ้งเตือน -->
+        <li th:each="n : ${latestNotifications}" th:data-read-url="@{/notifications/{id}/read(id=${n.id})}">
+          <!-- มีต้นไม้ = ลิงก์ไปหน้าต้นไม้, ไม่มี (เช่น SYSTEM) = ไปหน้าแจ้งเตือน / กดแล้วนับว่าอ่านแล้ว -->
           <a th:href="${n.plant != null} ? @{/plants/{id}(id=${n.plant.id})} : @{/notifications}"
              th:classappend="${n.isRead} ? '' : 'unread'" href="/plants/1">
             <span class="rp-dot"></span>
@@ -38,6 +42,11 @@
               </small>
             </span>
           </a>
+          <!-- ติ๊กว่าอ่านแล้ว โดยไม่ต้องเปิดดู (มีเฉพาะอันที่ยังไม่อ่าน) -->
+          <button type="button" class="rp-bell-check" th:unless="${n.isRead}"
+                  title="ทำเครื่องหมายว่าอ่านแล้ว" aria-label="ทำเครื่องหมายว่าอ่านแล้ว">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>
+          </button>
         </li>
       </ul>
       <p class="muted small" style="padding: 16px; margin: 0; text-align: center"
@@ -46,6 +55,63 @@
       <a class="rp-bell-all" th:href="@{/notifications}" href="/notifications">ดูทั้งหมด</a>
     </div>
   </details>
+
+  <script>
+    // ติ๊กอ่านแล้วในกระดิ่ง: ส่ง POST ไปบันทึกเบื้องหลัง แล้วอัปเดตตัวเลขในหน้าเลย ไม่ต้องโหลดหน้าใหม่
+    (function () {
+      var wrap = document.currentScript.closest(".rp-bell-wrap");
+      var badge = wrap.querySelector(".rp-bell-count");
+      var readAll = wrap.querySelector(".rp-bell-readall");
+      var count = badge ? parseInt(badge.dataset.count, 10) : 0;
+
+      function post(url) {
+        var body = new FormData();
+        body.append(wrap.dataset.csrfName, wrap.dataset.csrfToken);
+        // keepalive: ส่งให้จบแม้ผู้ใช้กดลิงก์เปลี่ยนหน้าไปแล้ว
+        return fetch(url, { method: "POST", body: body, credentials: "same-origin", keepalive: true });
+      }
+
+      function setCount(n) {
+        count = Math.max(n, 0);
+        if (badge) {
+          if (count === 0) { badge.remove(); badge = null; }
+          else { badge.textContent = count > 99 ? "99+" : count; }
+        }
+        if (count === 0 && readAll) { readAll.remove(); readAll = null; }
+      }
+
+      function markRead(li) {
+        var link = li.querySelector("a.unread");
+        if (!link) return;
+        link.classList.remove("unread");
+        var check = li.querySelector(".rp-bell-check");
+        if (check) check.remove();
+        setCount(count - 1);
+      }
+
+      wrap.querySelectorAll(".rp-bell-list li").forEach(function (li) {
+        var check = li.querySelector(".rp-bell-check");
+        if (check) {
+          check.addEventListener("click", function () {
+            post(li.dataset.readUrl).then(function () { markRead(li); });
+          });
+        }
+        // กดเปิดแจ้งเตือนที่ยังไม่อ่าน = อ่านแล้ว แล้วไปหน้านั้นต่อตามปกติ
+        li.querySelector("a").addEventListener("click", function () {
+          if (this.classList.contains("unread")) { post(li.dataset.readUrl); }
+        });
+      });
+
+      if (readAll) {
+        readAll.addEventListener("click", function () {
+          post(readAll.dataset.url).then(function () {
+            wrap.querySelectorAll(".rp-bell-list li").forEach(markRead);
+            setCount(0);
+          });
+        });
+      }
+    })();
+  </script>
 </div>
 
 </body>

@@ -50,21 +50,21 @@ public class ReportController {
         return "reports/report-form";
     }
 
+    // ส่งไม่ผ่าน = แสดงฟอร์มเดิมพร้อมข้อความที่พิมพ์ไว้ (ไม่ redirect เพราะ redirect จะทำให้ข้อมูลในฟอร์มหาย)
     @PostMapping
-    public String create(@Valid @ModelAttribute HealthReportRequest request,
+    public String create(@Valid @ModelAttribute("form") HealthReportRequest request,
                          BindingResult result,
+                         Model model,
                          RedirectAttributes redirect) {
         if (result.hasErrors()) {
-            redirect.addFlashAttribute("error", result.getAllErrors().get(0).getDefaultMessage());
-            return backToForm(request);
+            return showFormAgain(request, result.getAllErrors().get(0).getDefaultMessage(), model);
         }
         try {
             HealthReport report = healthReportService.create(request, currentEmail());
             redirect.addFlashAttribute("success", "ส่งรายงานแล้ว ผู้ดูแลระบบจะตอบกลับเร็วๆ นี้");
             return "redirect:/reports/" + report.getId();
         } catch (IllegalArgumentException | ResourceNotFoundException | InvalidRequestException | IllegalStateException e) {
-            redirect.addFlashAttribute("error", e.getMessage());
-            return backToForm(request);
+            return showFormAgain(request, e.getMessage(), model);
         }
     }
 
@@ -79,11 +79,14 @@ public class ReportController {
         }
     }
 
-    // กรอกผิดแล้วกลับไปฟอร์มเดิม โดยยังเลือกต้นไม้เดิมไว้
-    private String backToForm(HealthReportRequest request) {
-        return (request.getPlantId() == null)
-                ? "redirect:/reports/new"
-                : "redirect:/reports/new?plantId=" + request.getPlantId();
+    // กรอกผิดแล้วแสดงฟอร์มเดิม: ค่าที่พิมพ์ไว้อยู่ใน "form" (หัวข้อ รายละเอียด ความรุนแรง ต้นไม้)
+    // ส่วนไฟล์รูปเบราว์เซอร์ไม่ยอมให้เติมกลับ ผู้ใช้ต้องเลือกรูปใหม่
+    private String showFormAgain(HealthReportRequest request, String message, Model model) {
+        model.addAttribute("error", message);
+        model.addAttribute("imageLost", request.getImage() != null && !request.getImage().isEmpty());
+        model.addAttribute("plants", plantService.findMyPlants(currentEmail(), null));
+        model.addAttribute("plantId", request.getPlantId());
+        return "reports/report-form";
     }
 
     // อีเมลของคนที่ login อยู่ ถามผ่าน CurrentUserService ของพรีม (ตามกติกาทีม)
