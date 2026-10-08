@@ -9,6 +9,7 @@ import com.example.plantpal.domain.enums.Severity;
 import com.example.plantpal.dto.request.HealthReportRequest;
 import com.example.plantpal.event.ReportAutoClosedEvent;
 import com.example.plantpal.event.ReportResolvedEvent;
+import com.example.plantpal.event.ReportSubmittedEvent;
 import com.example.plantpal.dto.request.ReportFollowUpRequest;
 import com.example.plantpal.exception.DuplicateReportException;
 import com.example.plantpal.exception.InvalidRequestException;
@@ -100,6 +101,22 @@ class HealthReportServiceImplTest {
         assertThat(result.getSeverity()).isEqualTo(Severity.HIGH);
         assertThat(result.getImageUrl()).isNull();
         verify(imageStorageService, never()).upload(any(), anyString());   // ไม่แนบรูป = ไม่อัปโหลด
+    }
+
+    @Test
+    void createPublishesSubmittedEventForAdmins() {
+        Plant plant = plant(HealthStatus.HEALTHY);
+        plant.setNickname("ฟิโลหัวใจ");
+        when(plantService.findMyPlant(10L, EMAIL)).thenReturn(plant);
+        when(healthReportRepository.save(any(HealthReport.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.create(request("ใบเหลือง", null), EMAIL);
+
+        ArgumentCaptor<ReportSubmittedEvent> captor = ArgumentCaptor.forClass(ReportSubmittedEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().getOwnerId()).isEqualTo(7L);
+        assertThat(captor.getValue().getPlantName()).isEqualTo("ฟิโลหัวใจ");
+        assertThat(captor.getValue().isFollowUp()).isFalse();
     }
 
     @Test
@@ -344,6 +361,10 @@ class HealthReportServiceImplTest {
 
         assertThat(next.getTitle()).isEqualTo("ติดตามผล: ใบเหลือง");
         assertThat(next.getDescription()).isEqualTo("ทำตามคำแนะนำแล้วแต่ยังไม่ดีขึ้น");   // ไม่กรอกอาการ = ข้อความตั้งต้น
+        // แจ้ง admin ว่าเป็นรอบติดตามผล
+        ArgumentCaptor<ReportSubmittedEvent> captor = ArgumentCaptor.forClass(ReportSubmittedEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().isFollowUp()).isTrue();
     }
 
     @Test
