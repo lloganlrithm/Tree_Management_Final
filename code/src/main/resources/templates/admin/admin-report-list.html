@@ -171,6 +171,10 @@
       imageBox.hidden = !url;
       if (url) { image.src = url; } else { image.removeAttribute("src"); }
 
+      // รายงานที่ยังไม่มีคำตอบ Thymeleaf จะไม่ใส่ data-fill-reply มาเลย app.js จึงไม่ล้างช่องให้
+      // ตั้งค่าเองทุกครั้ง ไม่ให้คำตอบของรายงานที่เปิดก่อนหน้าค้างอยู่
+      document.getElementById("adminReply").value = row.dataset.fillReply || "";
+
       // สถานะต้นไม้: บอกสถานะตอนนี้ + ให้เลือกได้แค่สถานะที่ State อนุญาต
       document.getElementById("plant-health-now").textContent = "(ตอนนี้: " + row.dataset.plantHealth + ")";
       var allowed = (row.dataset.plantNext || "").split(",");
