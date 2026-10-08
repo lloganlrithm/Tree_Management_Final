@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html lang="th" xmlns:th="http://www.thymeleaf.org">
 <!--เก็บแค่ fragment รายงานสุขภาพของต้นไม้ 1 ต้น ให้ดึงไปใส่ในหน้ารายละเอียดต้นไม้:
-     <section th:replace="~{fragments/reports :: plantReports}"></section> -->
+     <section th:replace="~{fragments/reports :: plantReports}"></section>
+     ต้องมีใน model: plant (ต้นไม้ที่กำลังดู) และ plantReports
+     ใน PlantController.detail():  model.addAttribute("plantReports", healthReportService.findByPlant(id, email)); -->
 <body>
 
 <section class="card card-pad" th:fragment="plantReports">
@@ -10,38 +12,32 @@
 
   <div class="section-head">
     <h2>รายงานสุขภาพ</h2>
-    <!-- ส่ง id ต้นไม้ไปให้ฟอร์มเลือกต้นนี้ไว้ก่อน: th:href="@{/reports/new(plantId=${plant.id})}" -->
-    <a class="btn btn-soft btn-sm" href="/reports/new?plantId=1">
+    <!-- ส่ง id ต้นไม้ไปให้ฟอร์มเลือกต้นนี้ไว้ก่อน -->
+    <a class="btn btn-soft btn-sm" th:href="@{/reports/new(plantId=${plant.id})}" href="/reports/new?plantId=1">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>แจ้งปัญหา
     </a>
   </div>
 
-  <!-- รายงานของต้นนี้ (health_reports.plant_id = id ต้นไม้) ใหม่สุดก่อน -->
-  <ul class="rp-mini">
-    <li>
-      <a href="/reports/1">
+  <!-- รายงานของต้นนี้ ใหม่สุดก่อน แสดง 5 รายการล่าสุด -->
+  <ul class="rp-mini" th:unless="${plantReports == null or #lists.isEmpty(plantReports)}">
+    <li th:each="r, it : ${plantReports}" th:if="${it.index < 5}">
+      <a th:href="@{/reports/{id}(id=${r.id})}" href="/reports/1">
         <span class="grow">
-          <b data-field="health_reports.title">ใบเหลืองและมีจุดสีน้ำตาล</b>
-          <time class="muted small" datetime="2026-10-04T09:12" data-field="health_reports.created_at">4 ต.ค. 2026</time>
+          <b th:text="${r.title}" data-field="health_reports.title">ใบเหลืองและมีจุดสีน้ำตาล</b>
+          <time class="muted small" th:datetime="${r.createdAt}" th:text="${#temporals.format(r.createdAt, 'd MMM yyyy')}"
+                data-field="health_reports.created_at">4 ต.ค. 2026</time>
         </span>
-        <span class="badge sev-HIGH" data-field="health_reports.severity">รุนแรง</span>
-        <span class="badge st-IN_PROGRESS" data-field="health_reports.status">กำลังดำเนินการ</span>
-      </a>
-    </li>
-    <li>
-      <a href="/reports/5">
-        <span class="grow">
-          <b data-field="health_reports.title">ปลายใบไหม้</b>
-          <time class="muted small" datetime="2026-08-15T16:45" data-field="health_reports.created_at">15 ส.ค. 2026</time>
-        </span>
-        <span class="badge sev-LOW" data-field="health_reports.severity">เล็กน้อย</span>
-        <span class="badge st-RESOLVED" data-field="health_reports.status">แก้ไขแล้ว</span>
+        <span class="badge" th:classappend="${r.severity != null} ? ('sev-' + ${r.severity})"
+              th:text="${@reportLabels.severity(r.severity)}" data-field="health_reports.severity">รุนแรง</span>
+        <span class="badge" th:classappend="'st-' + ${r.status}"
+              th:text="${@reportLabels.status(r.status)}" data-field="health_reports.status">กำลังดำเนินการ</span>
       </a>
     </li>
   </ul>
+  <a class="muted small" th:if="${plantReports != null and plantReports.size() > 5}" th:href="@{/reports}" href="/reports">ดูรายงานทั้งหมด</a>
 
-  <!-- ต้นนี้ยังไม่มีรายงาน: th:if="${#lists.isEmpty(reports)}" -->
-  <p class="muted small" hidden>ยังไม่เคยแจ้งปัญหาของต้นนี้</p>
+  <!-- ต้นนี้ยังไม่มีรายงาน (หรือ Controller ยังไม่ได้ส่ง plantReports มา) -->
+  <p class="muted small" th:if="${plantReports == null or #lists.isEmpty(plantReports)}">ยังไม่เคยแจ้งปัญหาของต้นนี้</p>
 </section>
 
 </body>

@@ -1,0 +1,277 @@
+/* PlantPal — หน้าปฏิทินการดูแล (C4)
+   ใช้ตัวแปรสี/ฟอนต์จาก base.css แบบเดียวกับ plants.css และ care.css */
+
+/* ===== แถบเตือนงานเลยกำหนด ===== */
+.cal-overdue {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    background: var(--crit-soft);
+    color: var(--crit);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.cal-overdue-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--crit);
+    flex: none;
+}
+
+.cal-overdue-link {
+    margin-left: auto;
+    font-size: .88rem;
+}
+
+.cal-overdue:hover .cal-overdue-link {
+    text-decoration: underline;
+}
+
+/* ===== ตารางปฏิทิน 7 คอลัมน์ ===== */
+.cal-weekdays,
+.cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.cal-weekdays {
+    margin-bottom: 8px;
+}
+
+.cal-weekdays span {
+    text-align: center;
+    font-size: .8rem;
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.cal-grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.cal-blank {
+    min-height: 104px;
+}
+
+.cal-day {
+    min-height: 104px;
+    min-width: 0;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+}
+
+.cal-day.is-empty {
+    background: var(--bg);
+}
+
+.cal-day.is-today {
+    border-color: var(--primary);
+    box-shadow: inset 0 0 0 1px var(--primary);
+    background: var(--surface);
+}
+
+.cal-date {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.cal-num {
+    font-family: var(--font-head);
+    font-weight: 600;
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.cal-month {
+    font-size: .75rem;
+    color: var(--muted);
+}
+
+.cal-dow {
+    display: none;
+    font-size: .8rem;
+    color: var(--muted);
+}
+
+.cal-today-tag {
+    margin-left: auto;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: var(--primary);
+    color: var(--on-primary);
+    font-size: .7rem;
+    line-height: 1.6;
+}
+
+.cal-day.is-today .cal-num {
+    color: var(--primary);
+}
+
+/* ===== งานในแต่ละวัน ===== */
+.cal-tasks {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.cal-task {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: var(--soft);
+    color: var(--primary-strong);
+    font-size: .78rem;
+    text-decoration: none;
+}
+
+.cal-task:hover {
+    background: var(--soft-strong);
+}
+
+.cal-task.a-FERTILIZE {
+    background: var(--warn-soft);
+    color: #8a5a17;
+}
+
+.cal-task.a-REPOT {
+    background: #f8e9e1;
+    color: #8c4e33;
+}
+
+.cal-task.a-CHECK_SUNLIGHT {
+    background: #fdf0d6;
+    color: #a8641c;
+}
+
+.cal-task.a-HEALTH_CHECK {
+    background: var(--recover-soft);
+    color: var(--recover);
+}
+
+.cal-task-icon {
+    flex: none;
+    font-size: .85rem;
+    line-height: 1;
+}
+
+.cal-task-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ชื่อประเภทงาน: บนจอใหญ่ซ่อนไว้ (ดูจากไอคอน/ชี้เมาส์) แต่โปรแกรมอ่านหน้าจอยังอ่านได้ */
+.sr-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+/* ===== คำอธิบายไอคอน / กล่องว่าง ===== */
+.cal-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    margin-top: 16px;
+    font-size: .82rem;
+    color: var(--muted);
+}
+
+.cal-empty {
+    margin-top: 16px;
+}
+
+.cal-empty-icon {
+    font-size: 2.6rem;
+    line-height: 1;
+}
+
+/* ===== จอแคบ: เปลี่ยนจากตาราง 7 คอลัมน์เป็นรายการวันแนวตั้ง โชว์เฉพาะวันที่มีงาน ===== */
+@media (max-width: 760px) {
+
+    .cal-weekdays,
+    .cal-blank {
+        display: none;
+    }
+
+    .cal-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .cal-day {
+        min-height: 0;
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .cal-day.is-empty:not(.is-today) {
+        display: none;
+    }
+
+    .cal-date {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+        width: 64px;
+        flex: none;
+    }
+
+    .cal-num {
+        font-size: 1.3rem;
+    }
+
+    .cal-dow {
+        display: inline;
+    }
+
+    .cal-month {
+        display: inline;
+    }
+
+    .cal-today-tag {
+        margin-left: 0;
+    }
+
+    .cal-tasks {
+        flex: 1;
+    }
+
+    .cal-task {
+        font-size: .85rem;
+        padding: 4px 8px;
+    }
+
+    .sr-label {
+        position: static;
+        width: auto;
+        height: auto;
+        clip: auto;
+    }
+}
