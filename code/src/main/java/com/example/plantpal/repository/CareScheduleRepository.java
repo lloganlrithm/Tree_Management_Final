@@ -85,6 +85,15 @@ public interface CareScheduleRepository extends JpaRepository<CareSchedule, Long
             """)
     List<CareSchedule> findAllActiveDueBefore(@Param("date") LocalDate date);
 
+    // ตารางดูแลที่ยังใช้งานของต้นไม้ 1 ต้น (ต้องเป็นของผู้ใช้คนนี้) ใกล้กำหนดก่อน ใช้ใน fragment หน้ารายละเอียดต้นไม้
+    @Query("""
+            select cs from CareSchedule cs
+            join cs.plant p
+            where p.id = :plantId and p.user.id = :userId and cs.isActive = true
+            order by cs.nextDueDate asc, cs.id asc
+            """)
+    List<CareSchedule> findActiveByPlantAndOwner(@Param("plantId") Long plantId, @Param("userId") Long userId);
+
     // หาตาราง 1 อัน แต่ต้องเป็นของต้นไม้ของผู้ใช้คนนี้เท่านั้น
     // (กันกดบันทึกของคนอื่น)
     @Query("""

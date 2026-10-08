@@ -29,6 +29,17 @@ public interface CareService {
     // ตารางดูแลของทุกคนที่เลยกำหนดแล้ว (nextDueDate < today)
     List<CareSchedule> findOverdue(LocalDate today);
 
+    // ===== ประวัติการดูแล (C3) =====
+
+    // ประวัติการดูแลต้นไม้ทุกต้นของผู้ใช้ ใหม่สุดก่อน
+    List<CareLog> findHistory(User user);
+
+    // ประวัติการดูแลของต้นไม้ 1 ต้น (ต้องเป็นของผู้ใช้คนนี้) ใหม่สุดก่อน
+    List<CareLog> findPlantHistory(Long plantId, User user);
+
+    // ตารางดูแลที่ยังใช้งานของต้นไม้ 1 ต้น (ต้องเป็นของผู้ใช้คนนี้) ใกล้กำหนดก่อน
+    List<CareSchedule> findPlantSchedules(Long plantId, User user);
+
     // กด "ทำแล้ว": บันทึกลง care_logs แล้วเลื่อน nextDueDate ไปรอบถัดไป
     CareLog markDone(Long scheduleId, User user, String notes);
 }
