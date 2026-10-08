@@ -84,6 +84,7 @@
 .rp-mini .grow { flex: 1; min-width: 140px; display: flex; flex-direction: column; }
 
 /* ---------- fragment: กระดิ่งแจ้งเตือนใน Navbar ---------- */
+.rp-bell-wrap { position: relative; display: inline-flex; }   /* แทน .bell-slot เดิมใน layout */
 .rp-bell { position: relative; }
 .rp-bell > summary { list-style: none; cursor: pointer; }
 .rp-bell > summary::-webkit-details-marker { display: none; }

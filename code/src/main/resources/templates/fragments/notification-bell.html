@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="th" xmlns:th="http://www.thymeleaf.org">
 <!--เก็บแค่ fragment กระดิ่งแจ้งเตือน ให้ดึงไปใส่ใน Navbar แทน <a class="bell"> เดิม:
-     <div th:replace="~{fragments/notification-bell :: bell}"></div> -->
+     <div th:replace="~{fragments/notification-bell :: bell}"></div>
+     ข้อมูล unreadCount + latestNotifications ส่งมาให้ทุกหน้าอัตโนมัติจาก NotificationModelAdvice -->
 <body>
 
 <div class="rp-bell-wrap" th:fragment="bell">
@@ -9,67 +10,38 @@
   <link rel="stylesheet" th:href="@{/css/reports.css}" href="/css/reports.css">
 
   <details class="rp-bell">
-    <summary class="bell" aria-label="แจ้งเตือน ยังไม่อ่าน 3 รายการ">
+    <summary class="bell" th:aria-label="'แจ้งเตือน ยังไม่อ่าน ' + ${unreadCount} + ' รายการ'" aria-label="แจ้งเตือน">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></svg>
-      <!-- จำนวนที่ยังไม่อ่าน (is_read = false) ถ้าเป็น 0 ให้ซ่อน: th:if="${unreadCount > 0}" -->
-      <span class="rp-bell-count">3</span>
+      <!-- จำนวนที่ยังไม่อ่าน เกิน 99 แสดง 99+ เป็น 0 ไม่แสดง -->
+      <span class="rp-bell-count" th:if="${unreadCount > 0}" th:text="${unreadCount > 99 ? '99+' : unreadCount}">3</span>
     </summary>
 
     <div class="rp-bell-menu">
       <div class="rp-bell-head">
         <span>การแจ้งเตือน</span>
-        <span class="muted small">ยังไม่อ่าน 3</span>
+        <span class="muted small" th:text="'ยังไม่อ่าน ' + ${unreadCount}">ยังไม่อ่าน 3</span>
       </div>
 
-      <!-- 5 รายการล่าสุด เรียงตาม created_at ใหม่สุดก่อน -->
-      <ul class="rp-bell-list">
-        <li>
-          <a class="unread" href="/plants/1">
+      <!-- 5 รายการล่าสุด ใหม่สุดก่อน -->
+      <ul class="rp-bell-list" th:unless="${#lists.isEmpty(latestNotifications)}">
+        <li th:each="n : ${latestNotifications}">
+          <!-- มีต้นไม้ = ลิงก์ไปหน้าต้นไม้, ไม่มี (เช่น SYSTEM) = ไปหน้าแจ้งเตือน -->
+          <a th:href="${n.plant != null} ? @{/plants/{id}(id=${n.plant.id})} : @{/notifications}"
+             th:classappend="${n.isRead} ? '' : 'unread'" href="/plants/1">
             <span class="rp-dot"></span>
             <span class="rp-bell-text">
-              <span data-field="notifications.message">ถึงเวลารดน้ำ ฟิโลหัวใจ แล้ว</span>
-              <small><span data-field="notifications.type">ถึงเวลาดูแล</span> · <time datetime="2026-10-06T08:00" data-field="notifications.created_at">วันนี้ 08:00</time></small>
-            </span>
-          </a>
-        </li>
-        <li>
-          <a class="unread" href="/plants/1">
-            <span class="rp-dot"></span>
-            <span class="rp-bell-text">
-              <span data-field="notifications.message">ผู้ดูแลระบบตอบรายงาน "ใบเหลืองและมีจุดสีน้ำตาล" แล้ว</span>
-              <small><span data-field="notifications.type">ตอบรายงาน</span> · <time datetime="2026-10-05T14:20" data-field="notifications.created_at">เมื่อวาน 14:20</time></small>
-            </span>
-          </a>
-        </li>
-        <li>
-          <a class="unread" href="/plants/2">
-            <span class="rp-dot"></span>
-            <span class="rp-bell-text">
-              <span data-field="notifications.message">ถึงเวลาใส่ปุ๋ย ยางดำ แล้ว</span>
-              <small><span data-field="notifications.type">ถึงเวลาดูแล</span> · <time datetime="2026-10-05T08:00" data-field="notifications.created_at">เมื่อวาน 08:00</time></small>
-            </span>
-          </a>
-        </li>
-        <li>
-          <a href="/plants/2">
-            <span class="rp-dot"></span>
-            <span class="rp-bell-text">
-              <span data-field="notifications.message">ผู้ดูแลระบบปิดรายงาน "มีแมลงตัวเล็กใต้ใบ" แล้ว</span>
-              <small><span data-field="notifications.type">ตอบรายงาน</span> · <time datetime="2026-09-22T11:00" data-field="notifications.created_at">22 ก.ย. 2026</time></small>
-            </span>
-          </a>
-        </li>
-        <li>
-          <!-- SYSTEM ไม่มี plant_id เลยลิงก์ไปหน้าแจ้งเตือน -->
-          <a href="/notifications">
-            <span class="rp-dot"></span>
-            <span class="rp-bell-text">
-              <span data-field="notifications.message">ยินดีต้อนรับสู่ PlantPal เริ่มเพิ่มต้นไม้ต้นแรกของคุณได้เลย</span>
-              <small><span data-field="notifications.type">ระบบ</span> · <time datetime="2026-09-01T09:00" data-field="notifications.created_at">1 ก.ย. 2026</time></small>
+              <span th:text="${n.message}" data-field="notifications.message">ถึงเวลารดน้ำ ฟิโลหัวใจ แล้ว</span>
+              <small>
+                <span th:text="${@reportLabels.notificationType(n.type)}" data-field="notifications.type">ถึงเวลาดูแล</span>
+                · <time th:datetime="${n.createdAt}" th:text="${#temporals.format(n.createdAt, 'd MMM HH:mm')}"
+                        data-field="notifications.created_at">6 ต.ค. 08:00</time>
+              </small>
             </span>
           </a>
         </li>
       </ul>
+      <p class="muted small" style="padding: 16px; margin: 0; text-align: center"
+         th:if="${#lists.isEmpty(latestNotifications)}">ยังไม่มีการแจ้งเตือน</p>
 
       <a class="rp-bell-all" th:href="@{/notifications}" href="/notifications">ดูทั้งหมด</a>
     </div>

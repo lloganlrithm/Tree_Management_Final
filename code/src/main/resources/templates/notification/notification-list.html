@@ -4,327 +4,79 @@
 
   <body>
     <div class="app">
-      <aside
-        th:replace="~{fragments/layout :: sidebar('notifications')}"
-      ></aside>
+      <aside th:replace="~{fragments/layout :: sidebar('notifications')}"></aside>
 
       <div class="main">
         <header th:replace="~{fragments/layout :: topbar}"></header>
 
         <main class="content">
-          <link
-            rel="stylesheet"
-            th:href="@{/css/reports.css}"
-            href="/css/reports.css"
-          />
+          <link rel="stylesheet" th:href="@{/css/reports.css}" href="/css/reports.css" />
 
           <div class="page-head">
             <div>
               <h1>การแจ้งเตือน</h1>
-              <p>ยังไม่อ่าน <b id="unread-count">3</b> รายการ</p>
+              <!-- unreadCount มาจาก NotificationModelAdvice (ตัวเดียวกับเลขบนกระดิ่ง) -->
+              <p>ยังไม่อ่าน <b th:text="${unreadCount}">3</b> รายการ</p>
             </div>
-            <!-- ตอนต่อ Service: form POST /notifications/read-all -->
-            <button type="button" class="btn btn-soft" id="read-all">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path d="m3 12 5 5L18 7" />
-                <path d="m12 16 1 1L23 7" /></svg
-              >อ่านทั้งหมด
-            </button>
+            <form method="post" th:action="@{/notifications/read-all}" action="/notifications/read-all" data-live
+                  th:if="${unreadCount > 0}">
+              <button type="submit" class="btn btn-soft">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 12 5 5L18 7" /><path d="m12 16 1 1L23 7" /></svg>อ่านทั้งหมด
+              </button>
+            </form>
           </div>
+
+          <div class="rp-flash ok" th:if="${success}" th:text="${success}">อ่านแล้ว 3 รายการ</div>
+          <div class="rp-flash err" th:if="${error}" th:text="${error}">เกิดข้อผิดพลาด</div>
 
           <div class="card toolbar">
-            <div class="chips" data-target="#note-list">
-              <span class="label">ประเภท</span>
-              <button type="button" class="chip active" data-filter="all">
-                ทั้งหมด
-              </button>
-              <button type="button" class="chip" data-filter="unread">
-                ยังไม่อ่าน
-              </button>
-              <button type="button" class="chip" data-filter="CARE_DUE">
-                ถึงเวลาดูแล
-              </button>
-              <button type="button" class="chip" data-filter="HEALTH_REPLY">
-                ตอบรายงาน
-              </button>
-              <button type="button" class="chip" data-filter="SYSTEM">
-                ระบบ
-              </button>
+            <div class="chips">
+              <span class="label">แสดง</span>
+              <a class="chip" th:href="@{/notifications}" th:classappend="${!unread} ? 'active'" href="/notifications">ทั้งหมด</a>
+              <a class="chip" th:href="@{/notifications(unread=true)}" th:classappend="${unread} ? 'active'" href="/notifications?unread=true">ยังไม่อ่าน</a>
             </div>
           </div>
 
-          <ul
-            class="card notes-list"
-            id="note-list"
-            style="list-style: none; margin: 0; padding: 0"
-          >
-            <!-- CARE_DUE: ไอคอนบัวรดน้ำ + ลิงก์ไปต้นไม้ (plant_id) -->
-            <li class="note unread rp-nt-CARE_DUE" data-tags="CARE_DUE unread">
-              <span class="icon-tile"
-                ><svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"
-                  /></svg
-              ></span>
+          <ul class="card notes-list" style="list-style: none; margin: 0; padding: 0" th:unless="${notifications.isEmpty()}">
+            <li class="note" th:each="n : ${notifications.content}"
+                th:classappend="${(n.isRead ? '' : 'unread ') + 'rp-nt-' + n.type}">
+              <!-- ไอคอนตามประเภท: CARE_DUE หยดน้ำ / HEALTH_REPLY ฟองคำพูด / SYSTEM วงกลม i -->
+              <span class="icon-tile" th:switch="${n.type.name()}">
+                <svg th:case="'CARE_DUE'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z" /></svg>
+                <svg th:case="'HEALTH_REPLY'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z" /></svg>
+                <svg th:case="*" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8h.01M11 12h1v4h1" /></svg>
+              </span>
               <div class="body">
-                <span class="rp-type" data-field="notifications.type"
-                  >ถึงเวลาดูแล</span
-                >
-                <p class="rp-msg" data-field="notifications.message">
-                  ถึงเวลารดน้ำ ฟิโลหัวใจ แล้ว
-                </p>
-                <a
-                  class="open"
-                  href="/plants/1"
-                  data-field="notifications.plant_id"
-                  >ดูต้นไม้ →</a
-                >
+                <span class="rp-type" th:text="${@reportLabels.notificationType(n.type)}" data-field="notifications.type">ถึงเวลาดูแล</span>
+                <p class="rp-msg" th:text="${n.message}" data-field="notifications.message">ถึงเวลารดน้ำ ฟิโลหัวใจ แล้ว</p>
+                <a class="open" th:if="${n.plant != null}" th:href="@{/plants/{id}(id=${n.plant.id})}" href="/plants/1"
+                   data-field="notifications.plant_id">ดูต้นไม้ →</a>
               </div>
               <div class="side">
-                <time
-                  class="when"
-                  datetime="2026-10-06T08:00"
-                  data-field="notifications.created_at"
-                  >วันนี้ 08:00</time
-                >
-                <button type="button" class="btn btn-sm" data-mark-read>
-                  อ่านแล้ว
-                </button>
-              </div>
-            </li>
-
-            <!-- HEALTH_REPLY: admin ตอบรายงานสุขภาพ -->
-            <li
-              class="note unread rp-nt-HEALTH_REPLY"
-              data-tags="HEALTH_REPLY unread"
-            >
-              <span class="icon-tile"
-                ><svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"
-                  /></svg
-              ></span>
-              <div class="body">
-                <span class="rp-type" data-field="notifications.type"
-                  >ตอบรายงาน</span
-                >
-                <p class="rp-msg" data-field="notifications.message">
-                  ผู้ดูแลระบบตอบรายงาน "ใบเหลืองและมีจุดสีน้ำตาล" แล้ว
-                </p>
-                <a
-                  class="open"
-                  href="/plants/1"
-                  data-field="notifications.plant_id"
-                  >ดูต้นไม้ →</a
-                >
-              </div>
-              <div class="side">
-                <time
-                  class="when"
-                  datetime="2026-10-05T14:20"
-                  data-field="notifications.created_at"
-                  >เมื่อวาน 14:20</time
-                >
-                <button type="button" class="btn btn-sm" data-mark-read>
-                  อ่านแล้ว
-                </button>
-              </div>
-            </li>
-
-            <li class="note unread rp-nt-CARE_DUE" data-tags="CARE_DUE unread">
-              <span class="icon-tile"
-                ><svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"
-                  /></svg
-              ></span>
-              <div class="body">
-                <span class="rp-type" data-field="notifications.type"
-                  >ถึงเวลาดูแล</span
-                >
-                <p class="rp-msg" data-field="notifications.message">
-                  ถึงเวลาใส่ปุ๋ย ยางดำ แล้ว
-                </p>
-                <a
-                  class="open"
-                  href="/plants/2"
-                  data-field="notifications.plant_id"
-                  >ดูต้นไม้ →</a
-                >
-              </div>
-              <div class="side">
-                <time
-                  class="when"
-                  datetime="2026-10-05T08:00"
-                  data-field="notifications.created_at"
-                  >เมื่อวาน 08:00</time
-                >
-                <button type="button" class="btn btn-sm" data-mark-read>
-                  อ่านแล้ว
-                </button>
-              </div>
-            </li>
-
-            <!-- อ่านแล้ว: ไม่มี .unread และไม่มีปุ่ม -->
-            <li class="note rp-nt-HEALTH_REPLY" data-tags="HEALTH_REPLY">
-              <span class="icon-tile"
-                ><svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"
-                  /></svg
-              ></span>
-              <div class="body">
-                <span class="rp-type" data-field="notifications.type"
-                  >ตอบรายงาน</span
-                >
-                <p class="rp-msg" data-field="notifications.message">
-                  ผู้ดูแลระบบปิดรายงาน "มีแมลงตัวเล็กใต้ใบ" แล้ว
-                </p>
-                <a
-                  class="open"
-                  href="/plants/2"
-                  data-field="notifications.plant_id"
-                  >ดูต้นไม้ →</a
-                >
-              </div>
-              <div class="side">
-                <time
-                  class="when"
-                  datetime="2026-09-22T11:00"
-                  data-field="notifications.created_at"
-                  >22 ก.ย. 2026</time
-                >
-              </div>
-            </li>
-
-            <!-- SYSTEM: ไม่มี plant_id เลยไม่มีลิงก์ -->
-            <li class="note rp-nt-SYSTEM" data-tags="SYSTEM">
-              <span class="icon-tile"
-                ><svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <circle cx="12" cy="12" r="9" />
-                  <path d="M12 8h.01M11 12h1v4h1" /></svg
-              ></span>
-              <div class="body">
-                <span class="rp-type" data-field="notifications.type"
-                  >ระบบ</span
-                >
-                <p class="rp-msg" data-field="notifications.message">
-                  ยินดีต้อนรับสู่ PlantPal เริ่มเพิ่มต้นไม้ต้นแรกของคุณได้เลย
-                </p>
-              </div>
-              <div class="side">
-                <time
-                  class="when"
-                  datetime="2026-09-01T09:00"
-                  data-field="notifications.created_at"
-                  >1 ก.ย. 2026</time
-                >
+                <time class="when" th:datetime="${n.createdAt}" th:text="${#temporals.format(n.createdAt, 'd MMM yyyy HH:mm')}"
+                      data-field="notifications.created_at">วันนี้ 08:00</time>
+                <form method="post" th:action="@{/notifications/{id}/read(id=${n.id})}" data-live th:unless="${n.isRead}">
+                  <button type="submit" class="btn btn-sm">อ่านแล้ว</button>
+                </form>
               </div>
             </li>
           </ul>
 
-          <!-- ไม่มีการแจ้งเตือน: th:if="${#lists.isEmpty(notifications)}" -->
-          <div class="card card-pad muted" style="text-align: center" hidden>
-            ยังไม่มีการแจ้งเตือน
-          </div>
+          <div class="card card-pad muted" style="text-align: center" th:if="${notifications.isEmpty()}"
+               th:text="${unread} ? 'ไม่มีการแจ้งเตือนที่ยังไม่อ่าน' : 'ยังไม่มีการแจ้งเตือน'">ยังไม่มีการแจ้งเตือน</div>
+
+          <nav class="rp-pager" aria-label="แบ่งหน้า" th:if="${notifications.totalPages > 1}">
+            <a th:if="${notifications.hasPrevious()}" th:href="@{/notifications(unread=${unread}, page=${notifications.number - 1})}">ก่อนหน้า</a>
+            <span class="is-disabled" th:unless="${notifications.hasPrevious()}">ก่อนหน้า</span>
+            <span class="is-current" aria-current="page" th:text="${notifications.number + 1} + ' / ' + ${notifications.totalPages}">1 / 2</span>
+            <a th:if="${notifications.hasNext()}" th:href="@{/notifications(unread=${unread}, page=${notifications.number + 1})}">ถัดไป</a>
+            <span class="is-disabled" th:unless="${notifications.hasNext()}">ถัดไป</span>
+          </nav>
         </main>
         <footer th:replace="~{fragments/layout :: footer}"></footer>
       </div>
     </div>
 
     <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
-    <script>
-      (function () {
-        var list = document.getElementById("note-list");
-        var count = document.getElementById("unread-count");
-
-        // นับใหม่ทุกครั้งที่มีการกดอ่าน (ปุ่มอ่านทีละอันจัดการโดย app.js)
-        function refresh() {
-          list.querySelectorAll(".note").forEach(function (n) {
-            var tags = n.dataset.tags.split(" ").filter(function (t) {
-              return t !== "unread";
-            });
-            if (n.classList.contains("unread")) tags.push("unread");
-            n.dataset.tags = tags.join(" ");
-          });
-          count.textContent = list.querySelectorAll(".note.unread").length;
-        }
-
-        document
-          .getElementById("read-all")
-          .addEventListener("click", function () {
-            list.querySelectorAll(".note.unread").forEach(function (n) {
-              n.classList.remove("unread");
-              var btn = n.querySelector("[data-mark-read]");
-              if (btn) btn.remove();
-            });
-            refresh();
-          });
-
-        document.addEventListener("click", function (e) {
-          if (e.target.closest("[data-mark-read]")) setTimeout(refresh, 0);
-        });
-      })();
-    </script>
   </body>
 </html>

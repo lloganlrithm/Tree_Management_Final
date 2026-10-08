@@ -1,11 +1,14 @@
 package com.example.plantpal.controller.web;
 
 import com.example.plantpal.domain.entity.Plant;
+import com.example.plantpal.domain.entity.User;
 import com.example.plantpal.domain.enums.HealthStatus;
 import com.example.plantpal.dto.request.PlantRequest;
 import com.example.plantpal.plant.state.InvalidHealthTransitionException;
 import com.example.plantpal.plant.state.PlantHealthStates;
+import com.example.plantpal.service.CareService;
 import com.example.plantpal.service.CurrentUserService;
+import com.example.plantpal.service.HealthReportService;
 import com.example.plantpal.service.PlantService;
 import com.example.plantpal.service.SpeciesService;
 import jakarta.validation.Valid;
@@ -24,6 +27,8 @@ public class PlantController {
     private final PlantService plantService;
     private final SpeciesService speciesService;
     private final CurrentUserService currentUserService;
+    private final HealthReportService healthReportService;
+    private final CareService careService;
 
     // หน้ารายการต้นไม้ของฉัน (+ ค้นหาด้วย ?keyword=...)
     @GetMapping
@@ -43,6 +48,12 @@ public class PlantController {
             model.addAttribute("speciesList", speciesService.findAll());   // ใช้ใน dropdown ของฟอร์มแก้ไข
             model.addAttribute("nextStatuses", PlantHealthStates.nextOf(plant.getHealthStatus()));   // ปุ่มเปลี่ยนสถานะ
             model.addAttribute("canUndo", plantService.canUndo(id));   // มีการแก้ไขให้ย้อนไหม (Memento)
+            // รายงานสุขภาพของต้นนี้ ใช้ใน fragments/reports :: plantReports (ของเปรม)
+            model.addAttribute("plantReports", healthReportService.findByPlant(id, currentEmail()));
+            // ตารางดูแล + ประวัติการดูแลของต้นนี้ ใช้ใน fragments/care-detail :: plantCare (ของเปียโน)
+            User me = currentUserService.getCurrentUser();
+            model.addAttribute("plantSchedules", careService.findPlantSchedules(id, me));
+            model.addAttribute("plantCareLogs", careService.findPlantHistory(id, me));
             return "plants/detail";
         } catch (IllegalArgumentException e) {
             redirect.addFlashAttribute("error", e.getMessage());
