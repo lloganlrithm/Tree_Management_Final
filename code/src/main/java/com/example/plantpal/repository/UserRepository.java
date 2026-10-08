@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.example.plantpal.domain.entity.User;
+import com.example.plantpal.domain.enums.Role;
 
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
@@ -40,4 +41,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("select count(c) from CareLog c where c.plant.user.id = :userId")
     long countCareLogsByUserId(@Param("userId") Long userId);
+
+    // id ของผู้ใช้ตาม role ที่ยังเปิดใช้งานอยู่ (ใช้ส่งแจ้งเตือนถึง admin ทุกคน)
+    @Query("select u.id from User u where u.role = :role and u.isActive = true")
+    List<Long> findActiveIdsByRole(@Param("role") Role role);
 }
