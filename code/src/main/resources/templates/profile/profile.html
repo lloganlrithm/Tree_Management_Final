@@ -9,7 +9,7 @@
   <div class="main">
     <header th:replace="~{fragments/layout :: topbar}"></header>
 
-    <main class="content">
+    <main class="content profile-page">
       <div class="page-head">
         <div>
           <h1>โปรไฟล์</h1>
@@ -23,7 +23,7 @@
       <section class="card profile-head">
         <div class="avatar-lg">
           <!-- ยังไม่มีรูป ใช้น้องปุยแทน -->
-          <img th:src="${profile.avatarUrl != null} ? @{${profile.avatarUrl}} : @{/img/mascot.svg}" alt="รูปโปรไฟล์">
+          <img id="avatar-img" th:src="${profile.avatarUrl != null} ? @{${profile.avatarUrl}} : @{/img/mascot.svg}" alt="รูปโปรไฟล์">
         </div>
         <div class="grow">
           <div class="profile-title">
@@ -65,8 +65,9 @@
             <span class="field-label">รูปโปรไฟล์</span>
             <label class="drop" for="f-avatar">
               <span class="icon icon-upload"></span><br>
-              อัปโหลดรูปใหม่ (PNG, JPG, GIF, WEBP ไม่เกิน 5MB) · ถ้าไม่มีรูป ระบบจะแสดงน้องปุยแทน<br><span class="small" data-file-name></span>
-              <input type="file" id="f-avatar" name="avatar" accept="image/png,image/jpeg,image/gif,image/webp" hidden>
+              อัปโหลดรูปใหม่ (PNG, JPG, GIF, WEBP ไม่เกิน 5MB) · ถ้าไม่มีรูป ระบบจะแสดงน้องปุยแทน<br><span class="small file-name" data-file-name></span>
+              <img class="drop-preview" data-file-preview alt="รูปที่เลือก" hidden>
+              <input type="file" id="f-avatar" name="avatar" data-preview-target="#avatar-img" accept="image/png,image/jpeg,image/gif,image/webp" hidden>
             </label>
           </div>
         </div>
