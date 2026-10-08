@@ -138,20 +138,20 @@ class HealthReportServiceImplTest {
                 .hasMessage("ไม่พบรายงานนี้");
     }
 
-    // ---------- reply ----------
+    // ---------- reply (admin): ส่งคำแนะนำ = กำลังดำเนินการ, ปฏิเสธ = ปิดพร้อมเหตุผล ----------
 
     @Test
-    void replyResolvedClosesReportMarksPlantRecoveringAndPublishesEvent() {
-        HealthReport report = report(plant(HealthStatus.SICK), ReportStatus.IN_PROGRESS);
+    void answerMovesReportToInProgressMarksPlantSickAndPublishesEvent() {
+        HealthReport report = report(plant(HealthStatus.HEALTHY), ReportStatus.PENDING);
         when(healthReportRepository.findWithPlantById(1L)).thenReturn(Optional.of(report));
         when(healthReportRepository.save(report)).thenReturn(report);
 
-        HealthReport result = service.reply(1L, ReportStatus.RESOLVED, "  ลดการรดน้ำ  ");
+        HealthReport result = service.reply(1L, ReportStatus.IN_PROGRESS, "  ลดการรดน้ำ  ");
 
-        assertThat(result.getStatus()).isEqualTo(ReportStatus.RESOLVED);
+        assertThat(result.getStatus()).isEqualTo(ReportStatus.IN_PROGRESS);
         assertThat(result.getAdminReply()).isEqualTo("ลดการรดน้ำ");
-        assertThat(result.getResolvedAt()).isNotNull();                          // ปิดเรื่องแล้วมีเวลาปิด
-        verify(plantService).changeHealth(10L, HealthStatus.RECOVERING);         // State: SICK -> RECOVERING
+        assertThat(result.getResolvedAt()).isNull();                     // ยังไม่ปิด รอผู้ใช้บอกผล
+        verify(plantService).changeHealth(10L, HealthStatus.SICK);       // State: HEALTHY -> SICK
 
         // Observer: ส่ง event ไปให้ NotificationListener พร้อมข้อมูลเจ้าของต้นไม้
         ArgumentCaptor<ReportResolvedEvent> captor = ArgumentCaptor.forClass(ReportResolvedEvent.class);
@@ -159,48 +159,91 @@ class HealthReportServiceImplTest {
         ReportResolvedEvent event = captor.getValue();
         assertThat(event.getOwnerId()).isEqualTo(7L);
         assertThat(event.getPlantId()).isEqualTo(10L);
-        assertThat(event.getStatus()).isEqualTo(ReportStatus.RESOLVED);
+        assertThat(event.getStatus()).isEqualTo(ReportStatus.IN_PROGRESS);
     }
 
     @Test
-    void replyResolvedOnHealthyPlantKeepsHealthButStillSavesReply() {
-        // HEALTHY -> RECOVERING เปลี่ยนไม่ได้ตาม State ของโป้ย: ต้องข้าม ไม่ทำให้การตอบล้ม
-        HealthReport report = report(plant(HealthStatus.HEALTHY), ReportStatus.PENDING);
+    void answerOnDeadPlantKeepsHealthButStillSavesReply() {
+        // DEAD -> SICK เปลี่ยนไม่ได้ตาม State ของโป้ย: ข้ามการเปลี่ยนสถานะต้นไม้ ไม่ทำให้การตอบล้ม
+        HealthReport report = report(plant(HealthStatus.DEAD), ReportStatus.PENDING);
         when(healthReportRepository.findWithPlantById(1L)).thenReturn(Optional.of(report));
         when(healthReportRepository.save(report)).thenReturn(report);
 
-        HealthReport result = service.reply(1L, ReportStatus.RESOLVED, "ไม่มีอะไรน่าห่วง");
+        HealthReport result = service.reply(1L, ReportStatus.IN_PROGRESS, "ปลูกต้นใหม่ได้เลย");
 
-        assertThat(result.getStatus()).isEqualTo(ReportStatus.RESOLVED);
+        assertThat(result.getStatus()).isEqualTo(ReportStatus.IN_PROGRESS);
         verify(plantService, never()).changeHealth(any(), any());
         verify(eventPublisher).publishEvent(any(ReportResolvedEvent.class));
     }
 
     @Test
-    void replyInProgressReopensReportAndMarksPlantSick() {
-        HealthReport report = report(plant(HealthStatus.HEALTHY), ReportStatus.RESOLVED);
-        report.setResolvedAt(LocalDateTime.now().minusDays(1));
+    void rejectClosesReportWithReason() {
+        HealthReport report = report(plant(HealthStatus.HEALTHY), ReportStatus.PENDING);
         when(healthReportRepository.findWithPlantById(1L)).thenReturn(Optional.of(report));
         when(healthReportRepository.save(report)).thenReturn(report);
 
-        HealthReport result = service.reply(1L, ReportStatus.IN_PROGRESS, "");
+        HealthReport result = service.reply(1L, ReportStatus.REJECTED, "เป็นลายใบปกติของพันธุ์นี้");
 
-        assertThat(result.getResolvedAt()).isNull();         // เปิดเรื่องกลับมา = ล้างเวลาปิด
-        assertThat(result.getAdminReply()).isNull();          // คำตอบว่าง = ไม่มีคำตอบ
-        verify(plantService).changeHealth(10L, HealthStatus.SICK);
+        assertThat(result.getStatus()).isEqualTo(ReportStatus.REJECTED);
+        assertThat(result.getAdminReply()).isEqualTo("เป็นลายใบปกติของพันธุ์นี้");
+        assertThat(result.getResolvedAt()).isNotNull();
+        verify(plantService, never()).changeHealth(any(), any());   // ปฏิเสธ = ไม่แตะสถานะต้นไม้
+    }
+
+    @Test
+    void rejectWithoutReasonIsRefused() {
+        HealthReport report = report(plant(HealthStatus.HEALTHY), ReportStatus.PENDING);
+        when(healthReportRepository.findWithPlantById(1L)).thenReturn(Optional.of(report));
+
+        assertThatThrownBy(() -> service.reply(1L, ReportStatus.REJECTED, "   "))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessage("กรุณาเขียนเหตุผลที่ปฏิเสธ");
+        verify(healthReportRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void answerWithoutAdviceIsRefused() {
+        HealthReport report = report(plant(HealthStatus.HEALTHY), ReportStatus.PENDING);
+        when(healthReportRepository.findWithPlantById(1L)).thenReturn(Optional.of(report));
+
+        assertThatThrownBy(() -> service.reply(1L, ReportStatus.IN_PROGRESS, ""))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessage("กรุณาเขียนคำแนะนำ");
+    }
+
+    @Test
+    void adminCannotSetResolvedDirectly() {
+        // "แก้ไขแล้ว" ปิดได้โดยผู้ใช้กดดีขึ้นแล้ว หรือ job เท่านั้น
+        HealthReport report = report(plant(HealthStatus.SICK), ReportStatus.IN_PROGRESS);
+        when(healthReportRepository.findWithPlantById(1L)).thenReturn(Optional.of(report));
+
+        assertThatThrownBy(() -> service.reply(1L, ReportStatus.RESOLVED, "หายแล้ว"))
+                .isInstanceOf(InvalidRequestException.class);
+        assertThat(report.getStatus()).isEqualTo(ReportStatus.IN_PROGRESS);
+    }
+
+    @Test
+    void replyToClosedReportIsRefused() {
+        HealthReport report = report(plant(HealthStatus.RECOVERING), ReportStatus.RESOLVED);
+        when(healthReportRepository.findWithPlantById(1L)).thenReturn(Optional.of(report));
+
+        assertThatThrownBy(() -> service.reply(1L, ReportStatus.IN_PROGRESS, "x"))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessage("รายงานนี้ปิดไปแล้ว ตอบเพิ่มไม่ได้");
     }
 
     @Test
     void replyWithAdminChosenPlantStatusUsesItInsteadOfAutomatic() {
-        // admin เลือก "ตายแล้ว" เอง: ต้องใช้ค่าที่เลือก ไม่ใช่ค่าอัตโนมัติ (RESOLVED -> RECOVERING)
-        HealthReport report = report(plant(HealthStatus.SICK), ReportStatus.IN_PROGRESS);
+        // admin เลือก "ตายแล้ว" เอง: ต้องใช้ค่าที่เลือก ไม่ใช่ค่าอัตโนมัติ (ส่งคำแนะนำ -> SICK)
+        HealthReport report = report(plant(HealthStatus.SICK), ReportStatus.PENDING);
         when(healthReportRepository.findWithPlantById(1L)).thenReturn(Optional.of(report));
         when(healthReportRepository.save(report)).thenReturn(report);
 
-        service.reply(1L, ReportStatus.RESOLVED, "ต้นตายแล้ว", HealthStatus.DEAD);
+        service.reply(1L, ReportStatus.IN_PROGRESS, "ต้นตายแล้ว", HealthStatus.DEAD);
 
         verify(plantService).changeHealth(10L, HealthStatus.DEAD);
-        verify(plantService, never()).changeHealth(10L, HealthStatus.RECOVERING);
+        verify(plantService, never()).changeHealth(10L, HealthStatus.SICK);
     }
 
     @Test
@@ -212,7 +255,7 @@ class HealthReportServiceImplTest {
         when(plantService.changeHealth(10L, HealthStatus.HEALTHY))
                 .thenThrow(new InvalidHealthTransitionException(HealthStatus.DEAD, HealthStatus.HEALTHY));
 
-        assertThatThrownBy(() -> service.reply(1L, ReportStatus.RESOLVED, "x", HealthStatus.HEALTHY))
+        assertThatThrownBy(() -> service.reply(1L, ReportStatus.IN_PROGRESS, "x", HealthStatus.HEALTHY))
                 .isInstanceOf(InvalidHealthTransitionException.class);
         verify(eventPublisher, never()).publishEvent(any());
     }
@@ -304,7 +347,7 @@ class HealthReportServiceImplTest {
     void replyToMissingReportThrowsNotFoundAndPublishesNothing() {
         when(healthReportRepository.findWithPlantById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.reply(99L, ReportStatus.RESOLVED, "x"))
+        assertThatThrownBy(() -> service.reply(99L, ReportStatus.IN_PROGRESS, "x"))
                 .isInstanceOf(ResourceNotFoundException.class);
         verify(eventPublisher, never()).publishEvent(any());
     }

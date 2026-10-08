@@ -155,12 +155,14 @@ public class HealthReportServiceImpl implements HealthReportService {
     @Override
     public HealthReport reply(Long id, ReportStatus status, String adminReply, HealthStatus plantHealth) {
         HealthReport report = findById(id);
+        String reply = blankToNull(adminReply);
+        validateAdminReply(report, status, reply);
 
+        // สถานะเดินเองตามสิ่งที่ admin ทำ: ส่งคำแนะนำ = กำลังดำเนินการ, ปฏิเสธ = ปิดเรื่องพร้อมเหตุผล
+        // (ปิดเป็น "แก้ไขแล้ว" ทำได้เฉพาะผู้ใช้กด "ต้นไม้ดีขึ้นแล้ว" หรือ job ปิดรายงานที่เงียบนาน)
         report.setStatus(status);
-        report.setAdminReply(blankToNull(adminReply));
-        // RESOLVED / REJECTED = ปิดเรื่อง บันทึกเวลาปิด ถ้าเปิดกลับมาให้ล้างเวลาปิดออก
-        boolean closed = status == ReportStatus.RESOLVED || status == ReportStatus.REJECTED;
-        report.setResolvedAt(closed ? LocalDateTime.now() : null);
+        report.setAdminReply(reply);
+        report.setResolvedAt(status == ReportStatus.REJECTED ? LocalDateTime.now() : null);
         HealthReport saved = healthReportRepository.save(report);
 
         Plant plant = saved.getPlant();
@@ -175,6 +177,21 @@ public class HealthReportServiceImpl implements HealthReportService {
         eventPublisher.publishEvent(new ReportResolvedEvent(
                 saved.getId(), plant.getUser().getId(), plant.getId(), saved.getTitle(), status));
         return saved;
+    }
+
+    // admin ทำได้ 2 อย่าง: ส่งคำแนะนำ (IN_PROGRESS) หรือปฏิเสธ (REJECTED) และต้องเขียนข้อความเสมอ
+    private void validateAdminReply(HealthReport report, ReportStatus status, String reply) {
+        if (report.getStatus() == ReportStatus.RESOLVED || report.getStatus() == ReportStatus.REJECTED) {
+            throw new InvalidRequestException("รายงานนี้ปิดไปแล้ว ตอบเพิ่มไม่ได้");
+        }
+        if (status != ReportStatus.IN_PROGRESS && status != ReportStatus.REJECTED) {
+            throw new InvalidRequestException("ผู้ดูแลระบบทำได้แค่ส่งคำแนะนำ หรือปฏิเสธรายงาน");
+        }
+        if (reply == null) {
+            throw new InvalidRequestException(status == ReportStatus.REJECTED
+                    ? "กรุณาเขียนเหตุผลที่ปฏิเสธ"
+                    : "กรุณาเขียนคำแนะนำ");
+        }
     }
 
     // เปลี่ยนสถานะสุขภาพต้นไม้ตามผลการตรวจ ผ่าน State pattern ของโป้ย (ห้าม set healthStatus เอง)

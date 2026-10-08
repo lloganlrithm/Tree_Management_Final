@@ -5,6 +5,7 @@ import com.example.plantpal.domain.enums.ReportStatus;
 import com.example.plantpal.plant.state.InvalidHealthTransitionException;
 import com.example.plantpal.domain.enums.Severity;
 import com.example.plantpal.service.HealthReportService;
+import com.example.plantpal.exception.InvalidRequestException;
 import com.example.plantpal.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -38,7 +39,8 @@ public class AdminReportController {
         return "admin/admin-report-list";
     }
 
-    // แผงตอบรายงาน: เปลี่ยนสถานะ + เขียนคำตอบ แล้วกลับไปหน้าเดิมพร้อมตัวกรองเดิม
+    // แผงตอบรายงาน: ปุ่ม "ส่งคำแนะนำ" ส่ง status=IN_PROGRESS / ปุ่ม "ปฏิเสธ" ส่ง status=REJECTED
+    // แล้วกลับไปหน้าเดิมพร้อมตัวกรองเดิม
     @PostMapping("/reply")
     public String reply(@RequestParam Long id,
                         @RequestParam ReportStatus status,
@@ -48,8 +50,10 @@ public class AdminReportController {
                         RedirectAttributes redirect) {
         try {
             healthReportService.reply(id, status, adminReply, plantHealthStatus);
-            redirect.addFlashAttribute("success", "บันทึกคำตอบแล้ว ระบบแจ้งเตือนเจ้าของต้นไม้ให้แล้ว");
-        } catch (IllegalArgumentException | ResourceNotFoundException | InvalidHealthTransitionException e) {
+            redirect.addFlashAttribute("success", status == ReportStatus.REJECTED
+                    ? "ปฏิเสธรายงานแล้ว ระบบแจ้งเหตุผลให้เจ้าของต้นไม้แล้ว"
+                    : "ส่งคำแนะนำแล้ว รายงานเปลี่ยนเป็นกำลังดำเนินการ ระบบแจ้งเตือนเจ้าของต้นไม้แล้ว");
+        } catch (IllegalArgumentException | ResourceNotFoundException | InvalidRequestException | InvalidHealthTransitionException e) {
             redirect.addFlashAttribute("error", e.getMessage());
         }
         // back = query string ของตัวกรองเดิม เช่น status=PENDING&page=1

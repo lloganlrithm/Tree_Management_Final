@@ -39,7 +39,7 @@ class NotificationListenerTest {
         listener.onReportResolved(new ReportResolvedEvent(1L, 7L, 10L, "ใบเหลือง", ReportStatus.REJECTED));
 
         verify(notificationService).create(7L, 10L, NotificationType.HEALTH_REPLY,
-                "ผู้ดูแลระบบปิดรายงาน \"ใบเหลือง\" แล้ว");
+                "ผู้ดูแลระบบปฏิเสธรายงาน \"ใบเหลือง\" ดูเหตุผลในรายงานได้เลย");
     }
 
     // ---------- CareDueEvent ----------

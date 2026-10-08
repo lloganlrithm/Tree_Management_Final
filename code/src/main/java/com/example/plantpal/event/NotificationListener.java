@@ -26,8 +26,8 @@ public class NotificationListener {
     public void onReportResolved(ReportResolvedEvent event) {
         String message = switch (event.getStatus()) {
             case RESOLVED -> "รายงาน \"" + event.getReportTitle() + "\" แก้ไขแล้ว ดูคำแนะนำจากผู้ดูแลระบบได้เลย";
-            case REJECTED -> "ผู้ดูแลระบบปิดรายงาน \"" + event.getReportTitle() + "\" แล้ว";
-            case IN_PROGRESS -> "ผู้ดูแลระบบกำลังดูรายงาน \"" + event.getReportTitle() + "\" และตอบกลับแล้ว";
+            case REJECTED -> "ผู้ดูแลระบบปฏิเสธรายงาน \"" + event.getReportTitle() + "\" ดูเหตุผลในรายงานได้เลย";
+            case IN_PROGRESS -> "ผู้ดูแลระบบส่งคำแนะนำรายงาน \"" + event.getReportTitle() + "\" แล้ว ลองทำตามแล้วบอกผลได้เลย";
             case PENDING -> "ผู้ดูแลระบบตอบรายงาน \"" + event.getReportTitle() + "\" แล้ว";
         };
         notificationService.create(event.getOwnerId(), event.getPlantId(), NotificationType.HEALTH_REPLY, message);
