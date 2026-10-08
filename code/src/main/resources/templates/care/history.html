@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="th" xmlns:th="http://www.thymeleaf.org">
+
+<!--
+    หน้า C3: ประวัติการดูแล (care_logs)
+    CareHistoryController ส่งมาให้:
+      logs            = List<CareLog> ใหม่สุดก่อน (ทุกต้น หรือเฉพาะต้นที่เลือก)
+      onTimeCount     = จำนวนครั้งที่ทำภายในวันกำหนด
+      lateCount       = จำนวนครั้งที่ทำหลังวันกำหนด
+      plants          = ต้นไม้ของผู้ใช้ (dropdown)
+      selectedPlantId = ต้นที่เลือกอยู่ (null = ทุกต้น)
+-->
+
+<head>
+    <th:block th:replace="~{fragments/layout :: head('ประวัติการดูแล')}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/care-history.css}">
+</head>
+
+<body>
+
+    <div class="app">
+
+        <aside th:replace="~{fragments/layout :: sidebar('care')}"></aside>
+
+        <div class="main">
+
+            <header th:replace="~{fragments/layout :: topbar}"></header>
+
+            <main class="content">
+
+                <!-- Page Header -->
+                <div class="page-head">
+                    <div>
+                        <h1>ประวัติการดูแล</h1>
+                        <p>บันทึกทุกครั้งที่กด “ทำแล้ว” พร้อมบอกว่าทำตรงเวลาหรือช้า</p>
+                    </div>
+                    <a class="btn" th:href="@{/care}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M15 18l-6-6 6-6" />
+                        </svg>
+                        กลับไปหน้าการดูแล
+                    </a>
+                </div>
+
+                <!-- ตัวกรอง: เลือกต้นไม้ (ส่งไป controller) + ประเภทงาน (กรองในหน้า ใช้ chip ของ app.js) -->
+                <section class="card toolbar">
+                    <form class="ch-plant-filter" method="get" th:action="@{/care/history}" data-live>
+                        <label for="ch-plant">ต้นไม้:</label>
+                        <select class="select" id="ch-plant" name="plantId">
+                            <option value="">ทุกต้น</option>
+                            <option th:each="p : ${plants}" th:value="${p.id}"
+                                th:selected="${selectedPlantId != null and selectedPlantId == p.id}"
+                                th:text="${p.nickname != null and !#strings.isEmpty(p.nickname)} ? ${p.nickname} : ${p.species.name}">
+                                น้องเขียว</option>
+                        </select>
+                        <button class="btn btn-soft btn-sm" type="submit">ดู</button>
+                    </form>
+
+                    <div class="chips" data-target="#historyList">
+                        <span class="label">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M3 5h18l-7 8v6l-4-2v-4z" />
+                            </svg>
+                            ประเภท:
+                        </span>
+                        <button type="button" class="chip active" data-filter="all">ทั้งหมด</button>
+                        <button type="button" class="chip" data-filter="WATER">รดน้ำ</button>
+                        <button type="button" class="chip" data-filter="FERTILIZE">ใส่ปุ๋ย</button>
+                        <button type="button" class="chip" data-filter="REPOT">เปลี่ยนกระถาง</button>
+                        <button type="button" class="chip" data-filter="CHECK_SUNLIGHT">เช็กแดด</button>
+                        <button type="button" class="chip" data-filter="HEALTH_CHECK">ตรวจสุขภาพ</button>
+                    </div>
+                </section>
+
+                <section class="card card-pad">
+
+                    <div class="section-head">
+                        <div>
+                            <h2>บันทึกการดูแล</h2>
+                            <p class="muted small">เรียงจากล่าสุด</p>
+                        </div>
+                        <div class="ch-summary" th:unless="${logs.isEmpty()}">
+                            <span class="badge plain" th:text="'ทั้งหมด ' + ${logs.size()} + ' ครั้ง'">ทั้งหมด 0
+                                ครั้ง</span>
+                            <span class="badge s-HEALTHY" th:text="'ตรงเวลา ' + ${onTimeCount}">ตรงเวลา 0</span>
+                            <span class="badge s-CRITICAL" th:text="'ช้า ' + ${lateCount}">ช้า 0</span>
+                        </div>
+                    </div>
+
+                    <ul class="ch-list" id="historyList" th:unless="${logs.isEmpty()}">
+                        <th:block th:each="log : ${logs}">
+                            <li th:replace="~{fragments/care-detail :: careLogRow(${log})}"></li>
+                        </th:block>
+                    </ul>
+
+                    <!-- ยังไม่มีประวัติ -->
+                    <div class="empty" th:if="${logs.isEmpty()}">
+                        <div class="ch-empty-icon">🕘</div>
+                        <h3>ยังไม่มีประวัติการดูแล</h3>
+                        <p class="muted">กด “ทำแล้ว” ในหน้าการดูแล แล้วบันทึกจะขึ้นที่นี่</p>
+                    </div>
+
+                </section>
+
+            </main>
+
+        </div>
+
+    </div>
+
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+</body>
+
+</html>
