@@ -7,6 +7,7 @@ import com.example.plantpal.service.CurrentUserService;
 import com.example.plantpal.service.HealthReportService;
 import com.example.plantpal.service.PlantService;
 import jakarta.validation.Valid;
+import com.example.plantpal.exception.DuplicateReportException;
 import com.example.plantpal.exception.InvalidRequestException;
 import com.example.plantpal.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -63,6 +64,9 @@ public class ReportController {
             HealthReport report = healthReportService.create(request, currentEmail());
             redirect.addFlashAttribute("success", "ส่งรายงานแล้ว ผู้ดูแลระบบจะตอบกลับเร็วๆ นี้");
             return "redirect:/reports/" + report.getId();
+        } catch (DuplicateReportException e) {
+            model.addAttribute("openReportId", e.getOpenReportId());   // ทำลิงก์ไปรายงานเดิมในกล่องแดง
+            return showFormAgain(request, e.getMessage(), model);
         } catch (IllegalArgumentException | ResourceNotFoundException | InvalidRequestException | IllegalStateException e) {
             return showFormAgain(request, e.getMessage(), model);
         }

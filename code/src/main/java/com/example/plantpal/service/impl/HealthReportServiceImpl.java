@@ -7,6 +7,7 @@ import com.example.plantpal.domain.enums.ReportStatus;
 import com.example.plantpal.domain.enums.Severity;
 import com.example.plantpal.dto.request.HealthReportRequest;
 import com.example.plantpal.event.ReportResolvedEvent;
+import com.example.plantpal.exception.DuplicateReportException;
 import com.example.plantpal.exception.ResourceNotFoundException;
 import com.example.plantpal.plant.state.PlantHealthStates;
 import com.example.plantpal.repository.HealthReportRepository;
@@ -29,6 +30,9 @@ import java.util.List;
 @Transactional
 public class HealthReportServiceImpl implements HealthReportService {
 
+    // รายงานที่ยังไม่ปิด = รอตรวจ หรือ กำลังดำเนินการ
+    private static final List<ReportStatus> OPEN_STATUSES = List.of(ReportStatus.PENDING, ReportStatus.IN_PROGRESS);
+
     private final HealthReportRepository healthReportRepository;
     // เรียกผ่าน Service ไม่เรียก PlantRepository ตรงๆ 
     private final PlantService plantService;
@@ -39,6 +43,8 @@ public class HealthReportServiceImpl implements HealthReportService {
     public HealthReport create(HealthReportRequest request, String email) {
         // findMyPlant โยน error ถ้าต้นไม้ไม่ใช่ของคนที่ login อยู่ = เช็คความเป็นเจ้าของไปในตัว
         Plant plant = plantService.findMyPlant(request.getPlantId(), email);
+        // ต้นไม้ 1 ต้นมีรายงานที่ยังเปิดอยู่ได้ทีละ 1 อัน (เช็คก่อนอัปโหลดรูป จะได้ไม่อัปรูปทิ้งเปล่าๆ)
+        ensureNoOpenReport(plant.getId());
 
         HealthReport report = new HealthReport();
         report.setPlant(plant);
@@ -147,6 +153,14 @@ public class HealthReportServiceImpl implements HealthReportService {
         if (target != null && PlantHealthStates.of(plant.getHealthStatus()).canChangeTo(target)) {
             plantService.changeHealth(plant.getId(), target);
         }
+    }
+
+    private void ensureNoOpenReport(Long plantId) {
+        healthReportRepository.findFirstByPlantIdAndStatusInOrderByCreatedAtDesc(plantId, OPEN_STATUSES)
+                .ifPresent(open -> {
+                    throw new DuplicateReportException(
+                            "ต้นนี้มีรายงานที่ยังไม่ปิดอยู่แล้ว รอผู้ดูแลระบบตอบ หรืออัปเดตผลในรายงานเดิม", open.getId());
+                });
     }
 
     private String blankToNull(String value) {

@@ -8,6 +8,7 @@ import com.example.plantpal.domain.enums.ReportStatus;
 import com.example.plantpal.domain.enums.Severity;
 import com.example.plantpal.dto.request.HealthReportRequest;
 import com.example.plantpal.event.ReportResolvedEvent;
+import com.example.plantpal.exception.DuplicateReportException;
 import com.example.plantpal.exception.ResourceNotFoundException;
 import com.example.plantpal.plant.state.InvalidHealthTransitionException;
 import com.example.plantpal.repository.HealthReportRepository;
@@ -103,6 +104,24 @@ class HealthReportServiceImplTest {
         HealthReport result = service.create(request, EMAIL);
 
         assertThat(result.getImageUrl()).isEqualTo("https://res.cloudinary.com/demo/leaf.png");
+    }
+
+    @Test
+    void createWhenPlantHasOpenReportThrowsConflictAndUploadsNothing() {
+        // ต้นนี้มีรายงาน "รอตรวจ" อยู่แล้ว -> แจ้งซ้ำไม่ได้ และไม่อัปรูปทิ้งเปล่าๆ
+        when(plantService.findMyPlant(10L, EMAIL)).thenReturn(plant(HealthStatus.SICK));
+        HealthReport open = report(plant(HealthStatus.SICK), ReportStatus.PENDING);
+        open.setId(5L);
+        when(healthReportRepository.findFirstByPlantIdAndStatusInOrderByCreatedAtDesc(any(), any()))
+                .thenReturn(Optional.of(open));
+        HealthReportRequest request = request("ใบเหลืองอีกแล้ว", null);
+        request.setImage(new MockMultipartFile("image", "leaf.png", "image/png", new byte[] {1}));
+
+        assertThatThrownBy(() -> service.create(request, EMAIL))
+                .isInstanceOf(DuplicateReportException.class)
+                .extracting("openReportId").isEqualTo(5L);   // หน้าเว็บใช้ทำลิงก์ไปรายงานเดิม
+        verify(imageStorageService, never()).upload(any(), anyString());
+        verify(healthReportRepository, never()).save(any());
     }
 
     // ---------- findMyReport ----------
