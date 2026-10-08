@@ -73,6 +73,24 @@
               </div>
             </div>
           </div>
+
+          <!-- ===== เปลี่ยนสถานะสุขภาพ: แสดงเฉพาะปุ่มที่สถานะปัจจุบันอนุญาต (State pattern) ===== -->
+          <form method="post" th:action="@{/plants/{id}/health(id=${plant.id})}" data-live
+            th:unless="${#lists.isEmpty(nextStatuses)}"
+            style="display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:0 24px 24px;">
+            <span class="muted small">เปลี่ยนสถานะเป็น</span>
+            <button class="btn" type="submit" name="status" th:each="s : ${nextStatuses}" th:value="${s}"
+              th:classappend="${s.name() == 'DEAD'} ? 'btn-danger' : 'btn-soft'">
+              <th:block th:switch="${s.name()}">
+                <th:block th:case="'HEALTHY'">ปกติดี</th:block>
+                <th:block th:case="'SICK'">ป่วย</th:block>
+                <th:block th:case="'RECOVERING'">กำลังฟื้นตัว</th:block>
+                <th:block th:case="'DEAD'">ตายแล้ว</th:block>
+              </th:block>
+            </button>
+          </form>
+          <p class="muted small" th:if="${#lists.isEmpty(nextStatuses)}" style="padding:0 24px 24px;">
+            ต้นไม้นี้ตายแล้ว เปลี่ยนสถานะไม่ได้</p>
         </section>
 
         <!-- ===== ข้อมูลสายพันธุ์ (ตาราง species) ===== -->

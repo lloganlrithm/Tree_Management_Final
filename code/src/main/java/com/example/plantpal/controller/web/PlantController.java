@@ -1,6 +1,10 @@
 package com.example.plantpal.controller.web;
 
+import com.example.plantpal.domain.entity.Plant;
+import com.example.plantpal.domain.enums.HealthStatus;
 import com.example.plantpal.dto.request.PlantRequest;
+import com.example.plantpal.plant.state.InvalidHealthTransitionException;
+import com.example.plantpal.plant.state.PlantHealthStates;
 import com.example.plantpal.service.CurrentUserService;
 import com.example.plantpal.service.PlantService;
 import com.example.plantpal.service.SpeciesService;
@@ -34,8 +38,10 @@ public class PlantController {
     @GetMapping("/{id}")
     public String detail(@PathVariable Long id, Model model, RedirectAttributes redirect) {
         try {
-            model.addAttribute("plant", plantService.findMyPlant(id, currentEmail()));
+            Plant plant = plantService.findMyPlant(id, currentEmail());
+            model.addAttribute("plant", plant);
             model.addAttribute("speciesList", speciesService.findAll());   // ใช้ใน dropdown ของฟอร์มแก้ไข
+            model.addAttribute("nextStatuses", PlantHealthStates.nextOf(plant.getHealthStatus()));   // ปุ่มเปลี่ยนสถานะ
             return "plants/detail";
         } catch (IllegalArgumentException e) {
             redirect.addFlashAttribute("error", e.getMessage());
@@ -67,6 +73,20 @@ public class PlantController {
             redirect.addFlashAttribute("error", e.getMessage());
         }
         return back;
+    }
+
+    // เปลี่ยนสถานะสุขภาพ: object สถานะปัจจุบันตัดสินว่าเปลี่ยนได้ไหม (State pattern)
+    @PostMapping("/{id}/health")
+    public String changeHealth(@PathVariable Long id,
+                               @RequestParam HealthStatus status,
+                               RedirectAttributes redirect) {
+        try {
+            plantService.changeMyPlantHealth(id, currentEmail(), status);
+            redirect.addFlashAttribute("success", "เปลี่ยนสถานะสุขภาพแล้ว");
+        } catch (IllegalArgumentException | InvalidHealthTransitionException e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/plants/" + id;
     }
 
     @PostMapping("/delete")

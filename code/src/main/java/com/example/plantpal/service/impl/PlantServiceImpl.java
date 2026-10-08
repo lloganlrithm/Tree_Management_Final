@@ -3,8 +3,10 @@ package com.example.plantpal.service.impl;
 import com.example.plantpal.domain.entity.Plant;
 import com.example.plantpal.domain.entity.Species;
 import com.example.plantpal.domain.entity.User;
+import com.example.plantpal.domain.enums.HealthStatus;
 import com.example.plantpal.dto.request.PlantRequest;
 import com.example.plantpal.event.PlantCreatedEvent;
+import com.example.plantpal.plant.state.PlantHealthStates;
 import com.example.plantpal.repository.PlantRepository;
 import com.example.plantpal.repository.SpeciesRepository;
 import com.example.plantpal.repository.UserRepository;
@@ -69,6 +71,25 @@ public class PlantServiceImpl implements PlantService {
     public void delete(Long id, String email) {
         Plant plant = findMyPlant(id, email);
         plantRepository.delete(plant);   // cascade ลบ care/report ของต้นนี้ตาม
+    }
+
+    @Override
+    public Plant changeMyPlantHealth(Long id, String email, HealthStatus target) {
+        Plant plant = findMyPlant(id, email);   // เช็คความเป็นเจ้าของ
+        return applyHealth(plant, target);
+    }
+
+    @Override
+    public Plant changeHealth(Long plantId, HealthStatus target) {
+        Plant plant = plantRepository.findById(plantId)
+                .orElseThrow(() -> new IllegalArgumentException("ไม่พบต้นไม้นี้"));
+        return applyHealth(plant, target);
+    }
+
+    // ให้ object สถานะปัจจุบันเป็นคนตัดสินว่าเปลี่ยนได้ไหม (State pattern)
+    private Plant applyHealth(Plant plant, HealthStatus target) {
+        PlantHealthStates.of(plant.getHealthStatus()).changeTo(plant, target);
+        return plantRepository.save(plant);
     }
 
     // ใช้ร่วมกันระหว่าง create และ update: คัดค่าจากฟอร์มลง entity
