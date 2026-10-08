@@ -5,6 +5,7 @@ import com.example.plantpal.domain.entity.CareSchedule;
 import com.example.plantpal.domain.entity.Plant;
 import com.example.plantpal.domain.entity.User;
 import com.example.plantpal.domain.enums.ActionType;
+import com.example.plantpal.dto.response.CareHistorySummary;
 import com.example.plantpal.event.PlantCreatedEvent;
 import com.example.plantpal.repository.CareLogRepository;
 import com.example.plantpal.repository.CareScheduleRepository;
@@ -73,6 +74,23 @@ public class CareServiceImpl implements CareService {
     @Override
     public List<CareLog> findPlantHistory(Long plantId, User user) {
         return careLogRepository.findHistoryByPlantAndOwner(plantId, user.getId());
+    }
+
+    @Override
+    public CareHistorySummary getHistorySummary(User user, Long plantId) {
+        List<CareLog> logs = (plantId == null)
+                ? findHistory(user)
+                : findPlantHistory(plantId, user);
+
+        long lateCount = logs.stream().filter(this::isLate).count();
+        long onTimeCount = logs.stream().filter(l -> l.getDueDate() != null && !isLate(l)).count();
+        return new CareHistorySummary(logs, onTimeCount, lateCount);
+    }
+
+    @Override
+    public boolean isLate(CareLog log) {
+        return log.getDueDate() != null
+                && log.getPerformedAt().toLocalDate().isAfter(log.getDueDate());
     }
 
     @Override
