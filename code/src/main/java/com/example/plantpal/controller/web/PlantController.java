@@ -2,6 +2,7 @@ package com.example.plantpal.controller.web;
 
 import com.example.plantpal.dto.request.PlantRequest;
 import com.example.plantpal.service.CurrentUserService;
+import com.example.plantpal.service.HealthReportService;
 import com.example.plantpal.service.PlantService;
 import com.example.plantpal.service.SpeciesService;
 import jakarta.validation.Valid;
@@ -20,6 +21,7 @@ public class PlantController {
     private final PlantService plantService;
     private final SpeciesService speciesService;
     private final CurrentUserService currentUserService;
+    private final HealthReportService healthReportService;
 
     // หน้ารายการต้นไม้ของฉัน (+ ค้นหาด้วย ?keyword=...)
     @GetMapping
@@ -36,6 +38,8 @@ public class PlantController {
         try {
             model.addAttribute("plant", plantService.findMyPlant(id, currentEmail()));
             model.addAttribute("speciesList", speciesService.findAll());   // ใช้ใน dropdown ของฟอร์มแก้ไข
+            // รายงานสุขภาพของต้นนี้ ใช้ใน fragments/reports :: plantReports (ของเปรม)
+            model.addAttribute("plantReports", healthReportService.findByPlant(id, currentEmail()));
             return "plants/detail";
         } catch (IllegalArgumentException e) {
             redirect.addFlashAttribute("error", e.getMessage());
