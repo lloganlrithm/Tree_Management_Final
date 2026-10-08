@@ -77,8 +77,8 @@ public class GlobalExceptionHandler {
     }
 
     // ---------- 409: ขัดกับข้อมูล/สถานะที่มีอยู่ ----------
-    @ExceptionHandler(InvalidHealthTransitionException.class)
-    public ResponseEntity<ErrorResponse> handleStateConflict(InvalidHealthTransitionException e, HttpServletRequest req) {
+    @ExceptionHandler(DuplicateReportException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateReport(DuplicateReportException e, HttpServletRequest req) {
         return build(HttpStatus.CONFLICT, e.getMessage(), req);
     }
 
