@@ -19,8 +19,7 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-// แปลง exception จาก REST API (/api/**) เป็น JSON รูปแบบเดียวกันทั้งระบบ (ErrorResponse)
-// จำกัดแค่ controller/api หน้าเว็บ Thymeleaf ยังใช้ error.html เหมือนเดิม
+
 @Slf4j
 @RestControllerAdvice(basePackages = "com.example.plantpal.controller.api")
 public class GlobalExceptionHandler {
@@ -43,7 +42,7 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, e.getMessage(), req);
     }
 
-    // ---------- 400: @Valid ไม่ผ่าน -> บอกทีละช่อง ----------
+    // ---------- 400: @Valid ไม่ผ่าน  ----------
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException e, HttpServletRequest req) {
         Map<String, String> fieldErrors = new LinkedHashMap<>();
@@ -54,7 +53,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(body);
     }
 
-    // ---------- 400: ส่งข้อมูลมาผิดรูปแบบ ----------
+    // ---------- 400: ส่งข้อมูลมาผิดรูปแบบจ้า ----------
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleUnreadable(HttpMessageNotReadableException e, HttpServletRequest req) {
         return build(HttpStatus.BAD_REQUEST, "รูปแบบ JSON ไม่ถูกต้อง", req);
@@ -77,8 +76,8 @@ public class GlobalExceptionHandler {
     }
 
     // ---------- 409: ขัดกับข้อมูล/สถานะที่มีอยู่ ----------
-    @ExceptionHandler(InvalidHealthTransitionException.class)
-    public ResponseEntity<ErrorResponse> handleStateConflict(InvalidHealthTransitionException e, HttpServletRequest req) {
+    @ExceptionHandler({InvalidHealthTransitionException.class, DuplicateReportException.class})
+    public ResponseEntity<ErrorResponse> handleConflict(RuntimeException e, HttpServletRequest req) {
         return build(HttpStatus.CONFLICT, e.getMessage(), req);
     }
 
@@ -87,7 +86,7 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.CONFLICT, "ข้อมูลซ้ำหรือขัดกับข้อมูลอื่นในระบบ", req);
     }
 
-    // ---------- 500: ที่เหลือทั้งหมด (ไม่ส่งรายละเอียดภายในออกไป) ----------
+    // ---------- 500 ----------
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpected(Exception e, HttpServletRequest req) {
         log.error("Unexpected error at {}", req.getRequestURI(), e);
