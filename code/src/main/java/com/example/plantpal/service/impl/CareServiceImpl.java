@@ -63,6 +63,23 @@ public class CareServiceImpl implements CareService {
         return careScheduleRepository.findAllActiveDueBefore(today);
     }
 
+    // ===== ประวัติการดูแล (C3) =====
+
+    @Override
+    public List<CareLog> findHistory(User user) {
+        return careLogRepository.findHistoryByOwner(user.getId());
+    }
+
+    @Override
+    public List<CareLog> findPlantHistory(Long plantId, User user) {
+        return careLogRepository.findHistoryByPlantAndOwner(plantId, user.getId());
+    }
+
+    @Override
+    public List<CareSchedule> findPlantSchedules(Long plantId, User user) {
+        return careScheduleRepository.findActiveByPlantAndOwner(plantId, user.getId());
+    }
+
     @Override
     @Transactional
     public CareLog markDone(Long scheduleId, User user, String notes) {
