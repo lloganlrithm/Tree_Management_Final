@@ -9,6 +9,7 @@ import com.example.plantpal.dto.request.ReportFollowUpRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface HealthReportService {
@@ -36,6 +37,13 @@ public interface HealthReportService {
 
     // รายงานของต้นไม้ 1 ต้น ใช้ใน fragment หน้ารายละเอียดต้นไม้
     List<HealthReport> findByPlant(Long plantId, String email);
+
+    // ---- ระบบ (job รายวัน) ----
+    // รายงาน "กำลังดำเนินการ" ที่สร้างก่อน before
+    List<HealthReport> findStaleInProgress(LocalDateTime before);
+
+    // ปิดรายงานที่เงียบนานเป็น "แก้ไขแล้ว" + แจ้งเจ้าของ
+    void autoClose(HealthReport report, int staleDays);
 
     // ---- Admin ----
     HealthReport findById(Long id);

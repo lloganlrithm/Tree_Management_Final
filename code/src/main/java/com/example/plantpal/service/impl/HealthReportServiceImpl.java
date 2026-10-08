@@ -7,6 +7,7 @@ import com.example.plantpal.domain.enums.ReportStatus;
 import com.example.plantpal.domain.enums.Severity;
 import com.example.plantpal.dto.request.HealthReportRequest;
 import com.example.plantpal.dto.request.ReportFollowUpRequest;
+import com.example.plantpal.event.ReportAutoClosedEvent;
 import com.example.plantpal.event.ReportResolvedEvent;
 import com.example.plantpal.exception.DuplicateReportException;
 import com.example.plantpal.exception.InvalidRequestException;
@@ -116,6 +117,24 @@ public class HealthReportServiceImpl implements HealthReportService {
         next.setImageUrl(imageUrl);
         // status = PENDING ตาม default ใน entity -> ขึ้นในหน้า admin เป็นรายงานรอตรวจ
         return healthReportRepository.save(next);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<HealthReport> findStaleInProgress(LocalDateTime before) {
+        return healthReportRepository.findByStatusAndCreatedAtBefore(ReportStatus.IN_PROGRESS, before);
+    }
+
+    @Override
+    public void autoClose(HealthReport report, int staleDays) {
+        // ไม่แตะสถานะต้นไม้: ไม่รู้ว่าดีขึ้นหรือไม่ แค่ปิดเรื่องที่ค้าง ถ้ายังมีปัญหาผู้ใช้แจ้งใหม่ได้
+        report.setStatus(ReportStatus.RESOLVED);
+        report.setResolvedAt(LocalDateTime.now());
+        healthReportRepository.save(report);
+
+        Plant plant = report.getPlant();
+        eventPublisher.publishEvent(new ReportAutoClosedEvent(
+                report.getId(), plant.getUser().getId(), plant.getId(), report.getTitle(), staleDays));
     }
 
     @Override

@@ -46,6 +46,15 @@ public class NotificationListener {
         notificationService.create(event.getOwnerId(), event.getPlantId(), NotificationType.CARE_DUE, message);
     }
 
+    // ผู้ฟังตัวที่ 3: job ปิดรายงานที่เงียบนาน -> บอกเจ้าของว่าปิดแล้ว และแจ้งใหม่ได้ถ้ายังมีปัญหา
+    @TransactionalEventListener
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void onReportAutoClosed(ReportAutoClosedEvent event) {
+        String message = "ปิดรายงาน \"" + event.getReportTitle() + "\" อัตโนมัติ เพราะไม่มีการบอกผลเกิน "
+                + event.getStaleDays() + " วัน ถ้ายังมีปัญหาแจ้งใหม่ได้เลย";
+        notificationService.create(event.getOwnerId(), event.getPlantId(), NotificationType.SYSTEM, message);
+    }
+
     private String actionLabel(ActionType type) {
         return switch (type) {
             case WATER -> "รดน้ำ";

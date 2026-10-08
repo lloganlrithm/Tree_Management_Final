@@ -42,6 +42,14 @@ class NotificationListenerTest {
                 "ผู้ดูแลระบบปฏิเสธรายงาน \"ใบเหลือง\" ดูเหตุผลในรายงานได้เลย");
     }
 
+    @Test
+    void autoClosedReportTellsOwnerTheyCanReportAgain() {
+        listener.onReportAutoClosed(new ReportAutoClosedEvent(1L, 7L, 10L, "ใบเหลือง", 14));
+
+        verify(notificationService).create(7L, 10L, NotificationType.SYSTEM,
+                "ปิดรายงาน \"ใบเหลือง\" อัตโนมัติ เพราะไม่มีการบอกผลเกิน 14 วัน ถ้ายังมีปัญหาแจ้งใหม่ได้เลย");
+    }
+
     // ---------- CareDueEvent ----------
 
     @Test

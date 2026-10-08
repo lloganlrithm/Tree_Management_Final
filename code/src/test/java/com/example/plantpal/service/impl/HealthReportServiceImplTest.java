@@ -7,6 +7,7 @@ import com.example.plantpal.domain.enums.HealthStatus;
 import com.example.plantpal.domain.enums.ReportStatus;
 import com.example.plantpal.domain.enums.Severity;
 import com.example.plantpal.dto.request.HealthReportRequest;
+import com.example.plantpal.event.ReportAutoClosedEvent;
 import com.example.plantpal.event.ReportResolvedEvent;
 import com.example.plantpal.dto.request.ReportFollowUpRequest;
 import com.example.plantpal.exception.DuplicateReportException;
@@ -341,6 +342,25 @@ class HealthReportServiceImplTest {
                 .isInstanceOf(InvalidRequestException.class);
         assertThat(previous.getStatus()).isEqualTo(ReportStatus.IN_PROGRESS);
         verify(healthReportRepository, never()).save(any());
+    }
+
+    // ---------- job ปิดรายงานที่เงียบนาน ----------
+
+    @Test
+    void autoCloseResolvesReportKeepsPlantHealthAndNotifiesOwner() {
+        HealthReport report = report(plant(HealthStatus.SICK), ReportStatus.IN_PROGRESS);
+
+        service.autoClose(report, 14);
+
+        assertThat(report.getStatus()).isEqualTo(ReportStatus.RESOLVED);
+        assertThat(report.getResolvedAt()).isNotNull();
+        verify(healthReportRepository).save(report);
+        verify(plantService, never()).changeHealth(any(), any());   // ไม่รู้ผลจริง เลยไม่แตะสถานะต้นไม้
+
+        ArgumentCaptor<ReportAutoClosedEvent> captor = ArgumentCaptor.forClass(ReportAutoClosedEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().getOwnerId()).isEqualTo(7L);
+        assertThat(captor.getValue().getStaleDays()).isEqualTo(14);
     }
 
     @Test
