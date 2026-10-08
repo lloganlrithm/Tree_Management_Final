@@ -17,6 +17,7 @@
       <a class="back" th:href="@{/reports}" href="/reports"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>รายงานของฉัน</a>
 
       <div class="rp-flash ok" th:if="${success}" th:text="${success}">ส่งรายงานแล้ว</div>
+      <div class="rp-flash err" th:if="${error}" th:text="${error}">เกิดข้อผิดพลาด</div>
 
       <div class="page-head">
         <div>
@@ -73,6 +74,18 @@
             <p class="reply wait" th:if="${report.adminReply == null}">รอผู้ดูแลระบบตอบกลับ</p>
           </section>
 
+          <!-- admin ตอบแล้ว (กำลังดำเนินการ): ผู้ใช้บอกผลหลังทำตามคำแนะนำ -->
+          <section class="card card-pad" th:if="${report.status.name() == 'IN_PROGRESS'}">
+            <div class="section-head"><h2>ทำตามคำแนะนำแล้วเป็นยังไงบ้าง</h2></div>
+            <div class="rp-followup-actions">
+              <form method="post" th:action="@{/reports/{id}/improved(id=${report.id})}" data-live>
+                <button type="submit" class="btn btn-primary">ต้นไม้ดีขึ้นแล้ว</button>
+              </form>
+              <button type="button" class="btn" data-open="followup-modal">ยังไม่ดีขึ้น</button>
+            </div>
+            <span class="hint">"ดีขึ้นแล้ว" จะปิดเรื่อง / "ยังไม่ดีขึ้น" ส่งอาการและรูปใหม่ให้ผู้ดูแลระบบตรวจอีกรอบ</span>
+          </section>
+
           <section class="card card-pad">
             <div class="section-head"><h2>ความคืบหน้า</h2></div>
             <ol class="rp-steps">
@@ -94,11 +107,93 @@
           </section>
         </div>
       </div>
+
+      <!-- ประวัติรายงานทุกรอบของต้นนี้ (แสดงเมื่อมีมากกว่า 1 รอบ) -->
+      <section class="card card-pad" th:if="${plantHistory != null and plantHistory.size() > 1}">
+        <div class="section-head"><h2>ประวัติรายงานของต้นนี้</h2></div>
+        <ul class="rp-mini">
+          <li th:each="h : ${plantHistory}" th:classappend="${h.id == report.id} ? 'is-current'">
+            <a th:href="@{/reports/{id}(id=${h.id})}" href="/reports/1">
+              <span class="grow">
+                <b th:text="${h.title}">ใบเหลือง</b>
+                <time class="muted small" th:datetime="${h.createdAt}" th:text="${#temporals.format(h.createdAt, 'd MMM yyyy')}">4 ต.ค. 2026</time>
+              </span>
+              <span class="muted small" th:if="${h.id == report.id}">รายงานนี้</span>
+              <span class="badge" th:classappend="'st-' + ${h.status}" th:text="${@reportLabels.status(h.status)}">แก้ไขแล้ว</span>
+            </a>
+          </li>
+        </ul>
+      </section>
+
+      <!-- แผง "ยังไม่ดีขึ้น": อาการตอนนี้ + รูปใหม่ (ไม่บังคับทั้งคู่) -->
+      <div class="modal-backdrop" id="followup-modal" hidden th:if="${report.status.name() == 'IN_PROGRESS'}">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="followup-title">
+          <div class="modal-head">
+            <div>
+              <h2 id="followup-title">ยังไม่ดีขึ้น</h2>
+              <p>ระบบจะปิดรอบนี้แล้วเปิดรายงานติดตามผลให้ผู้ดูแลระบบตรวจอีกรอบ</p>
+            </div>
+            <button type="button" class="btn btn-icon" data-close aria-label="ปิด"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          </div>
+          <form method="post" th:action="@{/reports/{id}/follow-up(id=${report.id})}" data-live enctype="multipart/form-data">
+            <div class="modal-body">
+              <div class="field">
+                <label for="followup-message">อาการตอนนี้</label>
+                <textarea class="textarea" id="followup-message" name="message" maxlength="2000"
+                          placeholder="เช่น ทำตามแล้ว ใบยังเหลืองอยู่ เริ่มลามไปใบบน"></textarea>
+              </div>
+              <div class="field">
+                <label for="followup-image">รูปตอนนี้</label>
+                <input class="input" type="file" id="followup-image" name="image" accept="image/*">
+                <span class="hint">ไม่บังคับ (PNG, JPG, GIF, WEBP) ไม่เกิน 5MB รูปเดิมยังอยู่ในรายงานรอบก่อน</span>
+                <div class="rp-preview" id="followup-preview" aria-live="polite">พรีวิวรูปจะแสดงที่นี่</div>
+                <button type="button" class="btn btn-sm btn-danger" id="followup-remove" hidden>ลบรูปนี้</button>
+              </div>
+            </div>
+            <div class="modal-foot form-actions">
+              <button type="button" class="btn" data-close>ยกเลิก</button>
+              <button type="submit" class="btn btn-primary">ส่งติดตามผล</button>
+            </div>
+          </form>
+        </div>
+      </div>
     </main>
     <footer th:replace="~{fragments/layout :: footer}"></footer>
   </div>
 </div>
 
 <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<script>
+  // พรีวิวรูปในแผง "ยังไม่ดีขึ้น" + เช็คชนิด/ขนาด + ปุ่มลบรูป (กติกาเดียวกับฟอร์มแจ้งปัญหา)
+  (function () {
+    var input = document.getElementById("followup-image");
+    if (!input) return;   // ไม่ใช่รายงานที่กำลังดำเนินการ ไม่มีแผงนี้
+    var box = document.getElementById("followup-preview");
+    var remove = document.getElementById("followup-remove");
+    var empty = box.textContent;
+    var MAX = 5 * 1024 * 1024;
+    var ALLOWED = ["image/png", "image/jpeg", "image/gif", "image/webp"];
+
+    function clearImage(message) {
+      input.value = "";
+      box.textContent = message || empty;
+      remove.hidden = true;
+    }
+
+    input.addEventListener("change", function () {
+      var file = input.files[0];
+      if (!file) { clearImage(); return; }
+      if (ALLOWED.indexOf(file.type) === -1) { clearImage("รองรับเฉพาะรูป PNG, JPG, GIF หรือ WEBP เลือกรูปใหม่"); return; }
+      if (file.size > MAX) { clearImage("ไฟล์ใหญ่เกิน 5MB เลือกรูปใหม่"); return; }
+      var img = new Image();
+      img.alt = "พรีวิวรูปที่แนบ";
+      img.src = URL.createObjectURL(file);
+      box.textContent = "";
+      box.appendChild(img);
+      remove.hidden = false;
+    });
+    remove.addEventListener("click", function () { clearImage(); });
+  })();
+</script>
 </body>
 </html>

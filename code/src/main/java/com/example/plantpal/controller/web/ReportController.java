@@ -3,6 +3,7 @@ package com.example.plantpal.controller.web;
 import com.example.plantpal.domain.entity.HealthReport;
 import com.example.plantpal.domain.enums.ReportStatus;
 import com.example.plantpal.dto.request.HealthReportRequest;
+import com.example.plantpal.dto.request.ReportFollowUpRequest;
 import com.example.plantpal.service.CurrentUserService;
 import com.example.plantpal.service.HealthReportService;
 import com.example.plantpal.service.PlantService;
@@ -75,11 +76,46 @@ public class ReportController {
     @GetMapping("/{id}")
     public String detail(@PathVariable Long id, Model model, RedirectAttributes redirect) {
         try {
-            model.addAttribute("report", healthReportService.findMyReport(id, currentEmail()));
+            HealthReport report = healthReportService.findMyReport(id, currentEmail());
+            model.addAttribute("report", report);
+            // ประวัติรายงานทุกรอบของต้นนี้ (รวมรอบติดตามผล) ใหม่สุดก่อน
+            model.addAttribute("plantHistory", healthReportService.findByPlant(report.getPlant().getId(), currentEmail()));
             return "reports/report-detail";
         } catch (IllegalArgumentException | ResourceNotFoundException e) {
             redirect.addFlashAttribute("error", e.getMessage());
             return "redirect:/reports";
+        }
+    }
+
+    // ผู้ใช้กด "ต้นไม้ดีขึ้นแล้ว" (รายงานที่กำลังดำเนินการ)
+    @PostMapping("/{id}/improved")
+    public String improved(@PathVariable Long id, RedirectAttributes redirect) {
+        try {
+            healthReportService.markImproved(id, currentEmail());
+            redirect.addFlashAttribute("success", "ปิดเรื่องแล้ว ดีใจด้วยที่ต้นไม้ดีขึ้น");
+        } catch (IllegalArgumentException | ResourceNotFoundException | InvalidRequestException e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/reports/" + id;
+    }
+
+    // ผู้ใช้กด "ยังไม่ดีขึ้น" + อาการ / รูปใหม่ -> ปิดรอบเดิม เปิดรายงานติดตามผล แล้วพาไปรายงานใหม่
+    @PostMapping("/{id}/follow-up")
+    public String followUp(@PathVariable Long id,
+                           @Valid @ModelAttribute ReportFollowUpRequest request,
+                           BindingResult result,
+                           RedirectAttributes redirect) {
+        if (result.hasErrors()) {
+            redirect.addFlashAttribute("error", result.getAllErrors().get(0).getDefaultMessage());
+            return "redirect:/reports/" + id;
+        }
+        try {
+            HealthReport next = healthReportService.followUp(id, request, currentEmail());
+            redirect.addFlashAttribute("success", "ส่งติดตามผลแล้ว ผู้ดูแลระบบจะตรวจอีกรอบ");
+            return "redirect:/reports/" + next.getId();
+        } catch (IllegalArgumentException | ResourceNotFoundException | InvalidRequestException | IllegalStateException e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+            return "redirect:/reports/" + id;
         }
     }
 

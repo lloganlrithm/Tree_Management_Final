@@ -61,6 +61,10 @@
 .rp-steps b { display: block; font-size: .92rem; }
 .rp-steps time, .rp-steps small { font-size: .84rem; color: var(--muted); }
 
+/* ---------- ผู้ใช้อัปเดตผล + ประวัติรายงานของต้นนี้ ---------- */
+.rp-followup-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
+.rp-mini .is-current a { background: var(--soft); border-radius: var(--radius-sm); padding-left: 10px; padding-right: 10px; }
+
 /* ---------- Admin ตอบรายงาน ---------- */
 .rp-filters { padding: 18px; display: flex; flex-direction: column; gap: 12px; }
 .rp-row { cursor: pointer; }
