@@ -52,10 +52,10 @@ public interface HealthReportService {
     // status / severity = null คือไม่กรอง
     Page<HealthReport> findAll(ReportStatus status, Severity severity, Pageable pageable);
 
-    // หน้า admin: รอบล่าสุดของแต่ละต้นเท่านั้น (กรองตามสถานะ / ความรุนแรงของรอบล่าสุด)
+    // หน้า admin: 1 แถวต่อ 1 เรื่อง (ไม่เลือกสถานะ = ซ่อนรอบที่ส่งต่อไปแล้ว) เลือกสถานะ = แสดงสถานะนั้นตรงๆ
     Page<HealthReport> findLatestRounds(ReportStatus status, Severity severity, Pageable pageable);
 
-    // รอบก่อนหน้าของรายงานแต่ละอัน key = id รายงาน, value = รอบเก่าของต้นเดียวกัน ใหม่สุดก่อน (ไม่มี = list ว่าง)
+    // รอบก่อนหน้าของเรื่องเดียวกัน key = id รายงาน, value = รอบที่ส่งต่อมาถึงรายงานนี้ ใหม่สุดก่อน (ไม่มี = list ว่าง)
     Map<Long, List<HealthReport>> findPreviousRounds(List<HealthReport> latest);
 
     // plantHealth = null คือเปลี่ยนสถานะต้นไม้อัตโนมัติตามสถานะรายงาน, มีค่า = admin เลือกเอง

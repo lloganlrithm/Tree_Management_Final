@@ -393,30 +393,44 @@ class HealthReportServiceImplTest {
     // ---------- admin เห็นรอบล่าสุด + รอบก่อนหน้า ----------
 
     @Test
-    void latestRoundsWithStatusFilterUsesStatusQuery() {
+    void latestRoundsWithoutStatusFilterHidesFollowedUpRounds() {
+        // ไม่เลือกสถานะ = 1 แถวต่อ 1 เรื่อง รอบที่ส่งต่อไปแล้วไม่ซ้อนกับรอบใหม่
         Pageable pageable = PageRequest.of(0, 10);
         Page<HealthReport> page = new PageImpl<>(List.of());
-        when(healthReportRepository.findLatestRoundsByStatus(ReportStatus.PENDING, pageable)).thenReturn(page);
+        when(healthReportRepository.findByStatusNot(ReportStatus.FOLLOWED_UP, pageable)).thenReturn(page);
 
-        assertThat(service.findLatestRounds(ReportStatus.PENDING, null, pageable)).isSameAs(page);
+        assertThat(service.findLatestRounds(null, null, pageable)).isSameAs(page);
     }
 
     @Test
-    void previousRoundsExcludeLatestAndKeepNewestFirst() {
+    void latestRoundsWithStatusFilterShowsThatStatusEvenIfNotLatest() {
+        // เลือก "ปฏิเสธ" ต้องเห็นรายงานที่ปฏิเสธ แม้ต้นนั้นจะแจ้งเรื่องใหม่มาแล้ว
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<HealthReport> page = new PageImpl<>(List.of());
+        when(healthReportRepository.findByStatus(ReportStatus.REJECTED, pageable)).thenReturn(page);
+
+        assertThat(service.findLatestRounds(ReportStatus.REJECTED, null, pageable)).isSameAs(page);
+    }
+
+    @Test
+    void previousRoundsOnlyFollowTheSameIssue() {
         Plant plant = plant(HealthStatus.SICK);
         HealthReport latest = report(plant, ReportStatus.PENDING);
-        latest.setId(3L);
+        latest.setId(4L);
         HealthReport second = report(plant, ReportStatus.FOLLOWED_UP);
-        second.setId(2L);
+        second.setId(3L);
         HealthReport first = report(plant, ReportStatus.FOLLOWED_UP);
-        first.setId(1L);
-        // repository คืนใหม่สุดก่อน (รวมรอบล่าสุดด้วย)
+        first.setId(2L);
+        // เรื่องเก่าที่จบไปแล้ว (ดีขึ้นแล้ว) เป็นคนละเรื่อง ต้องไม่ถูกนับเป็นรอบก่อนหน้า
+        HealthReport oldIssue = report(plant, ReportStatus.RESOLVED);
+        oldIssue.setId(1L);
+        // repository คืนใหม่สุดก่อน (รวมรายงานนี้ด้วย)
         when(healthReportRepository.findByPlantIdInOrderByCreatedAtDesc(List.of(10L)))
-                .thenReturn(List.of(latest, second, first));
+                .thenReturn(List.of(latest, second, first, oldIssue));
 
         Map<Long, List<HealthReport>> result = service.findPreviousRounds(List.of(latest));
 
-        assertThat(result.get(3L)).containsExactly(second, first);
+        assertThat(result.get(4L)).containsExactly(second, first);
     }
 
     @Test

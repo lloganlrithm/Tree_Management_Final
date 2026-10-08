@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -170,16 +171,14 @@ public class HealthReportServiceImpl implements HealthReportService {
     @Override
     @Transactional(readOnly = true)
     public Page<HealthReport> findLatestRounds(ReportStatus status, Severity severity, Pageable pageable) {
-        if (status != null && severity != null) {
-            return healthReportRepository.findLatestRoundsByStatusAndSeverity(status, severity, pageable);
-        }
+        // เลือกสถานะเอง = แสดงสถานะนั้นตรงๆ (รวม "ส่งต่อรอบใหม่" ด้วย ถ้าเลือก)
         if (status != null) {
-            return healthReportRepository.findLatestRoundsByStatus(status, pageable);
+            return findAll(status, severity, pageable);
         }
-        if (severity != null) {
-            return healthReportRepository.findLatestRoundsBySeverity(severity, pageable);
-        }
-        return healthReportRepository.findLatestRounds(pageable);
+        // ไม่เลือกสถานะ = ซ่อนรอบที่ส่งต่อไปแล้ว เหลือ 1 แถวต่อ 1 เรื่อง (แจ้งใหม่คนละเรื่องยังแยกแถวกัน)
+        return (severity == null)
+                ? healthReportRepository.findByStatusNot(ReportStatus.FOLLOWED_UP, pageable)
+                : healthReportRepository.findBySeverityAndStatusNot(severity, ReportStatus.FOLLOWED_UP, pageable);
     }
 
     @Override
@@ -188,19 +187,32 @@ public class HealthReportServiceImpl implements HealthReportService {
         Map<Long, List<HealthReport>> result = new HashMap<>();
         if (latest.isEmpty()) return result;
 
-        // ดึงทุกรอบของต้นในหน้านี้ทีเดียว แล้วแยกตามต้น
+        // ดึงทุกรายงานของต้นในหน้านี้ทีเดียว แล้วแยกตามต้น (ใหม่สุดก่อน)
         List<Long> plantIds = latest.stream().map(r -> r.getPlant().getId()).distinct().toList();
         Map<Long, List<HealthReport>> byPlant = healthReportRepository.findByPlantIdInOrderByCreatedAtDesc(plantIds)
                 .stream()
                 .collect(Collectors.groupingBy(r -> r.getPlant().getId()));
 
         for (HealthReport report : latest) {
-            List<HealthReport> previous = byPlant.getOrDefault(report.getPlant().getId(), List.of()).stream()
-                    .filter(r -> !r.getId().equals(report.getId()))
-                    .toList();
-            result.put(report.getId(), previous);
+            result.put(report.getId(), chainBefore(report, byPlant.getOrDefault(report.getPlant().getId(), List.of())));
         }
         return result;
+    }
+
+    // รอบก่อนหน้าของเรื่องเดียวกัน: ย้อนจากรายงานนี้ไปเรื่อยๆ ตราบที่รอบก่อนเป็น "ส่งต่อรอบใหม่"
+    // เจอรอบที่จบแบบอื่น (ดีขึ้นแล้ว / ปฏิเสธ / หมดเวลา) = เป็นเรื่องเก่าคนละเรื่อง หยุด
+    private List<HealthReport> chainBefore(HealthReport report, List<HealthReport> plantReportsNewestFirst) {
+        List<HealthReport> chain = new ArrayList<>();
+        boolean found = false;
+        for (HealthReport r : plantReportsNewestFirst) {
+            if (!found) {
+                found = r.getId().equals(report.getId());
+                continue;
+            }
+            if (r.getStatus() != ReportStatus.FOLLOWED_UP) break;
+            chain.add(r);
+        }
+        return chain;
     }
 
     @Override

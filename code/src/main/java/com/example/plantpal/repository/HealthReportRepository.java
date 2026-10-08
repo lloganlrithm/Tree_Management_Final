@@ -9,8 +9,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
 import com.example.plantpal.domain.entity.HealthReport;
 import com.example.plantpal.domain.enums.ReportStatus;
@@ -59,30 +57,12 @@ public interface HealthReportRepository extends JpaRepository<HealthReport, Long
     @EntityGraph(attributePaths = { "plant", "plant.user" })
     Optional<HealthReport> findWithPlantById(Long id);
 
-    // ---- Admin: เห็นแค่รอบล่าสุดของแต่ละต้น (รอบติดตามผลไม่ซ้อนกับรอบเก่า) ----
-    // รอบล่าสุด = id มากสุดของต้นนั้น (id เพิ่มตามลำดับการสร้าง)
-    String LATEST_ROUND = "select r from HealthReport r"
-            + " where r.id = (select max(r2.id) from HealthReport r2 where r2.plant = r.plant)";
-    String LATEST_ROUND_COUNT = "select count(r) from HealthReport r"
-            + " where r.id = (select max(r2.id) from HealthReport r2 where r2.plant = r.plant)";
+    // ---- Admin: ไม่กรองสถานะ = ทุกรายงานยกเว้นรอบที่ส่งต่อไปแล้ว (FOLLOWED_UP มีรอบใหม่แทนเสมอ) ----
+    @EntityGraph(attributePaths = "plant")
+    Page<HealthReport> findByStatusNot(ReportStatus status, Pageable pageable);
 
     @EntityGraph(attributePaths = "plant")
-    @Query(value = LATEST_ROUND, countQuery = LATEST_ROUND_COUNT)
-    Page<HealthReport> findLatestRounds(Pageable pageable);
-
-    @EntityGraph(attributePaths = "plant")
-    @Query(value = LATEST_ROUND + " and r.status = :status", countQuery = LATEST_ROUND_COUNT + " and r.status = :status")
-    Page<HealthReport> findLatestRoundsByStatus(@Param("status") ReportStatus status, Pageable pageable);
-
-    @EntityGraph(attributePaths = "plant")
-    @Query(value = LATEST_ROUND + " and r.severity = :severity", countQuery = LATEST_ROUND_COUNT + " and r.severity = :severity")
-    Page<HealthReport> findLatestRoundsBySeverity(@Param("severity") Severity severity, Pageable pageable);
-
-    @EntityGraph(attributePaths = "plant")
-    @Query(value = LATEST_ROUND + " and r.status = :status and r.severity = :severity",
-            countQuery = LATEST_ROUND_COUNT + " and r.status = :status and r.severity = :severity")
-    Page<HealthReport> findLatestRoundsByStatusAndSeverity(@Param("status") ReportStatus status,
-                                                           @Param("severity") Severity severity, Pageable pageable);
+    Page<HealthReport> findBySeverityAndStatusNot(Severity severity, ReportStatus status, Pageable pageable);
 
     // ทุกรอบของหลายต้นในครั้งเดียว (ใช้แสดง "รอบก่อนหน้า" ในแผงตอบ admin ไม่ต้องยิง query ทีละต้น)
     List<HealthReport> findByPlantIdInOrderByCreatedAtDesc(Collection<Long> plantIds);

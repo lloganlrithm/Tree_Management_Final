@@ -28,8 +28,8 @@ public class AdminReportController {
 
     private final HealthReportService healthReportService;
 
-    // ตารางรายงาน ต้นละ 1 แถว (รอบล่าสุด) กรองด้วย ?status=...&severity=... แบ่งหน้าด้วย ?page=0
-    // รอบเก่าของต้นเดียวกันไปอยู่ในส่วน "รอบก่อนหน้า" ของแผงตอบ
+    // ตารางรายงาน 1 แถวต่อ 1 เรื่อง กรองด้วย ?status=...&severity=... แบ่งหน้าด้วย ?page=0
+    // รอบที่ส่งต่อมาของเรื่องเดียวกันไปอยู่ในส่วน "รอบก่อนหน้า" ของแผงตอบ
     @GetMapping
     public String list(@RequestParam(required = false) ReportStatus status,
                        @RequestParam(required = false) Severity severity,
