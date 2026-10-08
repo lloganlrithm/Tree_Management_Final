@@ -6,8 +6,10 @@ import com.example.plantpal.domain.enums.HealthStatus;
 import com.example.plantpal.domain.enums.ReportStatus;
 import com.example.plantpal.domain.enums.Severity;
 import com.example.plantpal.dto.request.HealthReportRequest;
+import com.example.plantpal.dto.request.ReportFollowUpRequest;
 import com.example.plantpal.event.ReportResolvedEvent;
 import com.example.plantpal.exception.DuplicateReportException;
+import com.example.plantpal.exception.InvalidRequestException;
 import com.example.plantpal.exception.ResourceNotFoundException;
 import com.example.plantpal.plant.state.PlantHealthStates;
 import com.example.plantpal.repository.HealthReportRepository;
@@ -32,6 +34,7 @@ public class HealthReportServiceImpl implements HealthReportService {
 
     // รายงานที่ยังไม่ปิด = รอตรวจ หรือ กำลังดำเนินการ
     private static final List<ReportStatus> OPEN_STATUSES = List.of(ReportStatus.PENDING, ReportStatus.IN_PROGRESS);
+    private static final String FOLLOW_UP_PREFIX = "ติดตามผล: ";
 
     private final HealthReportRepository healthReportRepository;
     // เรียกผ่าน Service ไม่เรียก PlantRepository ตรงๆ 
@@ -78,6 +81,41 @@ public class HealthReportServiceImpl implements HealthReportService {
     @Override
     public void deleteMyReport(Long id, String email) {
         healthReportRepository.delete(findMyReport(id, email));
+    }
+
+    @Override
+    public HealthReport markImproved(Long id, String email) {
+        HealthReport report = findMyInProgressReport(id, email);
+        report.setStatus(ReportStatus.RESOLVED);
+        report.setResolvedAt(LocalDateTime.now());
+        updatePlantHealth(report.getPlant(), ReportStatus.RESOLVED);   // State: ป่วย -> กำลังฟื้นตัว
+        return healthReportRepository.save(report);
+    }
+
+    @Override
+    public HealthReport followUp(Long id, ReportFollowUpRequest request, String email) {
+        HealthReport previous = findMyInProgressReport(id, email);
+
+        // อัปโหลดรูปก่อนแก้อะไรใน DB: ถ้าอัปไม่ผ่าน จะ error ออกไปโดยรอบเดิมยังเปิดอยู่เหมือนเดิม
+        String imageUrl = null;
+        if (request.getImage() != null && !request.getImage().isEmpty()) {
+            imageUrl = imageStorageService.upload(request.getImage(), "reports");
+        }
+
+        // ปิดรอบเดิม (รอบนี้ admin ตอบแล้ว ผลไปต่อในรายงานใหม่) ทำใน transaction เดียวกับการสร้างรายงานใหม่
+        previous.setStatus(ReportStatus.RESOLVED);
+        previous.setResolvedAt(LocalDateTime.now());
+        healthReportRepository.save(previous);
+
+        HealthReport next = new HealthReport();
+        next.setPlant(previous.getPlant());
+        next.setTitle(followUpTitle(previous.getTitle()));
+        String message = blankToNull(request.getMessage());
+        next.setDescription(message != null ? message : "ทำตามคำแนะนำแล้วแต่ยังไม่ดีขึ้น");
+        next.setSeverity(previous.getSeverity());
+        next.setImageUrl(imageUrl);
+        // status = PENDING ตาม default ใน entity -> ขึ้นในหน้า admin เป็นรายงานรอตรวจ
+        return healthReportRepository.save(next);
     }
 
     @Override
@@ -153,6 +191,21 @@ public class HealthReportServiceImpl implements HealthReportService {
         if (target != null && PlantHealthStates.of(plant.getHealthStatus()).canChangeTo(target)) {
             plantService.changeHealth(plant.getId(), target);
         }
+    }
+
+    // อัปเดตผลได้เฉพาะรายงานของตัวเองที่ admin ตอบแล้วและยัง "กำลังดำเนินการ"
+    private HealthReport findMyInProgressReport(Long id, String email) {
+        HealthReport report = findMyReport(id, email);
+        if (report.getStatus() != ReportStatus.IN_PROGRESS) {
+            throw new InvalidRequestException("อัปเดตผลได้เฉพาะรายงานที่กำลังดำเนินการ");
+        }
+        return report;
+    }
+
+    // "ติดตามผล: ใบเหลือง" ติดตามซ้ำหลายรอบไม่ต้องเติมคำนำหน้าซ้ำ และไม่เกิน 150 ตัวอักษรตามคอลัมน์ title
+    private String followUpTitle(String title) {
+        String base = title.startsWith(FOLLOW_UP_PREFIX) ? title : FOLLOW_UP_PREFIX + title;
+        return base.length() > 150 ? base.substring(0, 150) : base;
     }
 
     private void ensureNoOpenReport(Long plantId) {

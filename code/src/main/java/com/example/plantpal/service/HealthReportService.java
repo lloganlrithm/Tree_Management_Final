@@ -5,6 +5,7 @@ import com.example.plantpal.domain.enums.HealthStatus;
 import com.example.plantpal.domain.enums.ReportStatus;
 import com.example.plantpal.domain.enums.Severity;
 import com.example.plantpal.dto.request.HealthReportRequest;
+import com.example.plantpal.dto.request.ReportFollowUpRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -22,6 +23,13 @@ public interface HealthReportService {
 
     // ลบได้เฉพาะรายงานของตัวเอง
     void deleteMyReport(Long id, String email);
+
+    // ---- ผู้ใช้อัปเดตผลหลัง admin ให้คำแนะนำ (ใช้ได้เฉพาะรายงาน "กำลังดำเนินการ") ----
+    // ต้นไม้ดีขึ้นแล้ว: ปิดเรื่อง + ต้นไม้เป็น "กำลังฟื้นตัว"
+    HealthReport markImproved(Long id, String email);
+
+    // ยังไม่ดีขึ้น: ปิดรอบเดิม แล้วเปิดรายงานใหม่ (ติดตามผล) ต้นเดียวกัน ให้ admin ตรวจอีกรอบ คืนรายงานใหม่
+    HealthReport followUp(Long id, ReportFollowUpRequest request, String email);
 
     // จำนวนรายงานที่ยังรอ admin ตอบ (โป้ยใช้ใน dashboard)
     long countPending(String email);

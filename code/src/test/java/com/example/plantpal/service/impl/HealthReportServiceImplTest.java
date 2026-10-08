@@ -8,7 +8,9 @@ import com.example.plantpal.domain.enums.ReportStatus;
 import com.example.plantpal.domain.enums.Severity;
 import com.example.plantpal.dto.request.HealthReportRequest;
 import com.example.plantpal.event.ReportResolvedEvent;
+import com.example.plantpal.dto.request.ReportFollowUpRequest;
 import com.example.plantpal.exception.DuplicateReportException;
+import com.example.plantpal.exception.InvalidRequestException;
 import com.example.plantpal.exception.ResourceNotFoundException;
 import com.example.plantpal.plant.state.InvalidHealthTransitionException;
 import com.example.plantpal.repository.HealthReportRepository;
@@ -213,6 +215,89 @@ class HealthReportServiceImplTest {
         assertThatThrownBy(() -> service.reply(1L, ReportStatus.RESOLVED, "x", HealthStatus.HEALTHY))
                 .isInstanceOf(InvalidHealthTransitionException.class);
         verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    // ---------- ผู้ใช้อัปเดตผล ----------
+
+    @Test
+    void markImprovedClosesReportAndMarksPlantRecovering() {
+        HealthReport report = report(plant(HealthStatus.SICK), ReportStatus.IN_PROGRESS);
+        when(healthReportRepository.findByIdAndPlantUserEmail(1L, EMAIL)).thenReturn(Optional.of(report));
+        when(healthReportRepository.save(report)).thenReturn(report);
+
+        HealthReport result = service.markImproved(1L, EMAIL);
+
+        assertThat(result.getStatus()).isEqualTo(ReportStatus.RESOLVED);
+        assertThat(result.getResolvedAt()).isNotNull();
+        verify(plantService).changeHealth(10L, HealthStatus.RECOVERING);   // State: SICK -> RECOVERING
+    }
+
+    @Test
+    void markImprovedOnPendingReportIsRejected() {
+        // admin ยังไม่ตอบ (รอตรวจ) -> ยังอัปเดตผลไม่ได้
+        HealthReport report = report(plant(HealthStatus.HEALTHY), ReportStatus.PENDING);
+        when(healthReportRepository.findByIdAndPlantUserEmail(1L, EMAIL)).thenReturn(Optional.of(report));
+
+        assertThatThrownBy(() -> service.markImproved(1L, EMAIL))
+                .isInstanceOf(InvalidRequestException.class);
+        verify(healthReportRepository, never()).save(any());
+    }
+
+    @Test
+    void followUpClosesPreviousAndOpensNewReportWithNewImage() {
+        Plant plant = plant(HealthStatus.SICK);
+        HealthReport previous = report(plant, ReportStatus.IN_PROGRESS);
+        previous.setSeverity(Severity.MEDIUM);
+        when(healthReportRepository.findByIdAndPlantUserEmail(1L, EMAIL)).thenReturn(Optional.of(previous));
+        when(healthReportRepository.save(any(HealthReport.class))).thenAnswer(inv -> inv.getArgument(0));
+        MockMultipartFile image = new MockMultipartFile("image", "leaf2.png", "image/png", new byte[] {1});
+        when(imageStorageService.upload(image, "reports")).thenReturn("https://res.cloudinary.com/demo/leaf2.png");
+        ReportFollowUpRequest request = new ReportFollowUpRequest();
+        request.setMessage("  ใบบนเริ่มเหลือง  ");
+        request.setImage(image);
+
+        HealthReport next = service.followUp(1L, request, EMAIL);
+
+        // รอบเดิมปิด รูปเดิมยังอยู่ในแถวเดิม
+        assertThat(previous.getStatus()).isEqualTo(ReportStatus.RESOLVED);
+        assertThat(previous.getResolvedAt()).isNotNull();
+        // รอบใหม่: ต้นเดียวกัน รอ admin ตรวจ
+        assertThat(next).isNotSameAs(previous);
+        assertThat(next.getPlant()).isSameAs(plant);
+        assertThat(next.getStatus()).isEqualTo(ReportStatus.PENDING);
+        assertThat(next.getTitle()).isEqualTo("ติดตามผล: ใบเหลือง");
+        assertThat(next.getDescription()).isEqualTo("ใบบนเริ่มเหลือง");
+        assertThat(next.getSeverity()).isEqualTo(Severity.MEDIUM);
+        assertThat(next.getImageUrl()).isEqualTo("https://res.cloudinary.com/demo/leaf2.png");
+    }
+
+    @Test
+    void followUpTwiceDoesNotRepeatPrefix() {
+        HealthReport previous = report(plant(HealthStatus.SICK), ReportStatus.IN_PROGRESS);
+        previous.setTitle("ติดตามผล: ใบเหลือง");
+        when(healthReportRepository.findByIdAndPlantUserEmail(1L, EMAIL)).thenReturn(Optional.of(previous));
+        when(healthReportRepository.save(any(HealthReport.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        HealthReport next = service.followUp(1L, new ReportFollowUpRequest(), EMAIL);
+
+        assertThat(next.getTitle()).isEqualTo("ติดตามผล: ใบเหลือง");
+        assertThat(next.getDescription()).isEqualTo("ทำตามคำแนะนำแล้วแต่ยังไม่ดีขึ้น");   // ไม่กรอกอาการ = ข้อความตั้งต้น
+    }
+
+    @Test
+    void followUpWithFailedUploadKeepsPreviousOpen() {
+        // อัปรูปพัง -> ต้องไม่ปิดรอบเดิม ไม่สร้างรอบใหม่ (รายงานไม่หายเฉยๆ)
+        HealthReport previous = report(plant(HealthStatus.SICK), ReportStatus.IN_PROGRESS);
+        when(healthReportRepository.findByIdAndPlantUserEmail(1L, EMAIL)).thenReturn(Optional.of(previous));
+        MockMultipartFile svg = new MockMultipartFile("image", "x.svg", "image/svg+xml", new byte[] {1});
+        when(imageStorageService.upload(svg, "reports")).thenThrow(new InvalidRequestException("รองรับเฉพาะรูป"));
+        ReportFollowUpRequest request = new ReportFollowUpRequest();
+        request.setImage(svg);
+
+        assertThatThrownBy(() -> service.followUp(1L, request, EMAIL))
+                .isInstanceOf(InvalidRequestException.class);
+        assertThat(previous.getStatus()).isEqualTo(ReportStatus.IN_PROGRESS);
+        verify(healthReportRepository, never()).save(any());
     }
 
     @Test
