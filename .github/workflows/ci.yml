@@ -1,0 +1,78 @@
+# CI/CD: ทุก push / PR -> build + รัน test ทั้งหมด
+# push เข้า develop (branch ที่ Render ใช้) แล้ว test ผ่าน -> สั่ง Render deploy ผ่าน Deploy Hook
+name: CI
+
+on:
+  push:
+    branches: [develop, main]
+    paths: ["code/**", ".github/workflows/ci.yml"]
+  pull_request:
+    branches: [develop, main]
+    paths: ["code/**", ".github/workflows/ci.yml"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: code
+
+    # PostgreSQL ชั่วคราวสำหรับ @SpringBootTest (Flyway สร้างตารางให้เอง) ไม่แตะ Neon
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: plantpal
+          POSTGRES_USER: plantpal
+          POSTGRES_PASSWORD: plantpal
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U plantpal -d plantpal"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/plantpal
+      SPRING_DATASOURCE_USERNAME: plantpal
+      SPRING_DATASOURCE_PASSWORD: plantpal
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven   # เก็บ dependency ไว้ รอบหน้า build เร็วขึ้น
+
+      # ใช้ mvn ที่มีในเครื่อง GitHub (ไม่ใช้ mvnw ให้เหมือน Dockerfile)
+      - name: Build and test
+        run: mvn -B test
+
+      # เก็บรายงานผล test ไว้ดาวน์โหลดจากหน้า Actions (ใช้ประกอบ Test Report ได้)
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: code/target/surefire-reports/
+
+  deploy:
+    # deploy เฉพาะตอน push เข้า develop และ test ผ่านแล้วเท่านั้น (PR ไม่ deploy)
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    steps:
+      # RENDER_DEPLOY_HOOK เก็บใน GitHub Secrets (ลิงก์นี้ใครมีก็สั่ง deploy ได้ ห้ามใส่ในไฟล์)
+      - name: Trigger Render deploy
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "ยังไม่ได้ตั้ง RENDER_DEPLOY_HOOK ข้าม deploy"
+            exit 0
+          fi
+          curl -fsS -X POST "$HOOK" > /dev/null
+          echo "สั่ง Render deploy แล้ว"
