@@ -2,12 +2,17 @@ package com.example.plantpal.service.impl;
 
 import com.example.plantpal.domain.entity.CareLog;
 import com.example.plantpal.domain.entity.CareSchedule;
-import com.example.plantpal.domain.entity.Species;
+import com.example.plantpal.domain.entity.Plant;
 import com.example.plantpal.domain.entity.User;
+import com.example.plantpal.domain.enums.ActionType;
+import com.example.plantpal.event.PlantCreatedEvent;
 import com.example.plantpal.repository.CareLogRepository;
 import com.example.plantpal.repository.CareScheduleRepository;
+import com.example.plantpal.repository.PlantRepository;
 import com.example.plantpal.service.CareService;
+import com.example.plantpal.service.strategy.CareIntervalCalculator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,14 +25,10 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class CareServiceImpl implements CareService {
 
-    // รอบตั้งต้น (วัน) เมื่อพันธุ์ไม้ไม่ได้กรอกรอบไว้
-    private static final int DEFAULT_FERTILIZE_DAYS = 30;
-    private static final int DEFAULT_REPOT_DAYS = 365;
-    private static final int DEFAULT_CHECK_SUNLIGHT_DAYS = 7;
-    private static final int DEFAULT_HEALTH_CHECK_DAYS = 14;
-
     private final CareScheduleRepository careScheduleRepository;
     private final CareLogRepository careLogRepository;
+    private final CareIntervalCalculator intervalCalculator;   // Strategy คำนวณรอบ (service/strategy)
+    private final PlantRepository plantRepository;
 
     @Override
     public List<CareSchedule> findOverdue(User user) {
@@ -68,28 +69,32 @@ public class CareServiceImpl implements CareService {
                 .build();
         careLogRepository.save(log);
 
-        // 2) เลื่อนรอบถัดไป นับจากวันที่ทำจริง (วันนี้)
-        schedule.setNextDueDate(LocalDate.now().plusDays(intervalDays(schedule)));
+        // 2) เลื่อนรอบถัดไป นับจากวันที่ทำจริง (วันนี้) ใช้ Strategy ตามประเภทงาน
+        schedule.setNextDueDate(intervalCalculator.nextDueDate(
+                schedule.getActionType(), schedule.getPlant().getSpecies(), LocalDate.now()));
         // ไม่ต้อง save เอง: schedule อยู่ใน transaction นี้ Hibernate
         // อัปเดตให้ตอนจบเมธอด
 
         return log;
     }
 
-    // รอบของงานแต่ละประเภท ใช้รอบจากพันธุ์ไม้ก่อน ถ้าไม่มีใช้ค่าตั้งต้น
-    // TODO(C2): ถ้าทำ Strategy คำนวณรอบแล้ว ให้ย้ายมาเรียกจาก Strategy แทนเมธอดนี้
-    private int intervalDays(CareSchedule schedule) {
-        Species species = schedule.getPlant().getSpecies();
-        return switch (schedule.getActionType()) {
-            case WATER -> species.getWaterIntervalDays();
-            case FERTILIZE -> orDefault(species.getFertilizeIntervalDays(), DEFAULT_FERTILIZE_DAYS);
-            case REPOT -> orDefault(species.getRepotIntervalDays(), DEFAULT_REPOT_DAYS);
-            case CHECK_SUNLIGHT -> DEFAULT_CHECK_SUNLIGHT_DAYS;
-            case HEALTH_CHECK -> DEFAULT_HEALTH_CHECK_DAYS;
-        };
-    }
+    // Observer: ฟัง PlantCreatedEvent (โป๊ยส่งมาหลังเพิ่มต้นไม้ใน PlantServiceImpl.create)
+    // แล้วสร้างตารางดูแลเริ่มต้น WATER / FERTILIZE / REPOT ให้ต้นไม้ใหม่
+    // รอบของแต่ละงานคำนวณด้วย Strategy นับจากวันที่เพิ่มต้นไม้ (วันนี้)
+    // ทำงานใน transaction เดียวกับตอนเพิ่มต้นไม้ ถ้าสร้างตารางไม่สำเร็จ ต้นไม้ก็จะไม่ถูกบันทึกด้วย
+    @EventListener
+    @Transactional
+    public void onPlantCreated(PlantCreatedEvent event) {
+        Plant plant = plantRepository.findById(event.plantId())
+                .orElseThrow(() -> new IllegalArgumentException("ไม่พบต้นไม้ที่เพิ่งเพิ่ม"));
+        LocalDate today = LocalDate.now();
 
-    private int orDefault(Integer value, int fallback) {
-        return (value != null && value > 0) ? value : fallback;
+        for (ActionType type : intervalCalculator.supportedTypes()) {
+            careScheduleRepository.save(CareSchedule.builder()
+                    .plant(plant)
+                    .actionType(type)
+                    .nextDueDate(intervalCalculator.nextDueDate(type, plant.getSpecies(), today))
+                    .build());   // isActive = true ตาม default ใน entity
+        }
     }
 }
