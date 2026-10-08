@@ -9,6 +9,7 @@ import com.example.plantpal.domain.enums.Severity;
 import com.example.plantpal.dto.request.HealthReportRequest;
 import com.example.plantpal.event.ReportResolvedEvent;
 import com.example.plantpal.exception.ResourceNotFoundException;
+import com.example.plantpal.plant.state.InvalidHealthTransitionException;
 import com.example.plantpal.repository.HealthReportRepository;
 import com.example.plantpal.service.ImageStorageService;
 import com.example.plantpal.service.PlantService;
@@ -166,6 +167,33 @@ class HealthReportServiceImplTest {
         assertThat(result.getResolvedAt()).isNull();         // เปิดเรื่องกลับมา = ล้างเวลาปิด
         assertThat(result.getAdminReply()).isNull();          // คำตอบว่าง = ไม่มีคำตอบ
         verify(plantService).changeHealth(10L, HealthStatus.SICK);
+    }
+
+    @Test
+    void replyWithAdminChosenPlantStatusUsesItInsteadOfAutomatic() {
+        // admin เลือก "ตายแล้ว" เอง: ต้องใช้ค่าที่เลือก ไม่ใช่ค่าอัตโนมัติ (RESOLVED -> RECOVERING)
+        HealthReport report = report(plant(HealthStatus.SICK), ReportStatus.IN_PROGRESS);
+        when(healthReportRepository.findWithPlantById(1L)).thenReturn(Optional.of(report));
+        when(healthReportRepository.save(report)).thenReturn(report);
+
+        service.reply(1L, ReportStatus.RESOLVED, "ต้นตายแล้ว", HealthStatus.DEAD);
+
+        verify(plantService).changeHealth(10L, HealthStatus.DEAD);
+        verify(plantService, never()).changeHealth(10L, HealthStatus.RECOVERING);
+    }
+
+    @Test
+    void replyWithNotAllowedPlantStatusFailsAndPublishesNothing() {
+        // State ของโป้ยไม่ยอม (เช่น DEAD -> HEALTHY): error ต้องหลุดออกไปให้ transaction ย้อน และไม่ส่งแจ้งเตือน
+        HealthReport report = report(plant(HealthStatus.DEAD), ReportStatus.PENDING);
+        when(healthReportRepository.findWithPlantById(1L)).thenReturn(Optional.of(report));
+        when(healthReportRepository.save(report)).thenReturn(report);
+        when(plantService.changeHealth(10L, HealthStatus.HEALTHY))
+                .thenThrow(new InvalidHealthTransitionException(HealthStatus.DEAD, HealthStatus.HEALTHY));
+
+        assertThatThrownBy(() -> service.reply(1L, ReportStatus.RESOLVED, "x", HealthStatus.HEALTHY))
+                .isInstanceOf(InvalidHealthTransitionException.class);
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test

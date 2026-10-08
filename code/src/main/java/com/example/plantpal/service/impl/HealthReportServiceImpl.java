@@ -109,7 +109,7 @@ public class HealthReportServiceImpl implements HealthReportService {
     }
 
     @Override
-    public HealthReport reply(Long id, ReportStatus status, String adminReply) {
+    public HealthReport reply(Long id, ReportStatus status, String adminReply, HealthStatus plantHealth) {
         HealthReport report = findById(id);
 
         report.setStatus(status);
@@ -120,7 +120,12 @@ public class HealthReportServiceImpl implements HealthReportService {
         HealthReport saved = healthReportRepository.save(report);
 
         Plant plant = saved.getPlant();
-        updatePlantHealth(plant, status);
+        if (plantHealth != null) {
+            // admin เลือกเอง: ให้ State ของโป้ยตรวจ ถ้าเปลี่ยนไม่ได้จะโยน error แล้ว transaction ย้อนทั้งหมด (คำตอบก็ไม่ถูกบันทึก)
+            plantService.changeHealth(plant.getId(), plantHealth);
+        } else {
+            updatePlantHealth(plant, status);
+        }
 
         // Observer: ประกาศว่ามีการตอบรายงาน ใครฟังอยู่ก็ทำงานของตัวเองต่อ (เช่น สร้างแจ้งเตือนให้เจ้าของ)
         eventPublisher.publishEvent(new ReportResolvedEvent(

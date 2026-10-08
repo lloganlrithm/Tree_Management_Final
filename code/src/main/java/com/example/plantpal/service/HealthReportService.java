@@ -1,6 +1,7 @@
 package com.example.plantpal.service;
 
 import com.example.plantpal.domain.entity.HealthReport;
+import com.example.plantpal.domain.enums.HealthStatus;
 import com.example.plantpal.domain.enums.ReportStatus;
 import com.example.plantpal.domain.enums.Severity;
 import com.example.plantpal.dto.request.HealthReportRequest;
@@ -34,5 +35,10 @@ public interface HealthReportService {
     // status / severity = null คือไม่กรอง
     Page<HealthReport> findAll(ReportStatus status, Severity severity, Pageable pageable);
 
-    HealthReport reply(Long id, ReportStatus status, String adminReply);
+    // plantHealth = null คือเปลี่ยนสถานะต้นไม้อัตโนมัติตามสถานะรายงาน, มีค่า = admin เลือกเอง
+    HealthReport reply(Long id, ReportStatus status, String adminReply, HealthStatus plantHealth);
+
+    default HealthReport reply(Long id, ReportStatus status, String adminReply) {
+        return reply(id, status, adminReply, null);
+    }
 }

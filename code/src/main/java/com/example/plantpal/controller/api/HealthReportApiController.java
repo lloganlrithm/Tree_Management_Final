@@ -72,7 +72,7 @@ public class HealthReportApiController {
         if (!currentUserService.isAdmin()) {
             throw new ForbiddenException("เฉพาะผู้ดูแลระบบเท่านั้นที่ตอบรายงานได้");
         }
-        return mapper.toResponse(healthReportService.reply(id, request.getStatus(), request.getAdminReply()));
+        return mapper.toResponse(healthReportService.reply(id, request.getStatus(), request.getAdminReply(), request.getPlantHealthStatus()));
     }
 
     // DELETE /api/v1/reports/{id} (เจ้าของเท่านั้น) -> 204 No Content

@@ -1,6 +1,8 @@
 package com.example.plantpal.controller.web;
 
+import com.example.plantpal.domain.enums.HealthStatus;
 import com.example.plantpal.domain.enums.ReportStatus;
+import com.example.plantpal.plant.state.InvalidHealthTransitionException;
 import com.example.plantpal.domain.enums.Severity;
 import com.example.plantpal.service.HealthReportService;
 import com.example.plantpal.exception.ResourceNotFoundException;
@@ -41,12 +43,13 @@ public class AdminReportController {
     public String reply(@RequestParam Long id,
                         @RequestParam ReportStatus status,
                         @RequestParam(required = false) String adminReply,
+                        @RequestParam(required = false) HealthStatus plantHealthStatus,
                         @RequestParam(required = false) String back,
                         RedirectAttributes redirect) {
         try {
-            healthReportService.reply(id, status, adminReply);
+            healthReportService.reply(id, status, adminReply, plantHealthStatus);
             redirect.addFlashAttribute("success", "บันทึกคำตอบแล้ว ระบบแจ้งเตือนเจ้าของต้นไม้ให้แล้ว");
-        } catch (IllegalArgumentException | ResourceNotFoundException e) {
+        } catch (IllegalArgumentException | ResourceNotFoundException | InvalidHealthTransitionException e) {
             redirect.addFlashAttribute("error", e.getMessage());
         }
         // back = query string ของตัวกรองเดิม เช่น status=PENDING&page=1
