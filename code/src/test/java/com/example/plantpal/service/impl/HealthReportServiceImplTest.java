@@ -7,8 +7,13 @@ import com.example.plantpal.domain.enums.HealthStatus;
 import com.example.plantpal.domain.enums.ReportStatus;
 import com.example.plantpal.domain.enums.Severity;
 import com.example.plantpal.dto.request.HealthReportRequest;
+import com.example.plantpal.event.ReportAutoClosedEvent;
 import com.example.plantpal.event.ReportResolvedEvent;
+import com.example.plantpal.dto.request.ReportFollowUpRequest;
+import com.example.plantpal.exception.DuplicateReportException;
+import com.example.plantpal.exception.InvalidRequestException;
 import com.example.plantpal.exception.ResourceNotFoundException;
+import com.example.plantpal.plant.state.InvalidHealthTransitionException;
 import com.example.plantpal.repository.HealthReportRepository;
 import com.example.plantpal.service.ImageStorageService;
 import com.example.plantpal.service.PlantService;
@@ -104,6 +109,24 @@ class HealthReportServiceImplTest {
         assertThat(result.getImageUrl()).isEqualTo("https://res.cloudinary.com/demo/leaf.png");
     }
 
+    @Test
+    void createWhenPlantHasOpenReportThrowsConflictAndUploadsNothing() {
+        // ต้นนี้มีรายงาน "รอตรวจ" อยู่แล้ว -> แจ้งซ้ำไม่ได้ และไม่อัปรูปทิ้งเปล่าๆ
+        when(plantService.findMyPlant(10L, EMAIL)).thenReturn(plant(HealthStatus.SICK));
+        HealthReport open = report(plant(HealthStatus.SICK), ReportStatus.PENDING);
+        open.setId(5L);
+        when(healthReportRepository.findFirstByPlantIdAndStatusInOrderByCreatedAtDesc(any(), any()))
+                .thenReturn(Optional.of(open));
+        HealthReportRequest request = request("ใบเหลืองอีกแล้ว", null);
+        request.setImage(new MockMultipartFile("image", "leaf.png", "image/png", new byte[] {1}));
+
+        assertThatThrownBy(() -> service.create(request, EMAIL))
+                .isInstanceOf(DuplicateReportException.class)
+                .extracting("openReportId").isEqualTo(5L);   // หน้าเว็บใช้ทำลิงก์ไปรายงานเดิม
+        verify(imageStorageService, never()).upload(any(), anyString());
+        verify(healthReportRepository, never()).save(any());
+    }
+
     // ---------- findMyReport ----------
 
     @Test
@@ -116,20 +139,20 @@ class HealthReportServiceImplTest {
                 .hasMessage("ไม่พบรายงานนี้");
     }
 
-    // ---------- reply ----------
+    // ---------- reply (admin): ส่งคำแนะนำ = กำลังดำเนินการ, ปฏิเสธ = ปิดพร้อมเหตุผล ----------
 
     @Test
-    void replyResolvedClosesReportMarksPlantRecoveringAndPublishesEvent() {
-        HealthReport report = report(plant(HealthStatus.SICK), ReportStatus.IN_PROGRESS);
+    void answerMovesReportToInProgressMarksPlantSickAndPublishesEvent() {
+        HealthReport report = report(plant(HealthStatus.HEALTHY), ReportStatus.PENDING);
         when(healthReportRepository.findWithPlantById(1L)).thenReturn(Optional.of(report));
         when(healthReportRepository.save(report)).thenReturn(report);
 
-        HealthReport result = service.reply(1L, ReportStatus.RESOLVED, "  ลดการรดน้ำ  ");
+        HealthReport result = service.reply(1L, ReportStatus.IN_PROGRESS, "  ลดการรดน้ำ  ");
 
-        assertThat(result.getStatus()).isEqualTo(ReportStatus.RESOLVED);
+        assertThat(result.getStatus()).isEqualTo(ReportStatus.IN_PROGRESS);
         assertThat(result.getAdminReply()).isEqualTo("ลดการรดน้ำ");
-        assertThat(result.getResolvedAt()).isNotNull();                          // ปิดเรื่องแล้วมีเวลาปิด
-        verify(plantService).changeHealth(10L, HealthStatus.RECOVERING);         // State: SICK -> RECOVERING
+        assertThat(result.getResolvedAt()).isNull();                     // ยังไม่ปิด รอผู้ใช้บอกผล
+        verify(plantService).changeHealth(10L, HealthStatus.SICK);       // State: HEALTHY -> SICK
 
         // Observer: ส่ง event ไปให้ NotificationListener พร้อมข้อมูลเจ้าของต้นไม้
         ArgumentCaptor<ReportResolvedEvent> captor = ArgumentCaptor.forClass(ReportResolvedEvent.class);
@@ -137,42 +160,214 @@ class HealthReportServiceImplTest {
         ReportResolvedEvent event = captor.getValue();
         assertThat(event.getOwnerId()).isEqualTo(7L);
         assertThat(event.getPlantId()).isEqualTo(10L);
-        assertThat(event.getStatus()).isEqualTo(ReportStatus.RESOLVED);
+        assertThat(event.getStatus()).isEqualTo(ReportStatus.IN_PROGRESS);
     }
 
     @Test
-    void replyResolvedOnHealthyPlantKeepsHealthButStillSavesReply() {
-        // HEALTHY -> RECOVERING เปลี่ยนไม่ได้ตาม State ของโป้ย: ต้องข้าม ไม่ทำให้การตอบล้ม
-        HealthReport report = report(plant(HealthStatus.HEALTHY), ReportStatus.PENDING);
+    void answerOnDeadPlantKeepsHealthButStillSavesReply() {
+        // DEAD -> SICK เปลี่ยนไม่ได้ตาม State ของโป้ย: ข้ามการเปลี่ยนสถานะต้นไม้ ไม่ทำให้การตอบล้ม
+        HealthReport report = report(plant(HealthStatus.DEAD), ReportStatus.PENDING);
         when(healthReportRepository.findWithPlantById(1L)).thenReturn(Optional.of(report));
         when(healthReportRepository.save(report)).thenReturn(report);
 
-        HealthReport result = service.reply(1L, ReportStatus.RESOLVED, "ไม่มีอะไรน่าห่วง");
+        HealthReport result = service.reply(1L, ReportStatus.IN_PROGRESS, "ปลูกต้นใหม่ได้เลย");
 
-        assertThat(result.getStatus()).isEqualTo(ReportStatus.RESOLVED);
+        assertThat(result.getStatus()).isEqualTo(ReportStatus.IN_PROGRESS);
         verify(plantService, never()).changeHealth(any(), any());
         verify(eventPublisher).publishEvent(any(ReportResolvedEvent.class));
     }
 
     @Test
-    void replyInProgressReopensReportAndMarksPlantSick() {
-        HealthReport report = report(plant(HealthStatus.HEALTHY), ReportStatus.RESOLVED);
-        report.setResolvedAt(LocalDateTime.now().minusDays(1));
+    void rejectClosesReportWithReason() {
+        HealthReport report = report(plant(HealthStatus.HEALTHY), ReportStatus.PENDING);
         when(healthReportRepository.findWithPlantById(1L)).thenReturn(Optional.of(report));
         when(healthReportRepository.save(report)).thenReturn(report);
 
-        HealthReport result = service.reply(1L, ReportStatus.IN_PROGRESS, "");
+        HealthReport result = service.reply(1L, ReportStatus.REJECTED, "เป็นลายใบปกติของพันธุ์นี้");
 
-        assertThat(result.getResolvedAt()).isNull();         // เปิดเรื่องกลับมา = ล้างเวลาปิด
-        assertThat(result.getAdminReply()).isNull();          // คำตอบว่าง = ไม่มีคำตอบ
-        verify(plantService).changeHealth(10L, HealthStatus.SICK);
+        assertThat(result.getStatus()).isEqualTo(ReportStatus.REJECTED);
+        assertThat(result.getAdminReply()).isEqualTo("เป็นลายใบปกติของพันธุ์นี้");
+        assertThat(result.getResolvedAt()).isNotNull();
+        verify(plantService, never()).changeHealth(any(), any());   // ปฏิเสธ = ไม่แตะสถานะต้นไม้
+    }
+
+    @Test
+    void rejectWithoutReasonIsRefused() {
+        HealthReport report = report(plant(HealthStatus.HEALTHY), ReportStatus.PENDING);
+        when(healthReportRepository.findWithPlantById(1L)).thenReturn(Optional.of(report));
+
+        assertThatThrownBy(() -> service.reply(1L, ReportStatus.REJECTED, "   "))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessage("กรุณาเขียนเหตุผลที่ปฏิเสธ");
+        verify(healthReportRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void answerWithoutAdviceIsRefused() {
+        HealthReport report = report(plant(HealthStatus.HEALTHY), ReportStatus.PENDING);
+        when(healthReportRepository.findWithPlantById(1L)).thenReturn(Optional.of(report));
+
+        assertThatThrownBy(() -> service.reply(1L, ReportStatus.IN_PROGRESS, ""))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessage("กรุณาเขียนคำแนะนำ");
+    }
+
+    @Test
+    void adminCannotSetResolvedDirectly() {
+        // "แก้ไขแล้ว" ปิดได้โดยผู้ใช้กดดีขึ้นแล้ว หรือ job เท่านั้น
+        HealthReport report = report(plant(HealthStatus.SICK), ReportStatus.IN_PROGRESS);
+        when(healthReportRepository.findWithPlantById(1L)).thenReturn(Optional.of(report));
+
+        assertThatThrownBy(() -> service.reply(1L, ReportStatus.RESOLVED, "หายแล้ว"))
+                .isInstanceOf(InvalidRequestException.class);
+        assertThat(report.getStatus()).isEqualTo(ReportStatus.IN_PROGRESS);
+    }
+
+    @Test
+    void replyToClosedReportIsRefused() {
+        HealthReport report = report(plant(HealthStatus.RECOVERING), ReportStatus.RESOLVED);
+        when(healthReportRepository.findWithPlantById(1L)).thenReturn(Optional.of(report));
+
+        assertThatThrownBy(() -> service.reply(1L, ReportStatus.IN_PROGRESS, "x"))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessage("รายงานนี้ปิดไปแล้ว ตอบเพิ่มไม่ได้");
+    }
+
+    @Test
+    void replyWithAdminChosenPlantStatusUsesItInsteadOfAutomatic() {
+        // admin เลือก "ตายแล้ว" เอง: ต้องใช้ค่าที่เลือก ไม่ใช่ค่าอัตโนมัติ (ส่งคำแนะนำ -> SICK)
+        HealthReport report = report(plant(HealthStatus.SICK), ReportStatus.PENDING);
+        when(healthReportRepository.findWithPlantById(1L)).thenReturn(Optional.of(report));
+        when(healthReportRepository.save(report)).thenReturn(report);
+
+        service.reply(1L, ReportStatus.IN_PROGRESS, "ต้นตายแล้ว", HealthStatus.DEAD);
+
+        verify(plantService).changeHealth(10L, HealthStatus.DEAD);
+        verify(plantService, never()).changeHealth(10L, HealthStatus.SICK);
+    }
+
+    @Test
+    void replyWithNotAllowedPlantStatusFailsAndPublishesNothing() {
+        // State ของโป้ยไม่ยอม (เช่น DEAD -> HEALTHY): error ต้องหลุดออกไปให้ transaction ย้อน และไม่ส่งแจ้งเตือน
+        HealthReport report = report(plant(HealthStatus.DEAD), ReportStatus.PENDING);
+        when(healthReportRepository.findWithPlantById(1L)).thenReturn(Optional.of(report));
+        when(healthReportRepository.save(report)).thenReturn(report);
+        when(plantService.changeHealth(10L, HealthStatus.HEALTHY))
+                .thenThrow(new InvalidHealthTransitionException(HealthStatus.DEAD, HealthStatus.HEALTHY));
+
+        assertThatThrownBy(() -> service.reply(1L, ReportStatus.IN_PROGRESS, "x", HealthStatus.HEALTHY))
+                .isInstanceOf(InvalidHealthTransitionException.class);
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    // ---------- ผู้ใช้อัปเดตผล ----------
+
+    @Test
+    void markImprovedClosesReportAndMarksPlantRecovering() {
+        HealthReport report = report(plant(HealthStatus.SICK), ReportStatus.IN_PROGRESS);
+        when(healthReportRepository.findByIdAndPlantUserEmail(1L, EMAIL)).thenReturn(Optional.of(report));
+        when(healthReportRepository.save(report)).thenReturn(report);
+
+        HealthReport result = service.markImproved(1L, EMAIL);
+
+        assertThat(result.getStatus()).isEqualTo(ReportStatus.RESOLVED);
+        assertThat(result.getResolvedAt()).isNotNull();
+        verify(plantService).changeHealth(10L, HealthStatus.RECOVERING);   // State: SICK -> RECOVERING
+    }
+
+    @Test
+    void markImprovedOnPendingReportIsRejected() {
+        // admin ยังไม่ตอบ (รอตรวจ) -> ยังอัปเดตผลไม่ได้
+        HealthReport report = report(plant(HealthStatus.HEALTHY), ReportStatus.PENDING);
+        when(healthReportRepository.findByIdAndPlantUserEmail(1L, EMAIL)).thenReturn(Optional.of(report));
+
+        assertThatThrownBy(() -> service.markImproved(1L, EMAIL))
+                .isInstanceOf(InvalidRequestException.class);
+        verify(healthReportRepository, never()).save(any());
+    }
+
+    @Test
+    void followUpClosesPreviousAndOpensNewReportWithNewImage() {
+        Plant plant = plant(HealthStatus.SICK);
+        HealthReport previous = report(plant, ReportStatus.IN_PROGRESS);
+        previous.setSeverity(Severity.MEDIUM);
+        when(healthReportRepository.findByIdAndPlantUserEmail(1L, EMAIL)).thenReturn(Optional.of(previous));
+        when(healthReportRepository.save(any(HealthReport.class))).thenAnswer(inv -> inv.getArgument(0));
+        MockMultipartFile image = new MockMultipartFile("image", "leaf2.png", "image/png", new byte[] {1});
+        when(imageStorageService.upload(image, "reports")).thenReturn("https://res.cloudinary.com/demo/leaf2.png");
+        ReportFollowUpRequest request = new ReportFollowUpRequest();
+        request.setMessage("  ใบบนเริ่มเหลือง  ");
+        request.setImage(image);
+
+        HealthReport next = service.followUp(1L, request, EMAIL);
+
+        // รอบเดิมปิด รูปเดิมยังอยู่ในแถวเดิม
+        assertThat(previous.getStatus()).isEqualTo(ReportStatus.RESOLVED);
+        assertThat(previous.getResolvedAt()).isNotNull();
+        // รอบใหม่: ต้นเดียวกัน รอ admin ตรวจ
+        assertThat(next).isNotSameAs(previous);
+        assertThat(next.getPlant()).isSameAs(plant);
+        assertThat(next.getStatus()).isEqualTo(ReportStatus.PENDING);
+        assertThat(next.getTitle()).isEqualTo("ติดตามผล: ใบเหลือง");
+        assertThat(next.getDescription()).isEqualTo("ใบบนเริ่มเหลือง");
+        assertThat(next.getSeverity()).isEqualTo(Severity.MEDIUM);
+        assertThat(next.getImageUrl()).isEqualTo("https://res.cloudinary.com/demo/leaf2.png");
+    }
+
+    @Test
+    void followUpTwiceDoesNotRepeatPrefix() {
+        HealthReport previous = report(plant(HealthStatus.SICK), ReportStatus.IN_PROGRESS);
+        previous.setTitle("ติดตามผล: ใบเหลือง");
+        when(healthReportRepository.findByIdAndPlantUserEmail(1L, EMAIL)).thenReturn(Optional.of(previous));
+        when(healthReportRepository.save(any(HealthReport.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        HealthReport next = service.followUp(1L, new ReportFollowUpRequest(), EMAIL);
+
+        assertThat(next.getTitle()).isEqualTo("ติดตามผล: ใบเหลือง");
+        assertThat(next.getDescription()).isEqualTo("ทำตามคำแนะนำแล้วแต่ยังไม่ดีขึ้น");   // ไม่กรอกอาการ = ข้อความตั้งต้น
+    }
+
+    @Test
+    void followUpWithFailedUploadKeepsPreviousOpen() {
+        // อัปรูปพัง -> ต้องไม่ปิดรอบเดิม ไม่สร้างรอบใหม่ (รายงานไม่หายเฉยๆ)
+        HealthReport previous = report(plant(HealthStatus.SICK), ReportStatus.IN_PROGRESS);
+        when(healthReportRepository.findByIdAndPlantUserEmail(1L, EMAIL)).thenReturn(Optional.of(previous));
+        MockMultipartFile svg = new MockMultipartFile("image", "x.svg", "image/svg+xml", new byte[] {1});
+        when(imageStorageService.upload(svg, "reports")).thenThrow(new InvalidRequestException("รองรับเฉพาะรูป"));
+        ReportFollowUpRequest request = new ReportFollowUpRequest();
+        request.setImage(svg);
+
+        assertThatThrownBy(() -> service.followUp(1L, request, EMAIL))
+                .isInstanceOf(InvalidRequestException.class);
+        assertThat(previous.getStatus()).isEqualTo(ReportStatus.IN_PROGRESS);
+        verify(healthReportRepository, never()).save(any());
+    }
+
+    // ---------- job ปิดรายงานที่เงียบนาน ----------
+
+    @Test
+    void autoCloseResolvesReportKeepsPlantHealthAndNotifiesOwner() {
+        HealthReport report = report(plant(HealthStatus.SICK), ReportStatus.IN_PROGRESS);
+
+        service.autoClose(report, 14);
+
+        assertThat(report.getStatus()).isEqualTo(ReportStatus.RESOLVED);
+        assertThat(report.getResolvedAt()).isNotNull();
+        verify(healthReportRepository).save(report);
+        verify(plantService, never()).changeHealth(any(), any());   // ไม่รู้ผลจริง เลยไม่แตะสถานะต้นไม้
+
+        ArgumentCaptor<ReportAutoClosedEvent> captor = ArgumentCaptor.forClass(ReportAutoClosedEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().getOwnerId()).isEqualTo(7L);
+        assertThat(captor.getValue().getStaleDays()).isEqualTo(14);
     }
 
     @Test
     void replyToMissingReportThrowsNotFoundAndPublishesNothing() {
         when(healthReportRepository.findWithPlantById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.reply(99L, ReportStatus.RESOLVED, "x"))
+        assertThatThrownBy(() -> service.reply(99L, ReportStatus.IN_PROGRESS, "x"))
                 .isInstanceOf(ResourceNotFoundException.class);
         verify(eventPublisher, never()).publishEvent(any());
     }

@@ -6,7 +6,11 @@ import com.example.plantpal.domain.enums.HealthStatus;
 import com.example.plantpal.domain.enums.ReportStatus;
 import com.example.plantpal.domain.enums.Severity;
 import com.example.plantpal.dto.request.HealthReportRequest;
+import com.example.plantpal.dto.request.ReportFollowUpRequest;
+import com.example.plantpal.event.ReportAutoClosedEvent;
 import com.example.plantpal.event.ReportResolvedEvent;
+import com.example.plantpal.exception.DuplicateReportException;
+import com.example.plantpal.exception.InvalidRequestException;
 import com.example.plantpal.exception.ResourceNotFoundException;
 import com.example.plantpal.plant.state.PlantHealthStates;
 import com.example.plantpal.repository.HealthReportRepository;
@@ -29,6 +33,10 @@ import java.util.List;
 @Transactional
 public class HealthReportServiceImpl implements HealthReportService {
 
+    // รายงานที่ยังไม่ปิด = รอตรวจ หรือ กำลังดำเนินการ
+    private static final List<ReportStatus> OPEN_STATUSES = List.of(ReportStatus.PENDING, ReportStatus.IN_PROGRESS);
+    private static final String FOLLOW_UP_PREFIX = "ติดตามผล: ";
+
     private final HealthReportRepository healthReportRepository;
     // เรียกผ่าน Service ไม่เรียก PlantRepository ตรงๆ 
     private final PlantService plantService;
@@ -39,6 +47,8 @@ public class HealthReportServiceImpl implements HealthReportService {
     public HealthReport create(HealthReportRequest request, String email) {
         // findMyPlant โยน error ถ้าต้นไม้ไม่ใช่ของคนที่ login อยู่ = เช็คความเป็นเจ้าของไปในตัว
         Plant plant = plantService.findMyPlant(request.getPlantId(), email);
+        // ต้นไม้ 1 ต้นมีรายงานที่ยังเปิดอยู่ได้ทีละ 1 อัน (เช็คก่อนอัปโหลดรูป จะได้ไม่อัปรูปทิ้งเปล่าๆ)
+        ensureNoOpenReport(plant.getId());
 
         HealthReport report = new HealthReport();
         report.setPlant(plant);
@@ -72,6 +82,59 @@ public class HealthReportServiceImpl implements HealthReportService {
     @Override
     public void deleteMyReport(Long id, String email) {
         healthReportRepository.delete(findMyReport(id, email));
+    }
+
+    @Override
+    public HealthReport markImproved(Long id, String email) {
+        HealthReport report = findMyInProgressReport(id, email);
+        report.setStatus(ReportStatus.RESOLVED);
+        report.setResolvedAt(LocalDateTime.now());
+        updatePlantHealth(report.getPlant(), ReportStatus.RESOLVED);   // State: ป่วย -> กำลังฟื้นตัว
+        return healthReportRepository.save(report);
+    }
+
+    @Override
+    public HealthReport followUp(Long id, ReportFollowUpRequest request, String email) {
+        HealthReport previous = findMyInProgressReport(id, email);
+
+        // อัปโหลดรูปก่อนแก้อะไรใน DB: ถ้าอัปไม่ผ่าน จะ error ออกไปโดยรอบเดิมยังเปิดอยู่เหมือนเดิม
+        String imageUrl = null;
+        if (request.getImage() != null && !request.getImage().isEmpty()) {
+            imageUrl = imageStorageService.upload(request.getImage(), "reports");
+        }
+
+        // ปิดรอบเดิม (รอบนี้ admin ตอบแล้ว ผลไปต่อในรายงานใหม่) ทำใน transaction เดียวกับการสร้างรายงานใหม่
+        previous.setStatus(ReportStatus.RESOLVED);
+        previous.setResolvedAt(LocalDateTime.now());
+        healthReportRepository.save(previous);
+
+        HealthReport next = new HealthReport();
+        next.setPlant(previous.getPlant());
+        next.setTitle(followUpTitle(previous.getTitle()));
+        String message = blankToNull(request.getMessage());
+        next.setDescription(message != null ? message : "ทำตามคำแนะนำแล้วแต่ยังไม่ดีขึ้น");
+        next.setSeverity(previous.getSeverity());
+        next.setImageUrl(imageUrl);
+        // status = PENDING ตาม default ใน entity -> ขึ้นในหน้า admin เป็นรายงานรอตรวจ
+        return healthReportRepository.save(next);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<HealthReport> findStaleInProgress(LocalDateTime before) {
+        return healthReportRepository.findByStatusAndCreatedAtBefore(ReportStatus.IN_PROGRESS, before);
+    }
+
+    @Override
+    public void autoClose(HealthReport report, int staleDays) {
+        // ไม่แตะสถานะต้นไม้: ไม่รู้ว่าดีขึ้นหรือไม่ แค่ปิดเรื่องที่ค้าง ถ้ายังมีปัญหาผู้ใช้แจ้งใหม่ได้
+        report.setStatus(ReportStatus.RESOLVED);
+        report.setResolvedAt(LocalDateTime.now());
+        healthReportRepository.save(report);
+
+        Plant plant = report.getPlant();
+        eventPublisher.publishEvent(new ReportAutoClosedEvent(
+                report.getId(), plant.getUser().getId(), plant.getId(), report.getTitle(), staleDays));
     }
 
     @Override
@@ -109,23 +172,45 @@ public class HealthReportServiceImpl implements HealthReportService {
     }
 
     @Override
-    public HealthReport reply(Long id, ReportStatus status, String adminReply) {
+    public HealthReport reply(Long id, ReportStatus status, String adminReply, HealthStatus plantHealth) {
         HealthReport report = findById(id);
+        String reply = blankToNull(adminReply);
+        validateAdminReply(report, status, reply);
 
+        // สถานะเดินเองตามสิ่งที่ admin ทำ: ส่งคำแนะนำ = กำลังดำเนินการ, ปฏิเสธ = ปิดเรื่องพร้อมเหตุผล
+        // (ปิดเป็น "แก้ไขแล้ว" ทำได้เฉพาะผู้ใช้กด "ต้นไม้ดีขึ้นแล้ว" หรือ job ปิดรายงานที่เงียบนาน)
         report.setStatus(status);
-        report.setAdminReply(blankToNull(adminReply));
-        // RESOLVED / REJECTED = ปิดเรื่อง บันทึกเวลาปิด ถ้าเปิดกลับมาให้ล้างเวลาปิดออก
-        boolean closed = status == ReportStatus.RESOLVED || status == ReportStatus.REJECTED;
-        report.setResolvedAt(closed ? LocalDateTime.now() : null);
+        report.setAdminReply(reply);
+        report.setResolvedAt(status == ReportStatus.REJECTED ? LocalDateTime.now() : null);
         HealthReport saved = healthReportRepository.save(report);
 
         Plant plant = saved.getPlant();
-        updatePlantHealth(plant, status);
+        if (plantHealth != null) {
+            // admin เลือกเอง: ให้ State ของโป้ยตรวจ ถ้าเปลี่ยนไม่ได้จะโยน error แล้ว transaction ย้อนทั้งหมด (คำตอบก็ไม่ถูกบันทึก)
+            plantService.changeHealth(plant.getId(), plantHealth);
+        } else {
+            updatePlantHealth(plant, status);
+        }
 
         // Observer: ประกาศว่ามีการตอบรายงาน ใครฟังอยู่ก็ทำงานของตัวเองต่อ (เช่น สร้างแจ้งเตือนให้เจ้าของ)
         eventPublisher.publishEvent(new ReportResolvedEvent(
                 saved.getId(), plant.getUser().getId(), plant.getId(), saved.getTitle(), status));
         return saved;
+    }
+
+    // admin ทำได้ 2 อย่าง: ส่งคำแนะนำ (IN_PROGRESS) หรือปฏิเสธ (REJECTED) และต้องเขียนข้อความเสมอ
+    private void validateAdminReply(HealthReport report, ReportStatus status, String reply) {
+        if (report.getStatus() == ReportStatus.RESOLVED || report.getStatus() == ReportStatus.REJECTED) {
+            throw new InvalidRequestException("รายงานนี้ปิดไปแล้ว ตอบเพิ่มไม่ได้");
+        }
+        if (status != ReportStatus.IN_PROGRESS && status != ReportStatus.REJECTED) {
+            throw new InvalidRequestException("ผู้ดูแลระบบทำได้แค่ส่งคำแนะนำ หรือปฏิเสธรายงาน");
+        }
+        if (reply == null) {
+            throw new InvalidRequestException(status == ReportStatus.REJECTED
+                    ? "กรุณาเขียนเหตุผลที่ปฏิเสธ"
+                    : "กรุณาเขียนคำแนะนำ");
+        }
     }
 
     // เปลี่ยนสถานะสุขภาพต้นไม้ตามผลการตรวจ ผ่าน State pattern ของโป้ย (ห้าม set healthStatus เอง)
@@ -142,6 +227,29 @@ public class HealthReportServiceImpl implements HealthReportService {
         if (target != null && PlantHealthStates.of(plant.getHealthStatus()).canChangeTo(target)) {
             plantService.changeHealth(plant.getId(), target);
         }
+    }
+
+    // อัปเดตผลได้เฉพาะรายงานของตัวเองที่ admin ตอบแล้วและยัง "กำลังดำเนินการ"
+    private HealthReport findMyInProgressReport(Long id, String email) {
+        HealthReport report = findMyReport(id, email);
+        if (report.getStatus() != ReportStatus.IN_PROGRESS) {
+            throw new InvalidRequestException("อัปเดตผลได้เฉพาะรายงานที่กำลังดำเนินการ");
+        }
+        return report;
+    }
+
+    // "ติดตามผล: ใบเหลือง" ติดตามซ้ำหลายรอบไม่ต้องเติมคำนำหน้าซ้ำ และไม่เกิน 150 ตัวอักษรตามคอลัมน์ title
+    private String followUpTitle(String title) {
+        String base = title.startsWith(FOLLOW_UP_PREFIX) ? title : FOLLOW_UP_PREFIX + title;
+        return base.length() > 150 ? base.substring(0, 150) : base;
+    }
+
+    private void ensureNoOpenReport(Long plantId) {
+        healthReportRepository.findFirstByPlantIdAndStatusInOrderByCreatedAtDesc(plantId, OPEN_STATUSES)
+                .ifPresent(open -> {
+                    throw new DuplicateReportException(
+                            "ต้นนี้มีรายงานที่ยังไม่ปิดอยู่แล้ว รอผู้ดูแลระบบตอบ หรืออัปเดตผลในรายงานเดิม", open.getId());
+                });
     }
 
     private String blankToNull(String value) {

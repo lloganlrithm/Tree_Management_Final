@@ -1,5 +1,6 @@
 package com.example.plantpal.dto.request;
 
+import com.example.plantpal.domain.enums.HealthStatus;
 import com.example.plantpal.domain.enums.ReportStatus;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -14,4 +15,7 @@ public class ReportReplyRequest {
     private ReportStatus status;
 
     private String adminReply;
+
+    // ไม่บังคับ: ว่าง = เปลี่ยนสถานะต้นไม้อัตโนมัติตามสถานะรายงาน
+    private HealthStatus plantHealthStatus;
 }

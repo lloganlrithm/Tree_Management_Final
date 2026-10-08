@@ -1,9 +1,13 @@
 package com.example.plantpal.controller.web;
 
+import com.example.plantpal.domain.enums.HealthStatus;
 import com.example.plantpal.domain.enums.NotificationType;
 import com.example.plantpal.domain.enums.ReportStatus;
 import com.example.plantpal.domain.enums.Severity;
+import com.example.plantpal.plant.state.PlantHealthStates;
 import org.springframework.stereotype.Component;
+
+import java.util.stream.Collectors;
 
 // แปลง enum เป็นข้อความภาษาไทยสำหรับหน้าเว็บ ใช้ใน Thymeleaf ด้วย ${@reportLabels.status(r.status)}
 // รวมไว้ที่เดียว ทุกหน้าของรายงาน/แจ้งเตือนจะได้ใช้คำเดียวกัน
@@ -17,6 +21,26 @@ public class ReportLabels {
 
     public Severity[] severities() {
         return Severity.values();
+    }
+
+    public HealthStatus[] healthStatuses() {
+        return HealthStatus.values();
+    }
+
+    // สถานะต้นไม้ที่เปลี่ยนไปได้จากสถานะปัจจุบัน (ถาม State ของโป้ย) ส่งเป็น "SICK,DEAD" ให้ script ในหน้า admin
+    public String nextHealthCsv(HealthStatus current) {
+        return PlantHealthStates.nextOf(current).stream().map(Enum::name).collect(Collectors.joining(","));
+    }
+
+    // ใช้คำเดียวกับหน้ารายละเอียดต้นไม้ของโป้ย
+    public String health(HealthStatus status) {
+        if (status == null) return "";
+        return switch (status) {
+            case HEALTHY -> "ปกติดี";
+            case SICK -> "ป่วย";
+            case RECOVERING -> "กำลังฟื้นตัว";
+            case DEAD -> "ตายแล้ว";
+        };
     }
 
     public String status(ReportStatus status) {

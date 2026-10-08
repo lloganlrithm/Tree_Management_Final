@@ -26,8 +26,8 @@ public class NotificationListener {
     public void onReportResolved(ReportResolvedEvent event) {
         String message = switch (event.getStatus()) {
             case RESOLVED -> "รายงาน \"" + event.getReportTitle() + "\" แก้ไขแล้ว ดูคำแนะนำจากผู้ดูแลระบบได้เลย";
-            case REJECTED -> "ผู้ดูแลระบบปิดรายงาน \"" + event.getReportTitle() + "\" แล้ว";
-            case IN_PROGRESS -> "ผู้ดูแลระบบกำลังดูรายงาน \"" + event.getReportTitle() + "\" และตอบกลับแล้ว";
+            case REJECTED -> "ผู้ดูแลระบบปฏิเสธรายงาน \"" + event.getReportTitle() + "\" ดูเหตุผลในรายงานได้เลย";
+            case IN_PROGRESS -> "ผู้ดูแลระบบส่งคำแนะนำรายงาน \"" + event.getReportTitle() + "\" แล้ว ลองทำตามแล้วบอกผลได้เลย";
             case PENDING -> "ผู้ดูแลระบบตอบรายงาน \"" + event.getReportTitle() + "\" แล้ว";
         };
         notificationService.create(event.getOwnerId(), event.getPlantId(), NotificationType.HEALTH_REPLY, message);
@@ -44,6 +44,15 @@ public class NotificationListener {
                 ? "เลยกำหนด" + action + " " + event.getPlantName() + " แล้ว (กำหนด " + date + ")"
                 : "พรุ่งนี้ถึงเวลา" + action + " " + event.getPlantName();
         notificationService.create(event.getOwnerId(), event.getPlantId(), NotificationType.CARE_DUE, message);
+    }
+
+    // ผู้ฟังตัวที่ 3: job ปิดรายงานที่เงียบนาน -> บอกเจ้าของว่าปิดแล้ว และแจ้งใหม่ได้ถ้ายังมีปัญหา
+    @TransactionalEventListener
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void onReportAutoClosed(ReportAutoClosedEvent event) {
+        String message = "ปิดรายงาน \"" + event.getReportTitle() + "\" อัตโนมัติ เพราะไม่มีการบอกผลเกิน "
+                + event.getStaleDays() + " วัน ถ้ายังมีปัญหาแจ้งใหม่ได้เลย";
+        notificationService.create(event.getOwnerId(), event.getPlantId(), NotificationType.SYSTEM, message);
     }
 
     private String actionLabel(ActionType type) {
