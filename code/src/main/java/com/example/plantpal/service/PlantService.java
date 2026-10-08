@@ -3,12 +3,16 @@ package com.example.plantpal.service;
 import com.example.plantpal.domain.entity.Plant;
 import com.example.plantpal.domain.enums.HealthStatus;
 import com.example.plantpal.dto.request.PlantRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
 public interface PlantService {
 
     List<Plant> findMyPlants(String email, String keyword);
+
+    Page<Plant> findMyPlantsPage(String email, Pageable pageable);   // แบบแบ่งหน้า (REST API)
 
     Plant findMyPlant(Long id, String email);
 

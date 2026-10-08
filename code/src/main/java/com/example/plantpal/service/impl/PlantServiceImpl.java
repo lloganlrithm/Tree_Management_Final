@@ -15,6 +15,8 @@ import com.example.plantpal.repository.UserRepository;
 import com.example.plantpal.service.PlantService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +42,12 @@ public class PlantServiceImpl implements PlantService {
         }
         return plantRepository
                 .findByUserEmailAndNicknameContainingIgnoreCaseOrderByCreatedAtDesc(email, keyword.trim());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Plant> findMyPlantsPage(String email, Pageable pageable) {
+        return plantRepository.findByUserEmail(email, pageable);
     }
 
     @Override
