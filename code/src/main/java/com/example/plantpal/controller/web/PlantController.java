@@ -42,6 +42,7 @@ public class PlantController {
             model.addAttribute("plant", plant);
             model.addAttribute("speciesList", speciesService.findAll());   // ใช้ใน dropdown ของฟอร์มแก้ไข
             model.addAttribute("nextStatuses", PlantHealthStates.nextOf(plant.getHealthStatus()));   // ปุ่มเปลี่ยนสถานะ
+            model.addAttribute("canUndo", plantService.canUndo(id));   // มีการแก้ไขให้ย้อนไหม (Memento)
             return "plants/detail";
         } catch (IllegalArgumentException e) {
             redirect.addFlashAttribute("error", e.getMessage());
@@ -84,6 +85,18 @@ public class PlantController {
             plantService.changeMyPlantHealth(id, currentEmail(), status);
             redirect.addFlashAttribute("success", "เปลี่ยนสถานะสุขภาพแล้ว");
         } catch (IllegalArgumentException | InvalidHealthTransitionException e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/plants/" + id;
+    }
+
+    // ย้อนการแก้ไขล่าสุด: เอาค่าเดิมจาก snapshot กลับมา (Memento pattern)
+    @PostMapping("/{id}/undo")
+    public String undo(@PathVariable Long id, RedirectAttributes redirect) {
+        try {
+            plantService.undoLastEdit(id, currentEmail());
+            redirect.addFlashAttribute("success", "ย้อนการแก้ไขล่าสุดแล้ว");
+        } catch (IllegalArgumentException e) {
             redirect.addFlashAttribute("error", e.getMessage());
         }
         return "redirect:/plants/" + id;

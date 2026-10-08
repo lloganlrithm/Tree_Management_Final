@@ -17,6 +17,13 @@ public interface PlantService {
     Plant update(PlantRequest request, String email);
 
     void delete(Long id, String email);
+    // ===== ย้อนการแก้ไข (Memento pattern ใน plant/memento) =====
+
+    /** ต้นนี้มีการแก้ไขให้ย้อนไหม (ใช้ซ่อน/แสดงปุ่มในหน้า detail) */
+    boolean canUndo(Long id);
+
+    /** ย้อนการแก้ไขล่าสุดของต้นไม้ตัวเอง กลับเป็นค่าก่อนแก้ */
+    Plant undoLastEdit(Long id, String email);
 
     // ===== สถานะสุขภาพ (State pattern ใน plant/state) =====
 
