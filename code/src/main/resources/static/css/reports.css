@@ -4,6 +4,21 @@
    ไฟล์นี้เขียนเฉพาะสิ่งที่หน้าของเปรมมีเอง ทุก class ขึ้นต้นด้วย rp-
    ========================================================= */
 
+/* ---------- ป้ายสถานะที่เพิ่มทีหลัง (4 ตัวแรกอยู่ใน base.css) ---------- */
+.st-FOLLOWED_UP { background: #efe9f6; color: #7a5aa6; }
+.st-AUTO_CLOSED { background: #eceeec; color: var(--muted); }
+
+/* ---------- หน้า admin: ป้าย "รอบที่ N" + รอบก่อนหน้าในแผงตอบ ---------- */
+.rp-round { margin-left: 6px; background: #efe9f6; color: #7a5aa6; font-size: .72rem; }
+.rp-rounds { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.rp-round-item {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--bg);
+}
+.rp-round-item p { margin: 0; overflow-wrap: anywhere; }
+.rp-round-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rp-round-head .badge { margin-left: auto; }
+
 /* ---------- กล่องข้อความหลังบันทึก (flash จาก Controller) ---------- */
 .rp-flash { padding: 12px 16px; border-radius: var(--radius-md); font-weight: 500; }
 .rp-flash.ok  { background: var(--soft); color: var(--primary-strong); }

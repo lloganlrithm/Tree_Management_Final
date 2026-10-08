@@ -26,7 +26,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.mock.web.MockMultipartFile;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -231,7 +238,18 @@ class HealthReportServiceImplTest {
 
         assertThatThrownBy(() -> service.reply(1L, ReportStatus.IN_PROGRESS, "x"))
                 .isInstanceOf(InvalidRequestException.class)
-                .hasMessage("รายงานนี้ปิดไปแล้ว ตอบเพิ่มไม่ได้");
+                .hasMessage("รายงานนี้จบไปแล้ว ตอบเพิ่มไม่ได้");
+    }
+
+    @Test
+    void replyToFollowedUpReportIsRefused() {
+        // รอบที่ส่งต่อไปแล้ว admin ต้องตอบในรายงานรอบใหม่ ไม่ใช่รอบเก่า
+        HealthReport report = report(plant(HealthStatus.SICK), ReportStatus.FOLLOWED_UP);
+        when(healthReportRepository.findWithPlantById(1L)).thenReturn(Optional.of(report));
+
+        assertThatThrownBy(() -> service.reply(1L, ReportStatus.IN_PROGRESS, "x"))
+                .isInstanceOf(InvalidRequestException.class);
+        verify(healthReportRepository, never()).save(any());
     }
 
     @Test
@@ -302,8 +320,8 @@ class HealthReportServiceImplTest {
 
         HealthReport next = service.followUp(1L, request, EMAIL);
 
-        // รอบเดิมปิด รูปเดิมยังอยู่ในแถวเดิม
-        assertThat(previous.getStatus()).isEqualTo(ReportStatus.RESOLVED);
+        // รอบเดิมเป็น "ส่งต่อรอบใหม่" (ไม่ใช่แก้ไขแล้ว) รูปเดิมยังอยู่ในแถวเดิม
+        assertThat(previous.getStatus()).isEqualTo(ReportStatus.FOLLOWED_UP);
         assertThat(previous.getResolvedAt()).isNotNull();
         // รอบใหม่: ต้นเดียวกัน รอ admin ตรวจ
         assertThat(next).isNotSameAs(previous);
@@ -347,12 +365,12 @@ class HealthReportServiceImplTest {
     // ---------- job ปิดรายงานที่เงียบนาน ----------
 
     @Test
-    void autoCloseResolvesReportKeepsPlantHealthAndNotifiesOwner() {
+    void autoCloseMarksReportAutoClosedKeepsPlantHealthAndNotifiesOwner() {
         HealthReport report = report(plant(HealthStatus.SICK), ReportStatus.IN_PROGRESS);
 
         service.autoClose(report, 14);
 
-        assertThat(report.getStatus()).isEqualTo(ReportStatus.RESOLVED);
+        assertThat(report.getStatus()).isEqualTo(ReportStatus.AUTO_CLOSED);
         assertThat(report.getResolvedAt()).isNotNull();
         verify(healthReportRepository).save(report);
         verify(plantService, never()).changeHealth(any(), any());   // ไม่รู้ผลจริง เลยไม่แตะสถานะต้นไม้
@@ -370,5 +388,56 @@ class HealthReportServiceImplTest {
         assertThatThrownBy(() -> service.reply(99L, ReportStatus.IN_PROGRESS, "x"))
                 .isInstanceOf(ResourceNotFoundException.class);
         verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    // ---------- admin เห็นรอบล่าสุด + รอบก่อนหน้า ----------
+
+    @Test
+    void latestRoundsWithoutStatusFilterHidesFollowedUpRounds() {
+        // ไม่เลือกสถานะ = 1 แถวต่อ 1 เรื่อง รอบที่ส่งต่อไปแล้วไม่ซ้อนกับรอบใหม่
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<HealthReport> page = new PageImpl<>(List.of());
+        when(healthReportRepository.findByStatusNot(ReportStatus.FOLLOWED_UP, pageable)).thenReturn(page);
+
+        assertThat(service.findLatestRounds(null, null, pageable)).isSameAs(page);
+    }
+
+    @Test
+    void latestRoundsWithStatusFilterShowsThatStatusEvenIfNotLatest() {
+        // เลือก "ปฏิเสธ" ต้องเห็นรายงานที่ปฏิเสธ แม้ต้นนั้นจะแจ้งเรื่องใหม่มาแล้ว
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<HealthReport> page = new PageImpl<>(List.of());
+        when(healthReportRepository.findByStatus(ReportStatus.REJECTED, pageable)).thenReturn(page);
+
+        assertThat(service.findLatestRounds(ReportStatus.REJECTED, null, pageable)).isSameAs(page);
+    }
+
+    @Test
+    void previousRoundsOnlyFollowTheSameIssue() {
+        Plant plant = plant(HealthStatus.SICK);
+        HealthReport latest = report(plant, ReportStatus.PENDING);
+        latest.setId(4L);
+        HealthReport second = report(plant, ReportStatus.FOLLOWED_UP);
+        second.setId(3L);
+        HealthReport first = report(plant, ReportStatus.FOLLOWED_UP);
+        first.setId(2L);
+        // เรื่องเก่าที่จบไปแล้ว (ดีขึ้นแล้ว) เป็นคนละเรื่อง ต้องไม่ถูกนับเป็นรอบก่อนหน้า
+        HealthReport oldIssue = report(plant, ReportStatus.RESOLVED);
+        oldIssue.setId(1L);
+        // repository คืนใหม่สุดก่อน (รวมรายงานนี้ด้วย)
+        when(healthReportRepository.findByPlantIdInOrderByCreatedAtDesc(List.of(10L)))
+                .thenReturn(List.of(latest, second, first, oldIssue));
+
+        Map<Long, List<HealthReport>> result = service.findPreviousRounds(List.of(latest));
+
+        assertThat(result.get(4L)).containsExactly(second, first);
+    }
+
+    @Test
+    void firstRoundHasNoPreviousRounds() {
+        HealthReport only = report(plant(HealthStatus.SICK), ReportStatus.PENDING);
+        when(healthReportRepository.findByPlantIdInOrderByCreatedAtDesc(List.of(10L))).thenReturn(List.of(only));
+
+        assertThat(service.findPreviousRounds(List.of(only)).get(1L)).isEmpty();
     }
 }
