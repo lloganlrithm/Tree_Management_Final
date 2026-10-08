@@ -51,22 +51,26 @@
 
         <div class="field">
           <label for="title">หัวข้อ</label>
+          <!-- ${form?.title}: ส่งไม่ผ่านแล้วกลับมาที่ฟอร์ม ข้อความที่พิมพ์ไว้ยังอยู่ -->
           <input class="input" type="text" id="title" name="title" data-field="health_reports.title"
-                 maxlength="150" placeholder="เช่น ใบเหลือง, ใบเหี่ยว" required>
+                 th:value="${form?.title}" maxlength="150" placeholder="เช่น ใบเหลือง, ใบเหี่ยว" required>
         </div>
 
         <div class="field">
           <label for="description">รายละเอียด</label>
           <textarea class="textarea" id="description" name="description" data-field="health_reports.description"
+                    th:text="${form?.description}"
                     placeholder="อาการที่เห็น เริ่มเป็นเมื่อไร ดูแลอะไรไปแล้วบ้าง"></textarea>
         </div>
 
         <fieldset class="rp-fieldset">
           <legend>ความรุนแรง</legend>
-          <div class="seg rp-seg" data-field="health_reports.severity">
-            <label><input type="radio" name="severity" value="LOW"><span>เล็กน้อย</span></label>
-            <label><input type="radio" name="severity" value="MEDIUM" checked><span class="rp-opt-MEDIUM">ปานกลาง</span></label>
-            <label><input type="radio" name="severity" value="HIGH"><span class="rp-opt-HIGH">รุนแรง</span></label>
+          <!-- เปิดฟอร์มครั้งแรกเลือก "ปานกลาง" ไว้ / ส่งไม่ผ่านจะเลือกค่าเดิมที่กดไว้ -->
+          <div class="seg rp-seg" data-field="health_reports.severity"
+               th:with="sev=${form?.severity != null ? form.severity.name() : 'MEDIUM'}">
+            <label><input type="radio" name="severity" value="LOW" th:checked="${sev == 'LOW'}"><span>เล็กน้อย</span></label>
+            <label><input type="radio" name="severity" value="MEDIUM" th:checked="${sev == 'MEDIUM'}"><span class="rp-opt-MEDIUM">ปานกลาง</span></label>
+            <label><input type="radio" name="severity" value="HIGH" th:checked="${sev == 'HIGH'}"><span class="rp-opt-HIGH">รุนแรง</span></label>
           </div>
         </fieldset>
 
@@ -74,8 +78,11 @@
           <label for="image">รูปอาการ</label>
           <!-- อัปโหลดขึ้น Cloudinary แล้วเก็บลิงก์ลง health_reports.image_url -->
           <input class="input" type="file" id="image" name="image" accept="image/*" data-field="health_reports.image_url">
-          <span class="hint">ไม่บังคับ รูปต้นไม้ที่เห็นอาการชัดๆ ไม่เกิน 5MB</span>
+          <span class="hint">ไม่บังคับ รูปต้นไม้ที่เห็นอาการชัดๆ (PNG, JPG, GIF, WEBP) ไม่เกิน 5MB</span>
+          <!-- เบราว์เซอร์ไม่ยอมให้เว็บเติมไฟล์กลับ ส่งไม่ผ่านต้องเลือกรูปใหม่ -->
+          <span class="hint" th:if="${imageLost}" style="color: var(--crit)">ข้อความที่พิมพ์ไว้ยังอยู่ แต่ต้องเลือกรูปใหม่อีกครั้ง</span>
           <div class="rp-preview" id="image-preview" aria-live="polite">พรีวิวรูปจะแสดงที่นี่</div>
+          <button type="button" class="btn btn-sm btn-danger" id="image-remove" hidden>ลบรูปนี้</button>
         </div>
 
         <div class="form-actions">
@@ -90,27 +97,37 @@
 
 <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
 <script>
-  // พรีวิวรูปที่เลือกจากเครื่อง (ยังไม่ได้อัปโหลด แค่แสดงในหน้า) + เช็คขนาดก่อนส่ง
+  // พรีวิวรูปที่เลือกจากเครื่อง (ยังไม่ได้อัปโหลด แค่แสดงในหน้า) + เช็คขนาด/ชนิดก่อนส่ง + ปุ่มลบรูป
   (function () {
     var input = document.getElementById("image");
     var box = document.getElementById("image-preview");
+    var remove = document.getElementById("image-remove");
     if (!input || !box) return;
     var empty = box.textContent;
     var MAX = 5 * 1024 * 1024;
+    var ALLOWED = ["image/png", "image/jpeg", "image/gif", "image/webp"];   // ชุดเดียวกับฝั่ง server
+
+    // ลบแค่รูป: ล้างช่องไฟล์ + พรีวิว ช่องอื่นในฟอร์มไม่โดน
+    function clearImage(message) {
+      input.value = "";
+      box.textContent = message || empty;
+      remove.hidden = true;
+    }
+
     input.addEventListener("change", function () {
       var file = input.files[0];
-      if (!file) { box.textContent = empty; return; }
-      if (file.size > MAX) {
-        input.value = "";
-        box.textContent = "ไฟล์ใหญ่เกิน 5MB เลือกรูปใหม่";
-        return;
-      }
+      if (!file) { clearImage(); return; }
+      if (ALLOWED.indexOf(file.type) === -1) { clearImage("รองรับเฉพาะรูป PNG, JPG, GIF หรือ WEBP เลือกรูปใหม่"); return; }
+      if (file.size > MAX) { clearImage("ไฟล์ใหญ่เกิน 5MB เลือกรูปใหม่"); return; }
       var img = new Image();
       img.alt = "พรีวิวรูปที่แนบ";
       img.src = URL.createObjectURL(file);
       box.textContent = "";
       box.appendChild(img);
+      remove.hidden = false;
     });
+
+    remove.addEventListener("click", function () { clearImage(); });
   })();
 </script>
 </body>
