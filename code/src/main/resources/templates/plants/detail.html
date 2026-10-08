@@ -52,7 +52,7 @@
             <div class="actions">
               <button class="btn btn-soft" type="button" data-open="edit-plant">แก้ไข</button>
               <!-- ย้อนการแก้ไขล่าสุด (Memento) แสดงเฉพาะตอนมีให้ย้อน -->
-              <form method="post" th:action="@{/plants/{id}/undo(id=${plant.id})}" th:if="${canUndo}"
+               <form method="post" data-live th:action="@{/plants/{id}/undo(id=${plant.id})}" th:if="${canUndo}"
                 style="display:inline;">
                 <button class="btn btn-soft" type="submit">ย้อนการแก้ไขล่าสุด</button>
               </form>
