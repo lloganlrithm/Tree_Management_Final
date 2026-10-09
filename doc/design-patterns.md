@@ -114,47 +114,7 @@
   - เขียน unit test แยกได้ (`NotificationListenerTest`, `HealthReportServiceImplTest` เช็กว่าส่ง event จริง)
 - **Class Diagram:**
 
-```mermaid
-classDiagram
-    class ApplicationEventPublisher {
-        <<Spring>>
-        +publishEvent(event)
-    }
-    class HealthReportServiceImpl {
-        +create(request, email)
-        +followUp(id, request, email)
-        +reply(id, status, adminReply, plantHealth)
-        +autoClose(report, staleDays)
-    }
-    class CareDueReminderJob
-    class OverdueCareReminderJob
-    class ReportResolvedEvent
-    class ReportSubmittedEvent
-    class ReportAutoClosedEvent
-    class CareDueEvent {
-        +from(schedule, overdue)$ CareDueEvent
-    }
-    class NotificationListener {
-        +onReportResolved(ReportResolvedEvent)
-        +onReportSubmitted(ReportSubmittedEvent)
-        +onReportAutoClosed(ReportAutoClosedEvent)
-        +onCareDue(CareDueEvent)
-    }
-    class NotificationService {
-        <<interface>>
-        +create(userId, plantId, type, message)
-    }
-    HealthReportServiceImpl --> ApplicationEventPublisher : publish
-    CareDueReminderJob --> ApplicationEventPublisher : publish
-    OverdueCareReminderJob --> ApplicationEventPublisher : publish
-    ApplicationEventPublisher ..> NotificationListener : แจ้งหลัง commit
-    HealthReportServiceImpl ..> ReportResolvedEvent : สร้าง
-    HealthReportServiceImpl ..> ReportSubmittedEvent : สร้าง
-    HealthReportServiceImpl ..> ReportAutoClosedEvent : สร้าง
-    CareDueReminderJob ..> CareDueEvent : สร้าง
-    OverdueCareReminderJob ..> CareDueEvent : สร้าง
-    NotificationListener --> NotificationService
-```
+![Observer](diagrams/pattern-observer.png)
 
 ### 2.4 Command
 - **ผู้รับผิดชอบ:** Preem
@@ -239,44 +199,6 @@ classDiagram
   - เขียน unit test เรียก `run()` ตรงๆ ได้โดยไม่ต้องรอเวลา (`CareReminderJobsTest`, `StaleReportCloseJobTest`)
 - **Class Diagram:**
 
-```mermaid
-classDiagram
-    class AbstractDailyJob~T~ {
-        <<abstract>>
-        +ZONE$ ZoneId
-        -transactionTemplate TransactionTemplate
-        +run() int
-        #name()* String
-        #findTargets(today)* List~T~
-        #process(target, today)*
-        #afterRun(count, today)
-    }
-    class CareDueReminderJob {
-        -careService CareService
-        -eventPublisher ApplicationEventPublisher
-        +scheduledRun()
-        #name() String
-        #findTargets(today) List~CareSchedule~
-        #process(schedule, today)
-    }
-    class OverdueCareReminderJob {
-        -careService CareService
-        -eventPublisher ApplicationEventPublisher
-        +scheduledRun()
-        #name() String
-        #findTargets(today) List~CareSchedule~
-        #process(schedule, today)
-    }
-    class StaleReportCloseJob {
-        +STALE_DAYS$ int
-        -healthReportService HealthReportService
-        +scheduledRun()
-        #name() String
-        #findTargets(today) List~HealthReport~
-        #process(report, today)
-    }
-    AbstractDailyJob <|-- CareDueReminderJob
-    AbstractDailyJob <|-- OverdueCareReminderJob
-    AbstractDailyJob <|-- StaleReportCloseJob
-    note for AbstractDailyJob "run() เป็น final\n1) findTargets\n2) process ทีละรายการ\n3) afterRun (hook)"
-```
+![Template Method](diagrams/pattern-template-method.png)
+
+> `run()` เป็น `final` (template method) ลำดับตายตัว: 1) `findTargets` → 2) `process` ทีละรายการ → 3) `afterRun` (hook) · ตัวเอียง = abstract ที่คลาสลูกต้องเขียน
