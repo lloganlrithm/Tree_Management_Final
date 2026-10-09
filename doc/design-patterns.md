@@ -11,11 +11,11 @@
 | DTO + Mapper | Architectural |  | `dto/request/`, `dto/response/`, `mapper/` |  |
 | Dependency Injection | Architectural |  | Constructor Injection ทุก service/controller |  |
 | Strategy | GoF Behavioral |  | `service/strategy/` |  |
-| State | GoF Behavioral |  | `plant/state/` |  |
+| State | GoF Behavioral | ต้นไม้มี 4 สถานะที่เปลี่ยนไปหากันได้ไม่ครบทุกทาง ถ้าเขียน if-else ใน service กติกาจะกระจาย และอาจเปลี่ยนผิด เช่นต้นที่ตายแล้วกลับมาปกติ | `plant/state/` | _(ใส่ชื่อ)_ |
 | Observer | GoF Behavioral | งานหลักหลายจุด (ตอบรายงาน, ส่งรายงาน, job รายวัน) ต้องสร้างแจ้งเตือน ถ้าเรียก NotificationService ตรงๆ ทุกโมดูลจะผูกกับระบบแจ้งเตือน | `event/` | Kamolpon |
 | Command | GoF Behavioral | แอดมินเปลี่ยน role / ระงับบัญชีผิดคน แล้วย้อนกลับไม่ได้ | `command/` | Preemphat |
 | Chain of Responsibility | GoF Behavioral | การตรวจข้อมูลสมัครสมาชิกกองรวมเป็น if-else ยาวใน service | `validation/` | Preemphat |
-| Memento | GoF Behavioral |  | `plant/memento/` |  |
+| Memento | GoF Behavioral | ผู้ใช้แก้ข้อมูลต้นไม้ผิดแล้วกดบันทึกไป ค่าเดิมหาย ต้องจำแล้วแก้กลับเอง | `plant/memento/` | _(ใส่ชื่อ)_ |
 | Iterator | GoF Behavioral |  | `iterator/` |  |
 | Template Method | GoF Behavioral | job รายวัน 3 ตัวมีขั้นตอนเหมือนกัน (เปิด transaction, หาวันที่, วนทำ, เขียน log) ต่างกันแค่หาอะไร / ทำอะไร | `job/` | Kamolpon |
 
@@ -68,14 +68,30 @@
 - **Class Diagram:** _(รอใส่)_
 
 ### 2.2 State
-- **ผู้รับผิดชอบ:** _(รอใส่)_
-- **ปัญหาที่แก้:** _(รอใส่)_
-- **ไฟล์/คลาสที่ใช้:**
-  - `plant/state/PlantHealthState` (interface)
-  - `plant/state/HealthyState`, `SickState`, `RecoveringState`, `DeadState`
-  - `plant/state/PlantHealthStates`, `plant/state/InvalidHealthTransitionException`
-- **เหตุผลที่เลือก:** _(รอใส่)_
-- **Class Diagram:** _(รอใส่)_
+
+- **ผู้รับผิดชอบ:** _(ใส่ชื่อ)_
+- **ปัญหาที่แก้:**
+  - ต้นไม้มี 4 สถานะ แต่เปลี่ยนไปหากันได้ไม่ครบทุกทาง เช่น DEAD เปลี่ยนไปสถานะอื่นไม่ได้อีก และ HEALTHY กระโดดไป RECOVERING ไม่ได้
+  - ถ้าเขียน if-else ใน `PlantServiceImpl` กติกาจะกระจายอยู่หลายที่ ทั้งปุ่มในหน้าต้นไม้และตอนแอดมินตอบรายงาน
+  - `recovery_count` ต้องเพิ่มเฉพาะตอนที่ต้นไม้ฟื้นจริงเท่านั้น
+- **ไฟล์/คลาส:**
+  - `plant/state/PlantHealthState`, `HealthyState`, `SickState`, `RecoveringState`, `DeadState`, `PlantHealthStates`, `InvalidHealthTransitionException`
+  - `service/impl/PlantServiceImpl` (`changeHealth`, `changeMyPlantHealth`, `markSick`, `markRecovering`)
+  - `controller/web/PlantController` (`POST /plants/{id}/health`)
+- **เหตุผล:**
+  - แต่ละสถานะตัดสินเองผ่าน `canChangeTo` / `onLeave` ส่วน service เรียกแค่บรรทัดเดียวคือ `PlantHealthStates.of(current).changeTo(plant, target)`
+  - กติกาอยู่ที่เดียว ถ้าเปลี่ยนสถานะผิดจะ throw `InvalidHealthTransitionException` และ API ตอบ 409
+  - `nextOf()` ทำให้หน้าเว็บแสดงเฉพาะปุ่มที่กดได้จริง
+  - เป็นไปตาม Open/Closed: ถ้าจะเพิ่มสถานะใหม่ ก็แค่สร้างคลาสใหม่แล้วลงทะเบียนใน `PlantHealthStates`
+  - ใช้ instance ร่วมกันเก็บไว้ใน `EnumMap`
+  - มีเทสต์ใน `PlantHealthStateTest` และ `PlantServiceImplHealthTest`
+- **State Diagram:**
+
+![State Diagram](diagrams/state-plant-health.png)
+
+- **Class Diagram:**
+
+![State](diagrams/pattern-state.png)
 
 ### 2.3 Observer
 - **ผู้รับผิดชอบ:** Kamolpon
@@ -177,11 +193,25 @@ classDiagram
 ![Chain of Responsibility](diagrams/pattern-chain-of-responsibility.png)
 
 ### 2.6 Memento
-- **ผู้รับผิดชอบ:** _(รอใส่)_
-- **ปัญหาที่แก้:** _(รอใส่)_
-- **ไฟล์/คลาสที่ใช้:** `plant/memento/PlantSnapshot`, `plant/memento/PlantEditHistory`
-- **เหตุผลที่เลือก:** _(รอใส่)_
-- **Class Diagram:** _(รอใส่)_
+
+- **ผู้รับผิดชอบ:** _(ใส่ชื่อ)_
+- **ปัญหาที่แก้:** ผู้ใช้แก้ข้อมูลต้นไม้ผิดแล้วกดบันทึกไป ค่าเดิมหาย ต้องจำแล้วแก้กลับเอง ถ้าจะเก็บประวัติไว้ใน entity หรือ service ตรง ๆ โค้ดจะรก
+- **ไฟล์/คลาส:**
+  - Memento: `plant/memento/PlantSnapshot` (record)
+  - Caretaker: `plant/memento/PlantEditHistory` (`@SessionScope`)
+  - Originator: `service/impl/PlantServiceImpl` (`createSnapshot`, `restoreSnapshot`, `update`, `undoLastEdit`, `canUndo`)
+  - `controller/web/PlantController` (`POST /plants/{id}/undo`)
+- **เหตุผล:**
+  - ก่อน `update` จะถ่าย snapshot ของค่าเดิมเก็บไว้ก่อนทุกครั้ง
+  - `PlantSnapshot` เป็น record จึงแก้ค่าข้างในไม่ได้ (immutable)
+  - Caretaker แค่เก็บและคืน snapshot โดยไม่เข้าไปดูข้างใน
+  - เป็น session scope ผู้ใช้แต่ละคนจึงมีประวัติของตัวเอง และไม่ต้องสร้างตารางใน DB
+  - ไม่เก็บ `healthStatus` ใน snapshot เพราะการเปลี่ยนสถานะต้องผ่าน State pattern เท่านั้น
+  - undo ได้ครั้งเดียว เพราะ `take()` ดึง snapshot ออกไปแล้ว
+  - มีเทสต์ใน `PlantServiceImplUndoTest`
+- **Class Diagram:**
+
+![Memento](diagrams/pattern-memento.png)
 
 ### 2.7 Iterator
 - **ผู้รับผิดชอบ:** _(รอใส่)_
