@@ -10,13 +10,13 @@
 | Service Layer | Architectural |  | `service/`, `service/impl/` |  |
 | DTO + Mapper | Architectural |  | `dto/request/`, `dto/response/`, `mapper/` |  |
 | Dependency Injection | Architectural |  | Constructor Injection ทุก service/controller |  |
-| Strategy | GoF Behavioral |  | `service/strategy/` |  |
+| Strategy | GoF Behavioral | งานดูแลแต่ละประเภทคำนวณรอบวันไม่เหมือนกัน ถ้าเขียน if-else ใน service เพิ่มงานใหม่ต้องแก้ service ทุกครั้ง | `service/strategy/` | Soranan |
 | State |
 | Observer | GoF Behavioral | งานหลักหลายจุด (ตอบรายงาน, ส่งรายงาน, job รายวัน) ต้องสร้างแจ้งเตือน ถ้าเรียก NotificationService ตรงๆ ทุกโมดูลจะผูกกับระบบแจ้งเตือน | `event/` | Kamolpon |
 | Command | GoF Behavioral | แอดมินเปลี่ยน role / ระงับบัญชีผิดคน แล้วย้อนกลับไม่ได้ | `command/` | Preemphat |
 | Chain of Responsibility | GoF Behavioral | การตรวจข้อมูลสมัครสมาชิกกองรวมเป็น if-else ยาวใน service | `validation/` | Preemphat |
 | Memento | GoF Behavioral | ผู้ใช้แก้ข้อมูลต้นไม้ผิดแล้วกดบันทึกไป ค่าเดิมหาย ต้องจำแล้วแก้กลับเอง | `plant/memento/` | Mukda |
-| Iterator | GoF Behavioral |  | `iterator/` |  |
+| Iterator | GoF Behavioral | ปฏิทิน 30 วันต้องแสดงทุกวันแม้วันที่ไม่มีงาน แต่ข้อมูลที่ได้มาเป็นรายการตารางดูแล ไม่ใช่รายวัน | `iterator/` | Soranan |
 | Template Method | GoF Behavioral | job รายวัน 3 ตัวมีขั้นตอนเหมือนกัน (เปิด transaction, หาวันที่, วนทำ, เขียน log) ต่างกันแค่หาอะไร / ทำอะไร | `job/` | Kamolpon |
 
 ---
