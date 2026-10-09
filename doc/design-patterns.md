@@ -12,11 +12,12 @@
 | Dependency Injection | Architectural |  | Constructor Injection ทุก service/controller |  |
 | Strategy | GoF Behavioral |  | `service/strategy/` |  |
 | State | GoF Behavioral |  | `plant/state/` |  |
-| Observer | GoF Behavioral |  | `event/` |  |
+| Observer | GoF Behavioral | งานหลักหลายจุด (ตอบรายงาน, ส่งรายงาน, job รายวัน) ต้องสร้างแจ้งเตือน ถ้าเรียก NotificationService ตรงๆ ทุกโมดูลจะผูกกับระบบแจ้งเตือน | `event/` | Kamolpon |
 | Command | GoF Behavioral | แอดมินเปลี่ยน role / ระงับบัญชีผิดคน แล้วย้อนกลับไม่ได้ | `command/` | Preemphat |
 | Chain of Responsibility | GoF Behavioral | การตรวจข้อมูลสมัครสมาชิกกองรวมเป็น if-else ยาวใน service | `validation/` | Preemphat |
 | Memento | GoF Behavioral |  | `plant/memento/` |  |
 | Iterator | GoF Behavioral |  | `iterator/` |  |
+| Template Method | GoF Behavioral | job รายวัน 3 ตัวมีขั้นตอนเหมือนกัน (เปิด transaction, หาวันที่, วนทำ, เขียน log) ต่างกันแค่หาอะไร / ทำอะไร | `job/` | Kamolpon |
 
 ---
 
@@ -77,14 +78,67 @@
 - **Class Diagram:** _(รอใส่)_
 
 ### 2.3 Observer
-- **ผู้รับผิดชอบ:** _(รอใส่)_
-- **ปัญหาที่แก้:** _(รอใส่)_
+- **ผู้รับผิดชอบ:** Kamolpon
+- **ปัญหาที่แก้:**
+  - หลายเหตุการณ์ในระบบต้องแจ้งเตือนคนอื่น เช่น admin ตอบรายงาน → แจ้งเจ้าของต้นไม้, ผู้ใช้ส่งรายงาน → แจ้ง admin ทุกคน, งานดูแลถึงกำหนด → แจ้งเจ้าของ
+  - ถ้าให้ `HealthReportServiceImpl` หรือ job เรียก `NotificationService` ตรงๆ ทุกโมดูลจะต้องรู้จักระบบแจ้งเตือน แก้ข้อความหรือเพิ่มช่องทางแจ้งเตือนทีไรต้องไล่แก้หลายไฟล์
+  - ถ้าบันทึกรายงานพังแต่แจ้งเตือนถูกสร้างไปแล้ว ผู้ใช้จะได้แจ้งเตือนของสิ่งที่ไม่ได้เกิดขึ้นจริง
 - **ไฟล์/คลาสที่ใช้:**
-  - Event: `event/CareDueEvent`, `PlantCreatedEvent`, `ReportSubmittedEvent`, `ReportResolvedEvent`, `ReportAutoClosedEvent`
-  - Listener: `event/NotificationListener`
-  - ผู้ส่ง event: (service/job ไหนเรียก `publishEvent`) _(รอใส่)_
-- **เหตุผลที่เลือก:** _(รอใส่)_
-- **Class Diagram:** _(รอใส่)_
+  - Event: `event/ReportResolvedEvent`, `ReportSubmittedEvent`, `ReportAutoClosedEvent`, `CareDueEvent`, `PlantCreatedEvent`
+  - Listener: `event/NotificationListener` (`onReportResolved`, `onReportSubmitted`, `onReportAutoClosed`, `onCareDue`), `service/impl/CareServiceImpl.onPlantCreated`
+  - ผู้ส่ง event (เรียก `publishEvent`):
+    - `service/impl/HealthReportServiceImpl` → ตอบรายงาน, ส่งรายงาน / ติดตามผล, ปิดรายงานอัตโนมัติ
+    - `job/CareDueReminderJob`, `job/OverdueCareReminderJob` → งานดูแลพรุ่งนี้ / เลยกำหนด
+    - `service/impl/PlantServiceImpl` → เพิ่มต้นไม้ใหม่ (`CareServiceImpl` รับไปสร้างตารางดูแล)
+- **เหตุผลที่เลือก:**
+  - ผู้ส่งแค่ประกาศว่า "เกิดอะไรขึ้น" ผ่าน `ApplicationEventPublisher` ของ Spring ไม่ต้องรู้ว่าใครฟังอยู่ ระบบรายงานกับระบบแจ้งเตือนเลยแยกกันได้
+  - จะเพิ่มแจ้งเตือนแบบใหม่ แค่สร้าง event + เพิ่ม method ใน listener ไม่ต้องแก้ของเดิม (ตอนแรกมีผู้ฟังตัวเดียว ตอนนี้เพิ่มเป็น 4 โดยไม่แตะตัวแรก)
+  - ใช้ `@TransactionalEventListener` (ทำงานหลัง commit) แจ้งเตือนจะถูกสร้างก็ต่อเมื่อบันทึกข้อมูลหลักสำเร็จแล้วเท่านั้น และใช้ `REQUIRES_NEW` เปิด transaction ใหม่ให้บันทึกแจ้งเตือนได้
+  - event เก็บแค่ค่าที่ต้องใช้ (id, ชื่อ, สถานะ) ไม่ส่ง entity เพราะ listener ทำงานหลัง transaction เดิมปิดไปแล้ว
+  - เขียน unit test แยกได้ (`NotificationListenerTest`, `HealthReportServiceImplTest` เช็กว่าส่ง event จริง)
+- **Class Diagram:**
+
+```mermaid
+classDiagram
+    class ApplicationEventPublisher {
+        <<Spring>>
+        +publishEvent(event)
+    }
+    class HealthReportServiceImpl {
+        +create(request, email)
+        +followUp(id, request, email)
+        +reply(id, status, adminReply, plantHealth)
+        +autoClose(report, staleDays)
+    }
+    class CareDueReminderJob
+    class OverdueCareReminderJob
+    class ReportResolvedEvent
+    class ReportSubmittedEvent
+    class ReportAutoClosedEvent
+    class CareDueEvent {
+        +from(schedule, overdue)$ CareDueEvent
+    }
+    class NotificationListener {
+        +onReportResolved(ReportResolvedEvent)
+        +onReportSubmitted(ReportSubmittedEvent)
+        +onReportAutoClosed(ReportAutoClosedEvent)
+        +onCareDue(CareDueEvent)
+    }
+    class NotificationService {
+        <<interface>>
+        +create(userId, plantId, type, message)
+    }
+    HealthReportServiceImpl --> ApplicationEventPublisher : publish
+    CareDueReminderJob --> ApplicationEventPublisher : publish
+    OverdueCareReminderJob --> ApplicationEventPublisher : publish
+    ApplicationEventPublisher ..> NotificationListener : แจ้งหลัง commit
+    HealthReportServiceImpl ..> ReportResolvedEvent : สร้าง
+    HealthReportServiceImpl ..> ReportSubmittedEvent : สร้าง
+    HealthReportServiceImpl ..> ReportAutoClosedEvent : สร้าง
+    CareDueReminderJob ..> CareDueEvent : สร้าง
+    OverdueCareReminderJob ..> CareDueEvent : สร้าง
+    NotificationListener --> NotificationService
+```
 
 ### 2.4 Command
 - **ผู้รับผิดชอบ:** Preem
@@ -135,3 +189,64 @@
 - **ไฟล์/คลาสที่ใช้:** `iterator/CareCalendarIterator` (implements `Iterator<CareCalendarDay>`)
 - **เหตุผลที่เลือก:** _(รอใส่)_
 - **Class Diagram:** _(รอใส่)_
+
+### 2.8 Template Method
+- **ผู้รับผิดชอบ:** Kamolpon
+- **ปัญหาที่แก้:**
+  - ระบบมีงานที่ต้องรันเองทุกเช้า 3 งาน: เตือนงานดูแลพรุ่งนี้ (08:00), เตือนงานที่เลยกำหนด (08:05), ปิดรายงานที่ไม่มีการบอกผลเกิน 14 วัน (08:10)
+  - ทั้ง 3 งานมีขั้นตอนเหมือนกันหมด: หาวันที่วันนี้ (เวลาไทย) → เปิด transaction → หาว่าต้องทำกับอะไร → ทำทีละรายการ → เขียน log สรุป
+  - ถ้าเขียนแยก 3 คลาส โค้ดส่วนที่เหมือนกันจะก๊อปซ้ำ 3 ที่ ถ้าแก้ (เช่น เปลี่ยน timezone) ต้องแก้ 3 ที่และลืมได้ง่าย
+- **ไฟล์/คลาสที่ใช้:**
+  - `job/AbstractDailyJob<T>` (abstract class มี template method `run()` เป็น `final`)
+  - `job/CareDueReminderJob`, `job/OverdueCareReminderJob`, `job/StaleReportCloseJob` (คลาสลูก)
+  - `config/SchedulingConfig` (เปิดใช้ `@Scheduled`)
+- **เหตุผลที่เลือก:**
+  - คลาสแม่กำหนดลำดับขั้นตอนไว้ใน `run()` ที่เป็น `final` คลาสลูก override ไม่ได้ ทุก job ทำงานลำดับเดียวกันแน่นอน
+  - คลาสลูกเขียนแค่ส่วนที่ต่าง: `findTargets()` (หาอะไร) กับ `process()` (ทำอะไร) ส่วน `afterRun()` เป็น hook จะเขียนทับหรือไม่ก็ได้
+  - ส่วนที่เหมือนกันอยู่ที่เดียว: ใช้เวลาไทย `Asia/Bangkok` เสมอแม้ server บน Render เป็น UTC, ทั้งงานอยู่ใน transaction เดียวเลยอ่านข้อมูล LAZY ได้
+  - เพิ่ม job ใหม่แค่ extends `AbstractDailyJob` แล้วเขียน 3 method (ตอนแรกมี 2 job ทีหลังเพิ่ม `StaleReportCloseJob` โดยไม่ต้องแก้คลาสแม่)
+  - job ไม่เรียก repository ตรง เรียกผ่าน `CareService` / `HealthReportService` และส่งแจ้งเตือนผ่าน Observer (`CareDueEvent`)
+  - เขียน unit test เรียก `run()` ตรงๆ ได้โดยไม่ต้องรอเวลา (`CareReminderJobsTest`, `StaleReportCloseJobTest`)
+- **Class Diagram:**
+
+```mermaid
+classDiagram
+    class AbstractDailyJob~T~ {
+        <<abstract>>
+        +ZONE$ ZoneId
+        -transactionTemplate TransactionTemplate
+        +run() int
+        #name()* String
+        #findTargets(today)* List~T~
+        #process(target, today)*
+        #afterRun(count, today)
+    }
+    class CareDueReminderJob {
+        -careService CareService
+        -eventPublisher ApplicationEventPublisher
+        +scheduledRun()
+        #name() String
+        #findTargets(today) List~CareSchedule~
+        #process(schedule, today)
+    }
+    class OverdueCareReminderJob {
+        -careService CareService
+        -eventPublisher ApplicationEventPublisher
+        +scheduledRun()
+        #name() String
+        #findTargets(today) List~CareSchedule~
+        #process(schedule, today)
+    }
+    class StaleReportCloseJob {
+        +STALE_DAYS$ int
+        -healthReportService HealthReportService
+        +scheduledRun()
+        #name() String
+        #findTargets(today) List~HealthReport~
+        #process(report, today)
+    }
+    AbstractDailyJob <|-- CareDueReminderJob
+    AbstractDailyJob <|-- OverdueCareReminderJob
+    AbstractDailyJob <|-- StaleReportCloseJob
+    note for AbstractDailyJob "run() เป็น final\n1) findTargets\n2) process ทีละรายการ\n3) afterRun (hook)"
+```
