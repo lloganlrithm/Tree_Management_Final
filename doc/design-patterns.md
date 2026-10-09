@@ -10,13 +10,13 @@
 | Service Layer | Architectural |  | `service/`, `service/impl/` |  |
 | DTO + Mapper | Architectural |  | `dto/request/`, `dto/response/`, `mapper/` |  |
 | Dependency Injection | Architectural |  | Constructor Injection ทุก service/controller |  |
-| Strategy | GoF Behavioral |  | `service/strategy/` |  |
+| Strategy | GoF Behavioral | งานดูแลแต่ละประเภทคำนวณรอบวันไม่เหมือนกัน ถ้าเขียน if-else ใน service เพิ่มงานใหม่ต้องแก้ service ทุกครั้ง | `service/strategy/` | Soranan |
 | State |
 | Observer | GoF Behavioral | งานหลักหลายจุด (ตอบรายงาน, ส่งรายงาน, job รายวัน) ต้องสร้างแจ้งเตือน ถ้าเรียก NotificationService ตรงๆ ทุกโมดูลจะผูกกับระบบแจ้งเตือน | `event/` | Kamolpon |
 | Command | GoF Behavioral | แอดมินเปลี่ยน role / ระงับบัญชีผิดคน แล้วย้อนกลับไม่ได้ | `command/` | Preemphat |
 | Chain of Responsibility | GoF Behavioral | การตรวจข้อมูลสมัครสมาชิกกองรวมเป็น if-else ยาวใน service | `validation/` | Preemphat |
 | Memento | GoF Behavioral | ผู้ใช้แก้ข้อมูลต้นไม้ผิดแล้วกดบันทึกไป ค่าเดิมหาย ต้องจำแล้วแก้กลับเอง | `plant/memento/` | Mukda |
-| Iterator | GoF Behavioral |  | `iterator/` |  |
+| Iterator | GoF Behavioral | ปฏิทิน 30 วันต้องแสดงทุกวันแม้วันที่ไม่มีงาน แต่ข้อมูลที่ได้มาเป็นรายการตารางดูแล ไม่ใช่รายวัน | `iterator/` | Soranan |
 | Template Method | GoF Behavioral | job รายวัน 3 ตัวมีขั้นตอนเหมือนกัน (เปิด transaction, หาวันที่, วนทำ, เขียน log) ต่างกันแค่หาอะไร / ทำอะไร | `job/` | Kamolpon |
 
 ---
@@ -58,14 +58,25 @@
 ## 2. GoF Patterns — กลุ่ม Behavioral
 
 ### 2.1 Strategy
-- **ผู้รับผิดชอบ:** _(รอใส่)_
-- **ปัญหาที่แก้:** _(รอใส่)_
+- **ผู้รับผิดชอบ:** Soranan
+- **ปัญหาที่แก้:**
+  - งานดูแลแต่ละประเภทมีรอบไม่เท่ากัน: รดน้ำใช้รอบของพันธุ์ไม้เสมอ, ใส่ปุ๋ยกับเปลี่ยนกระถางใช้รอบของพันธุ์ถ้า admin กรอกไว้ ถ้าไม่ได้กรอกใช้ค่าตั้งต้น 30 วัน / 365 วัน
+  - ต้องคำนวณวันครบกำหนด 2 จังหวะ: ตอนเพิ่มต้นไม้ใหม่ (สร้างตารางดูแล) และตอนผู้ใช้กด "ทำแล้ว" (เลื่อนไปครั้งถัดไป)
+  - ถ้าเขียน `switch` / if-else ไว้ใน `CareServiceImpl` กติกาการคำนวณจะปนกับโค้ดบันทึกข้อมูล และเพิ่มงานประเภทใหม่ทีไรต้องกลับมาแก้ service ทุกครั้ง
 - **ไฟล์/คลาสที่ใช้:**
-  - `service/strategy/CareIntervalStrategy` (interface)
-  - `service/strategy/WaterIntervalStrategy`, `FertilizeIntervalStrategy`, `RepotIntervalStrategy`
-  - `service/strategy/CareIntervalCalculator` (เลือก strategy ตาม `ActionType`)
-- **เหตุผลที่เลือก:** _(รอใส่)_
-- **Class Diagram:** _(รอใส่)_
+  - `service/strategy/CareIntervalStrategy` (interface: `actionType()`, `intervalDays(species)`)
+  - `service/strategy/WaterIntervalStrategy`, `FertilizeIntervalStrategy`, `RepotIntervalStrategy` (strategy ของแต่ละงาน)
+  - `service/strategy/CareIntervalCalculator` (Context: เลือก strategy ตาม `ActionType`)
+  - `service/impl/CareServiceImpl` (ผู้เรียกใช้: `markDone`, `onPlantCreated`)
+- **เหตุผลที่เลือก:**
+  - แต่ละคลาสรู้กติกาของงานตัวเองแค่อย่างเดียว `CareServiceImpl` เรียกแค่ `intervalCalculator.nextDueDate(type, species, today)` ไม่ต้องรู้ว่าแต่ละงานคำนวณยังไง
+  - Spring ส่ง strategy ทุกตัวที่เป็น `@Component` เข้า constructor ของ `CareIntervalCalculator` ให้เอง แล้วเก็บไว้ใน `EnumMap` ตาม `ActionType` จะเพิ่มงานใหม่ แค่สร้างคลาส strategy ใหม่ ไม่ต้องแก้ Calculator หรือ service (Open/Closed)
+  - งานที่ยังไม่มี strategy ของตัวเอง (เช็กแดด / ตรวจสุขภาพ) ใช้รอบสำรอง 7 วัน ระบบเลยไม่พังถ้าเจอประเภทงานที่ยังไม่รองรับ
+  - `supportedTypes()` บอกว่างานไหนมี strategy ซึ่งใช้ตัดสินด้วยว่าจะสร้างตารางอัตโนมัติให้งานไหนตอนเพิ่มต้นไม้ (ตอนนี้คือ WATER, FERTILIZE, REPOT) เพิ่ม strategy ใหม่ ตารางของงานนั้นจะถูกสร้างให้เอง
+  - ทดสอบแต่ละกติกาแยกกันได้ (`CareIntervalStrategyTest`, `CareIntervalCalculatorTest`, `CareServiceImplTest`)
+- **Class Diagram:**
+
+![Strategy](diagrams/pattern-strategy.png)
 
 ### 2.2 State
 
@@ -174,11 +185,25 @@
 ![Memento](diagrams/pattern-memento.png)
 
 ### 2.7 Iterator
-- **ผู้รับผิดชอบ:** _(รอใส่)_
-- **ปัญหาที่แก้:** _(รอใส่)_
-- **ไฟล์/คลาสที่ใช้:** `iterator/CareCalendarIterator` (implements `Iterator<CareCalendarDay>`)
-- **เหตุผลที่เลือก:** _(รอใส่)_
-- **Class Diagram:** _(รอใส่)_
+- **ผู้รับผิดชอบ:** Soranan
+- **ปัญหาที่แก้:**
+  - หน้าปฏิทินการดูแลต้องแสดงครบ 30 วันข้างหน้า รวมถึงวันที่ไม่มีงานด้วย และต้องรู้ว่าวันไหนคือ "วันนี้"
+  - ข้อมูลที่ได้จาก `CareService.findDueBetween()` เป็นรายการตารางดูแลเรียงตามวันครบกำหนด ไม่ได้มาเป็นรายวัน
+  - ถ้าให้ controller หรือหน้า Thymeleaf วนวันที่แล้วกรองงานของแต่ละวันเอง โค้ดคำนวณวันที่จะไปอยู่ในหน้า HTML และต้องวนรายการงานทั้งหมดซ้ำทุกวัน
+- **ไฟล์/คลาสที่ใช้:**
+  - `iterator/CareCalendarIterator` (implements `java.util.Iterator<CareCalendarDay>`)
+  - `dto/response/CareCalendarDay` (ข้อมูล 1 วัน: วันที่, งานของวันนั้น, เป็นวันนี้หรือไม่)
+  - `controller/web/CareCalendarController` (ผู้เรียกใช้: วน `hasNext()` / `next()` แล้วส่งรายการวันให้ `care/calendar.html`)
+- **เหตุผลที่เลือก:**
+  - ใช้ interface `Iterator` มาตรฐานของ Java ผู้เรียกแค่วน `hasNext()` / `next()` ได้ "วัน" ทีละวันตามลำดับ ไม่ต้องรู้ว่าข้างในคำนวณวันที่หรือเก็บงานไว้ยังไง
+  - จัดกลุ่มงานตามวันครบกำหนดลง `Map` ครั้งเดียวตอนสร้าง แล้ว `next()` แค่หยิบงานของวันนั้นออกมา ไม่ต้องวนงานทั้งหมดทุกวัน
+  - หน้า HTML ไม่ต้องคำนวณวันที่เอง แค่วนแสดง `days` ตามลำดับ และใช้ค่า `today` ไฮไลต์วันนี้
+  - ป้องกันการใช้งานผิด: สร้างด้วยจำนวนวันน้อยกว่า 1 จะ throw `IllegalArgumentException` และเรียก `next()` เกินวันสุดท้ายจะ throw `NoSuchElementException` ตามสัญญาของ `Iterator`
+  - จะเปลี่ยนช่วงปฏิทิน (เช่น 7 วัน หรือ 60 วัน) แค่เปลี่ยนตัวเลขที่ส่งเข้าไป ไม่ต้องแก้ตัว iterator
+  - มีเทสต์ใน `CareCalendarIteratorTest`
+- **Class Diagram:**
+
+![Iterator](diagrams/pattern-iterator.png)
 
 ### 2.8 Template Method
 - **ผู้รับผิดชอบ:** Kamolpon
