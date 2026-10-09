@@ -45,13 +45,13 @@
 | Plant — CareSchedule | has | 1 — 0..* | One-to-Many | ต้นไม้ 1 ต้นมีตารางดูแลหลายอย่าง เช่น รดน้ำ ใส่ปุ๋ย (งานชนิดเดียวกันซ้ำไม่ได้) |
 | Plant — CareLog | records | 1 — 0..* | One-to-Many | เก็บประวัติว่าดูแลอะไรไปแล้วบ้าง |
 | Plant — HealthReport | reported in | 1 — 0..* | One-to-Many | ผู้ใช้แจ้งปัญหาสุขภาพต้นไม้ แอดมินตอบกลับ |
-| CareSchedule — CareLog | fulfilled by | 0..1 — 0..* | One-to-Many (ไม่บังคับ) | บันทึกการดูแลอาจทำตามตาราง หรือทำเองนอกตารางก็ได้ |
-| Plant — Notification | about | 0..1 — 0..* | One-to-Many (ไม่บังคับ) | แจ้งเตือนอาจผูกกับต้นไม้ หรือเป็นแจ้งเตือนระบบเฉยๆ |
-| CareSchedule — Notification | reminds | 0..1 — 0..* | One-to-Many (ไม่บังคับ) | แจ้งเตือนงานดูแลที่ใกล้ถึงหรือเลยกำหนด |
+| CareSchedule — CareLog | fulfilled by | 0..1 — 0..* | One-to-Many  | บันทึกการดูแลอาจทำตามตาราง หรือทำเองนอกตารางก็ได้ |
+| Plant — Notification | about | 0..1 — 0..* | One-to-Many  | แจ้งเตือนอาจผูกกับต้นไม้ หรือเป็นแจ้งเตือนระบบเฉยๆ |
+| CareSchedule — Notification | reminds | 0..1 — 0..* | One-to-Many  | แจ้งเตือนงานดูแลที่ใกล้ถึงหรือเลยกำหนด |
 
 **สัญลักษณ์ในแผนภาพ**
 
-| เส้น | ความหมาย |
+| เส้น | ความหมาย | 
 |---|---|
 | เส้นทึบมีรูปเพชร ◆ | Composition — ตัวแม่ถูกลบ ตัวลูกถูกลบไปด้วย (ตรงกับ `cascade = ALL, orphanRemoval = true` ในโค้ด) |
 | เส้นทึบธรรมดา | Association — เกี่ยวข้องกัน แต่ลบตัวหนึ่งแล้วอีกตัวไม่หายตาม |
