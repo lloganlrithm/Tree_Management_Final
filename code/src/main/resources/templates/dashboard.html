@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="th" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/layout :: head('หน้าหลัก')}"></head>
+
+<body>
+<link rel="stylesheet" th:href="@{/css/plants.css}">
+<link rel="stylesheet" th:href="@{/css/reports.css}">
+<div class="app">
+
+  <aside th:replace="~{fragments/layout :: sidebar('dashboard')}"></aside>
+
+  <div class="main">
+    <header th:replace="~{fragments/layout :: topbar}"></header>
+
+    <main class="content">
+
+      <div class="page-head">
+        <div>
+          <h1>หน้าหลัก</h1>
+          <p>สรุปต้นไม้ของคุณและสิ่งที่ต้องดูแลวันนี้</p>
+        </div>
+        <a class="btn btn-primary" th:href="@{/plants}">ดูต้นไม้ของฉัน</a>
+      </div>
+
+      <!-- ===== สรุปต้นไม้ (ตาราง plants) ===== -->
+      <section class="stats">
+        <div class="card stat">
+          <span class="label">ต้นไม้ทั้งหมด</span>
+          <span class="value"><th:block th:text="${totalPlants}">0</th:block><small>ต้น</small></span>
+          <span class="foot">ตายแล้ว <th:block th:text="${counts['DEAD']}">0</th:block> ต้น</span>
+        </div>
+        <div class="card stat">
+          <span class="label">ปกติดี</span>
+          <span class="value"><th:block th:text="${counts['HEALTHY']}">0</th:block><small>ต้น</small></span>
+        </div>
+        <div class="card stat">
+          <span class="label">ป่วย</span>
+          <span class="value"><th:block th:text="${counts['SICK']}">0</th:block><small>ต้น</small></span>
+        </div>
+        <div class="card stat">
+          <span class="label">กำลังฟื้นตัว</span>
+          <span class="value"><th:block th:text="${counts['RECOVERING']}">0</th:block><small>ต้น</small></span>
+        </div>
+      </section>
+
+      <div class="two-col">
+
+        <!-- ===== งานดูแลถึงพรุ่งนี้ (ตาราง care_schedules) ===== -->
+        <section class="card card-pad">
+          <div class="section-head">
+            <h2>งานดูแลวันนี้และพรุ่งนี้</h2>
+            <a class="link" th:href="@{/care}">ดูทั้งหมด</a>
+          </div>
+
+          <div class="tasks" th:unless="${#lists.isEmpty(tasks)}">
+            <a class="task" th:each="t : ${tasks}" th:href="@{/plants/{id}(id=${t.plantId})}"
+               style="text-decoration:none;color:inherit">
+              <div class="task-body">
+                <div class="task-name">
+                  <span th:switch="${t.actionType.name()}">
+                    <th:block th:case="'WATER'">รดน้ำ</th:block>
+                    <th:block th:case="'FERTILIZE'">ใส่ปุ๋ย</th:block>
+                    <th:block th:case="'REPOT'">เปลี่ยนกระถาง</th:block>
+                    <th:block th:case="'CHECK_SUNLIGHT'">เช็คแสง</th:block>
+                    <th:block th:case="'HEALTH_CHECK'">ตรวจสุขภาพ</th:block>
+                  </span>
+                  <span th:text="${t.plantName}">ม่อนม่อน</span>
+                  <span class="species" th:text="${t.speciesName}">มอนสเตอร่า</span>
+                </div>
+                <div class="task-meta">
+                  <span class="late" th:if="${t.overdue}">เลยกำหนด</span>
+                  <span th:if="${!t.overdue and t.dueDate == today}">วันนี้</span>
+                  <span th:if="${t.dueDate.isAfter(today)}">พรุ่งนี้</span>
+                  <span th:text="${#temporals.format(t.dueDate, 'dd/MM/yyyy')}">07/10/2026</span>
+                </div>
+              </div>
+            </a>
+          </div>
+
+          <p class="muted small" th:if="${#lists.isEmpty(tasks)}">ไม่มีงานดูแลวันนี้และพรุ่งนี้</p>
+        </section>
+
+        <!-- ===== รายงานที่รอ admin ตอบ (ตาราง health_reports) ===== -->
+        <section class="card card-pad">
+          <div class="section-head">
+            <h2>รายงานที่รอตอบ <span class="muted small" th:text="'(' + ${#lists.size(reports)} + ')'">(0)</span></h2>
+            <a class="link" th:href="@{/reports}">ดูทั้งหมด</a>
+          </div>
+
+          <ul class="rp-mini" th:unless="${#lists.isEmpty(reports)}">
+            <li th:each="r : ${reports}">
+              <a th:href="@{/reports/{id}(id=${r.id})}">
+                <span class="grow">
+                  <b th:text="${r.title}">ใบเหลือง</b>
+                  <span class="muted small"
+                        th:text="${r.plantName} + ' · ' + ${#temporals.format(r.createdAt, 'dd/MM/yyyy')}">ม่อนม่อน · 04/10/2026</span>
+                </span>
+                <span class="badge" th:if="${r.severity}" th:classappend="'sev-' + ${r.severity}"
+                      th:switch="${r.severity.name()}">
+                  <th:block th:case="'LOW'">เล็กน้อย</th:block>
+                  <th:block th:case="'MEDIUM'">ปานกลาง</th:block>
+                  <th:block th:case="'HIGH'">รุนแรง</th:block>
+                </span>
+              </a>
+            </li>
+          </ul>
+
+          <p class="muted small" th:if="${#lists.isEmpty(reports)}">ไม่มีรายงานที่รอตอบ</p>
+        </section>
+
+      </div>
+    </main>
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+  </div>
+</div>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

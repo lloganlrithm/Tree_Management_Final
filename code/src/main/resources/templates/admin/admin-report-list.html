@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="th" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/layout :: head('จัดการรายงานสุขภาพ')}"></head>
+
+<body>
+<div class="app">
+
+  <aside th:replace="~{fragments/layout :: sidebar('admin-reports')}"></aside>
+
+  <div class="main">
+    <header th:replace="~{fragments/layout :: topbar}"></header>
+
+    <!-- backQs = ตัวกรอง + หน้าปัจจุบัน ส่งไปกับฟอร์มตอบ จะได้กลับมาหน้าเดิม -->
+    <main class="content rp-page"
+          th:with="backQs=${(status != null ? 'status=' + status.name() + '&' : '') + (severity != null ? 'severity=' + severity.name() + '&' : '') + 'page=' + reports.number}">
+      <link rel="stylesheet" th:href="@{/css/reports.css}" href="/css/reports.css">
+
+      <div class="page-head">
+        <div>
+          <h1>รายงานสุขภาพจากผู้ใช้</h1>
+          <p>กดแถวเพื่อเปลี่ยนสถานะและเขียนคำตอบ</p>
+        </div>
+      </div>
+
+      <div class="rp-flash ok" th:if="${success}" th:text="${success}">บันทึกคำตอบแล้ว</div>
+      <div class="rp-flash err" th:if="${error}" th:text="${error}">เกิดข้อผิดพลาด</div>
+
+      <!-- ตัวกรอง: เป็นลิงก์ให้ Controller กรองจาก DB และเก็บตัวกรองอีกกลุ่มไว้ในลิงก์ -->
+      <div class="card rp-filters">
+        <div class="chips">
+          <span class="label">สถานะ</span>
+          <a class="chip" th:href="@{/admin/reports(severity=${severity})}" th:classappend="${status == null} ? 'active'">ทั้งหมด</a>
+          <a class="chip" th:each="s : ${@reportLabels.statuses()}"
+             th:href="@{/admin/reports(status=${s}, severity=${severity})}"
+             th:classappend="${status == s} ? 'active'"
+             th:text="${@reportLabels.status(s)}">รอตรวจ</a>
+        </div>
+        <div class="chips">
+          <span class="label">ความรุนแรง</span>
+          <a class="chip" th:href="@{/admin/reports(status=${status})}" th:classappend="${severity == null} ? 'active'">ทั้งหมด</a>
+          <a class="chip" th:each="v : ${@reportLabels.severities()}"
+             th:href="@{/admin/reports(status=${status}, severity=${v})}"
+             th:classappend="${severity == v} ? 'active'"
+             th:text="${@reportLabels.severity(v)}">รุนแรง</a>
+        </div>
+      </div>
+
+      <div class="card table-wrap" th:unless="${reports.isEmpty()}">
+        <table class="data">
+          <thead>
+            <tr><th>หัวข้อ</th><th>ต้นไม้</th><th>ความรุนแรง</th><th>สถานะ</th><th>วันที่แจ้ง</th></tr>
+          </thead>
+          <tbody>
+            <!-- กดแถว = เปิดแผงตอบ ค่าใน data-fill-* ถูก app.js เติมลงช่องในแผง -->
+            <tr class="rp-row" tabindex="0" data-open="reply-modal"
+                th:each="r : ${reports.content}"
+                th:data-fill-id="${r.id}"
+                th:data-fill-title="${r.title}"
+                th:data-fill-desc="${r.description != null ? r.description : 'ไม่มีรายละเอียด'}"
+                th:data-fill-status="${r.status}"
+                th:data-fill-reply="${r.adminReply != null ? r.adminReply : ''}"
+                th:data-image="${r.imageUrl}"
+                th:with="healthNow=${@reportLabels.health(r.plant.healthStatus)}, healthNext=${@reportLabels.nextHealthCsv(r.plant.healthStatus)}, statusNow=${@reportLabels.status(r.status)}, prevCount=${previousRounds.get(r.id).size()}"
+                th:data-status-label="${statusNow}"
+                th:data-plant-health="${healthNow}"
+                th:data-plant-next="${healthNext}">
+              <!-- th:data-* เรียก @bean ตรงๆ ไม่ได้ (Thymeleaf 3.1 กันไว้) เลยคำนวณใน th:with ก่อน -->
+              <td>
+                <b th:text="${r.title}" data-field="health_reports.title">ใบเหี่ยวแม้รดน้ำแล้ว</b>
+                <!-- ต้นนี้มีรอบก่อนหน้า = บอกว่าเป็นรอบที่เท่าไร -->
+                <span class="badge rp-round" th:if="${prevCount > 0}" th:text="'รอบที่ ' + ${prevCount + 1}">รอบที่ 2</span>
+                <!-- มีรูปแนบ = แสดงรูปย่อ กดแถวแล้วดูรูปใหญ่ในแผงตอบ -->
+                <img class="rp-thumb" th:if="${r.imageUrl != null}" th:src="${r.imageUrl}" alt="มีรูปแนบ" loading="lazy">
+              </td>
+              <td th:text="${r.plant.nickname != null ? r.plant.nickname : 'ไม่มีชื่อเล่น'}" data-field="plants.nickname">บอสตันฟู</td>
+              <td><span class="badge" th:classappend="${r.severity != null} ? ('sev-' + ${r.severity})"
+                        th:text="${@reportLabels.severity(r.severity)}" data-field="health_reports.severity">ปานกลาง</span></td>
+              <td><span class="badge" th:classappend="'st-' + ${r.status}"
+                        th:text="${@reportLabels.status(r.status)}" data-field="health_reports.status">รอตรวจ</span></td>
+              <td class="num"><time th:datetime="${r.createdAt}" th:text="${#temporals.format(r.createdAt, 'd MMM yyyy')}"
+                                    data-field="health_reports.created_at">5 ต.ค. 2026</time></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- รอบก่อนหน้าของแต่ละแถว ซ่อนไว้ใน <template> script ด้านล่างคัดลอกเข้าแผงตอบตอนกดแถว -->
+      <template th:each="r : ${reports.content}" th:id="'rounds-' + ${r.id}">
+        <li class="rp-round-item" th:each="p, st : ${previousRounds.get(r.id)}"
+            th:with="roundNo=${previousRounds.get(r.id).size() - st.index}">
+          <div class="rp-round-head">
+            <b th:text="'รอบที่ ' + ${roundNo}">รอบที่ 1</b>
+            <time class="muted small" th:datetime="${p.createdAt}" th:text="${#temporals.format(p.createdAt, 'd MMM yyyy')}">4 ต.ค. 2026</time>
+            <span class="badge" th:classappend="'st-' + ${p.status}" th:text="${@reportLabels.status(p.status)}">ส่งต่อรอบใหม่</span>
+          </div>
+          <p class="small"><span class="muted">อาการ:</span> <span th:text="${p.description != null ? p.description : p.title}">ใบล่างเริ่มเหลือง</span></p>
+          <p class="small"><span class="muted">คำตอบ admin:</span> <span th:text="${p.adminReply != null ? p.adminReply : 'ยังไม่ได้ตอบ'}">ลดการรดน้ำ</span></p>
+          <a th:if="${p.imageUrl != null}" th:href="${p.imageUrl}" target="_blank" rel="noopener">
+            <img class="rp-thumb" th:src="${p.imageUrl}" alt="รูปที่แนบในรอบนี้" loading="lazy">
+          </a>
+        </li>
+      </template>
+
+      <div class="card card-pad muted" style="text-align:center" th:if="${reports.isEmpty()}">ไม่มีรายงานตามตัวกรองนี้</div>
+
+      <nav class="rp-pager" aria-label="แบ่งหน้า" th:if="${reports.totalPages > 1}">
+        <a th:if="${reports.hasPrevious()}" th:href="@{/admin/reports(status=${status}, severity=${severity}, page=${reports.number - 1})}">ก่อนหน้า</a>
+        <span class="is-disabled" th:unless="${reports.hasPrevious()}">ก่อนหน้า</span>
+
+        <th:block th:each="i : ${#numbers.sequence(0, reports.totalPages - 1)}">
+          <span class="is-current" aria-current="page" th:if="${i == reports.number}" th:text="${i + 1}">1</span>
+          <a th:unless="${i == reports.number}" th:href="@{/admin/reports(status=${status}, severity=${severity}, page=${i})}" th:text="${i + 1}">2</a>
+        </th:block>
+
+        <a th:if="${reports.hasNext()}" th:href="@{/admin/reports(status=${status}, severity=${severity}, page=${reports.number + 1})}">ถัดไป</a>
+        <span class="is-disabled" th:unless="${reports.hasNext()}">ถัดไป</span>
+      </nav>
+
+      <!-- แผงตอบรายงาน (อยู่ใน main เพื่อใช้ backQs ได้) -->
+      <div class="modal-backdrop" id="reply-modal" hidden>
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="reply-title">
+          <div class="modal-head">
+            <div>
+              <h2 id="reply-title">ตอบรายงาน</h2>
+              <p data-fill="title">หัวข้อรายงาน</p>
+            </div>
+            <button type="button" class="btn btn-icon" data-close aria-label="ปิด"><span class="icon icon-close" aria-hidden="true"></span></button>
+          </div>
+          <!-- data-live: ต่อ Controller แล้ว ให้ app.js ปล่อยส่งข้อมูลจริง -->
+          <form method="post" th:action="@{/admin/reports/reply}" action="/admin/reports/reply" data-live>
+            <input type="hidden" name="id" data-fill="id">
+            <input type="hidden" name="back" th:value="${backQs}">
+            <div class="modal-body">
+              <div class="field">
+                <span class="hint">อาการที่ผู้ใช้แจ้ง</span>
+                <p class="reply wait" data-fill="desc">รายละเอียด</p>
+              </div>
+              <!-- รูปที่ผู้ใช้แนบ (ซ่อนถ้าไม่มี) ใส่ src ด้วย script ด้านล่างตอนกดแถว -->
+              <div class="field" id="reply-image-box" hidden>
+                <span class="hint">รูปที่แนบมา</span>
+                <img class="rp-reply-img" id="reply-image" alt="รูปอาการที่ผู้ใช้แนบมากับรายงาน">
+              </div>
+              <!-- รอบก่อนหน้าของต้นนี้ (ซ่อนถ้าเป็นรอบแรก) admin จะเห็นว่าเคยแนะนำอะไรไปแล้ว -->
+              <div class="field" id="prev-rounds-box" hidden>
+                <span class="hint">รอบก่อนหน้า</span>
+                <ul class="rp-rounds" id="prev-rounds"></ul>
+              </div>
+              <!-- สถานะรายงานเดินเอง: ส่งคำแนะนำ = กำลังดำเนินการ, ปฏิเสธ = ปฏิเสธ, ผู้ใช้บอกผล = ต้นไม้ดีขึ้นแล้ว / ส่งต่อรอบใหม่ -->
+              <p class="small muted">สถานะรายงานตอนนี้: <b id="report-status-now">รอตรวจ</b></p>
+              <p class="rp-flash err" id="report-closed-note" hidden>รายงานนี้จบแล้ว ดูได้อย่างเดียว ตอบเพิ่มไม่ได้</p>
+              <!-- สถานะสุขภาพต้นไม้: เปลี่ยนผ่าน State pattern ของโป้ย แสดงเฉพาะสถานะที่เปลี่ยนไปได้จริง (script ด้านล่างซ่อนตัวที่ไม่ได้) -->
+              <div class="field">
+                <label for="plantHealthStatus">สถานะต้นไม้ <span class="muted small" id="plant-health-now"></span></label>
+                <select class="select" id="plantHealthStatus" name="plantHealthStatus" data-field="plants.health_status">
+                  <option value="">อัตโนมัติตามสถานะรายงาน</option>
+                  <option th:each="h : ${@reportLabels.healthStatuses()}" th:value="${h}" th:text="${@reportLabels.health(h)}">ป่วย</option>
+                </select>
+                <span class="hint">อัตโนมัติ: ส่งคำแนะนำ = ป่วย (ผู้ใช้กดดีขึ้นแล้ว = กำลังฟื้นตัว)</span>
+              </div>
+              <div class="field">
+                <label for="adminReply">คำแนะนำ / เหตุผลที่ปฏิเสธ</label>
+                <textarea class="textarea" id="adminReply" name="adminReply" data-fill="reply" data-field="health_reports.admin_reply"
+                          placeholder="ส่งคำแนะนำ: บอกวิธีดูแล / ปฏิเสธ: บอกเหตุผล เช่น ไม่ใช่อาการป่วย" required></textarea>
+                <span class="hint">ต้องเขียนทุกครั้ง ระบบจะส่งแจ้งเตือนให้เจ้าของต้นไม้</span>
+              </div>
+            </div>
+            <div class="modal-foot form-actions">
+              <button type="button" class="btn" data-close>ยกเลิก</button>
+              <!-- 2 ปุ่มส่ง status ต่างกัน: Controller ไม่ต้องให้ admin เลือกสถานะเอง -->
+              <button type="submit" class="btn btn-danger" name="status" value="REJECTED" id="btn-reject"
+                      onclick="return confirm('ปฏิเสธรายงานนี้? ระบบจะแจ้งเหตุผลให้เจ้าของต้นไม้')">ปฏิเสธรายงาน</button>
+              <button type="submit" class="btn btn-primary" name="status" value="IN_PROGRESS" id="btn-answer">ส่งคำแนะนำ</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+  </div>
+</div>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<script>
+  // กด Enter บนแถวเพื่อเปิดแผงตอบเหมือนคลิก
+  document.querySelectorAll(".rp-row").forEach(function (row) {
+    row.addEventListener("keydown", function (e) { if (e.key === "Enter") row.click(); });
+  });
+  // กดแถว: แสดงรูปของรายงานนั้นในแผงตอบ (app.js เติมข้อความ แต่ไม่ได้ใส่ src ให้รูป)
+  var imageBox = document.getElementById("reply-image-box");
+  var image = document.getElementById("reply-image");
+  document.querySelectorAll(".rp-row").forEach(function (row) {
+    row.addEventListener("click", function () {
+      var url = row.dataset.image;
+      imageBox.hidden = !url;
+      if (url) { image.src = url; } else { image.removeAttribute("src"); }
+
+      // รอบก่อนหน้า: คัดลอกจาก <template id="rounds-{id}"> ของแถวนี้
+      var rounds = document.getElementById("prev-rounds");
+      var tpl = document.getElementById("rounds-" + row.dataset.fillId);
+      rounds.replaceChildren();
+      if (tpl) rounds.appendChild(tpl.content.cloneNode(true));
+      document.getElementById("prev-rounds-box").hidden = rounds.children.length === 0;
+
+      // รายงานที่ยังไม่มีคำตอบ Thymeleaf จะไม่ใส่ data-fill-reply มาเลย app.js จึงไม่ล้างช่องให้
+      // ตั้งค่าเองทุกครั้ง ไม่ให้คำตอบของรายงานที่เปิดก่อนหน้าค้างอยู่
+      document.getElementById("adminReply").value = row.dataset.fillReply || "";
+
+      // สถานะรายงานตอนนี้ + รายงานที่จบแล้วซ่อนปุ่มส่ง (server ก็กันซ้ำอีกชั้น)
+      document.getElementById("report-status-now").textContent = row.dataset.statusLabel;
+      var closed = row.dataset.fillStatus !== "PENDING" && row.dataset.fillStatus !== "IN_PROGRESS";
+      document.getElementById("report-closed-note").hidden = !closed;
+      document.getElementById("btn-reject").hidden = closed;
+      document.getElementById("btn-answer").hidden = closed;
+
+      // สถานะต้นไม้: บอกสถานะตอนนี้ + ให้เลือกได้แค่สถานะที่ State อนุญาต
+      document.getElementById("plant-health-now").textContent = "(ตอนนี้: " + row.dataset.plantHealth + ")";
+      var allowed = (row.dataset.plantNext || "").split(",");
+      var select = document.getElementById("plantHealthStatus");
+      Array.prototype.forEach.call(select.options, function (opt) {
+        if (!opt.value) return;
+        var ok = allowed.indexOf(opt.value) !== -1;
+        opt.hidden = !ok;
+        opt.disabled = !ok;
+      });
+      select.value = "";
+    });
+  });
+</script>
+</body>
+</html>

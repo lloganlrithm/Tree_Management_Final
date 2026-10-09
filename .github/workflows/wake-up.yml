@@ -1,0 +1,21 @@
+# ปลุกเว็บบน Render ก่อน job แจ้งเตือนรายวัน (08:00 / 08:05 / 08:10 เวลาไทย)
+# Render free tier หลับหลังไม่มีคนเข้า 15 นาที ถ้าหลับอยู่ @Scheduled จะไม่ทำงาน
+# เรียกเว็บทุก 10 นาที ช่วง 07:00–08:50 เวลาไทย (GitHub อาจรันช้ากว่าเวลาที่ตั้งได้ เลยเผื่อหลายรอบ)
+# หมายเหตุ: GitHub รัน schedule เฉพาะไฟล์ที่อยู่ใน branch หลัก (main) เท่านั้น
+name: Wake up Render
+
+on:
+  schedule:
+    - cron: "*/10 0-1 * * *"   # UTC 00:00–01:50 = 07:00–08:50 เวลาไทย
+  workflow_dispatch:            # กดรันเองจากหน้า Actions ได้ (ใช้ทดสอบ / ปลุกก่อนนำเสนอ)
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping PlantPal
+        run: |
+          # ตื่นจากหลับใช้เวลาเกือบ 1 นาที ให้รอได้ถึง 2 นาที และลองซ้ำ 3 ครั้ง
+          curl -fsS --max-time 120 --retry 3 --retry-delay 10 -o /dev/null \
+            -w "HTTP %{http_code} in %{time_total}s\n" \
+            https://plantpal-owy8.onrender.com/

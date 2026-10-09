@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="th" xmlns:th="http://www.thymeleaf.org">
+
+<!--
+    หน้า C1: ตารางดูแลของต้นไม้ทุกต้นของคนที่ login
+    Controller ต้องส่ง 3 ลิสต์ (List<CareSchedule>, เฉพาะ isActive = true, เรียงตาม nextDueDate):
+      overdue   = nextDueDate <  วันนี้   (เลยกำหนด)
+      dueToday  = nextDueDate == วันนี้   (วันนี้)
+      upcoming  = nextDueDate >  วันนี้   (ถัดไป)
+-->
+
+<head>
+    <th:block th:replace="~{fragments/layout :: head('ตารางและการดูแล')}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/care.css}">
+</head>
+
+<body>
+
+    <div class="app">
+
+        <!-- Sidebar -->
+        <aside th:replace="~{fragments/layout :: sidebar('care')}"></aside>
+
+        <div class="main">
+
+            <!-- Topbar -->
+            <header th:replace="~{fragments/layout :: topbar}"></header>
+
+            <main class="content care-content" th:with="overdueList=${overdue != null ? overdue : {}},
+                         todayList=${dueToday != null ? dueToday : {}},
+                         upcomingList=${upcoming != null ? upcoming : {}},
+                         totalCount=${overdueList.size() + todayList.size() + upcomingList.size()}">
+
+                <!-- Page Header -->
+                <div class="page-head">
+                    <div>
+                        <h1>ตารางและการดูแล</h1>
+                        <p>ติดตามและบันทึกการดูแลต้นไม้ของคุณ</p>
+                    </div>
+                    <!-- ปุ่มไปหน้าประวัติการดูแล (C3) -->
+                    <a class="btn" th:href="@{/care/history}">
+                        <span class="icon icon-clock" aria-hidden="true"></span>
+                        ประวัติการดูแล
+                    </a>
+                </div>
+
+                <!-- ผลลัพธ์หลังกด "ทำแล้ว" (ส่งมาจาก CareController ผ่าน flash attribute) -->
+                <div class="flash ok" th:if="${success}" th:text="${success}">บันทึกการดูแลแล้ว</div>
+                <div class="flash err" th:if="${error}" th:text="${error}">เกิดข้อผิดพลาด</div>
+
+                <!-- Filter ตามประเภทการดูแล -->
+                <section class="card toolbar">
+                    <div class="chips care-filters">
+                        <span class="label">
+                            <span class="icon icon-filter s16" aria-hidden="true"></span>
+                            ประเภท:
+                        </span>
+                        <button type="button" class="chip active" data-filter="ALL">ทั้งหมด</button>
+                        <button type="button" class="chip" data-filter="WATER">รดน้ำ</button>
+                        <button type="button" class="chip" data-filter="FERTILIZE">ใส่ปุ๋ย</button>
+                        <button type="button" class="chip" data-filter="REPOT">เปลี่ยนกระถาง</button>
+                        <button type="button" class="chip" data-filter="CHECK_SUNLIGHT">เช็กแดด</button>
+                        <button type="button" class="chip" data-filter="HEALTH_CHECK">ตรวจสุขภาพ</button>
+                    </div>
+                </section>
+
+                <!-- Care Schedule -->
+                <section class="card card-pad">
+
+                    <div class="section-head">
+                        <div>
+                            <h2>ตารางดูแล</h2>
+                            <p class="muted small">รายการดูแลต้นไม้ทุกต้นของคุณ แบ่งตามวันกำหนด</p>
+                        </div>
+                        <span class="badge plain s-HEALTHY" id="careTotalCount" th:text="${totalCount} + ' รายการ'">0
+                            รายการ</span>
+                    </div>
+
+                    <div id="careTaskList">
+
+                        <!-- ===== กลุ่ม 1: เลยกำหนด ===== -->
+                        <div class="care-group overdue" id="group-overdue" data-group="overdue"
+                            th:if="${!overdueList.isEmpty()}">
+                            <div class="care-group-header">
+                                <span class="care-group-dot"></span>
+                                <h3>เลยกำหนด</h3>
+                                <span class="care-group-count" th:text="${overdueList.size()}">0</span>
+                            </div>
+                            <div class="care-task-list">
+                                <th:block th:each="schedule : ${overdueList}">
+                                    <article th:replace="~{this :: careCard(${schedule}, 'overdue')}"></article>
+                                </th:block>
+                            </div>
+                        </div>
+
+                        <!-- ===== กลุ่ม 2: วันนี้ ===== -->
+                        <div class="care-group today" id="group-today" data-group="today"
+                            th:if="${!todayList.isEmpty()}">
+                            <div class="care-group-header">
+                                <span class="care-group-dot"></span>
+                                <h3>วันนี้</h3>
+                                <span class="care-group-count" th:text="${todayList.size()}">0</span>
+                            </div>
+                            <div class="care-task-list">
+                                <th:block th:each="schedule : ${todayList}">
+                                    <article th:replace="~{this :: careCard(${schedule}, 'today')}"></article>
+                                </th:block>
+                            </div>
+                        </div>
+
+                        <!-- ===== กลุ่ม 3: ถัดไป ===== -->
+                        <div class="care-group upcoming" id="group-upcoming" data-group="upcoming"
+                            th:if="${!upcomingList.isEmpty()}">
+                            <div class="care-group-header">
+                                <span class="care-group-dot"></span>
+                                <h3>ถัดไป</h3>
+                                <span class="care-group-count" th:text="${upcomingList.size()}">0</span>
+                            </div>
+                            <div class="care-task-list">
+                                <th:block th:each="schedule : ${upcomingList}">
+                                    <article th:replace="~{this :: careCard(${schedule}, 'upcoming')}"></article>
+                                </th:block>
+                            </div>
+                        </div>
+
+                        <!-- ไม่มีตารางเลย -->
+                        <div class="empty care-empty" th:if="${totalCount == 0}">
+                            <div class="care-empty-icon">🌱</div>
+                            <h3>ยังไม่มีตารางดูแล</h3>
+                            <p class="muted">เพิ่มต้นไม้ในหน้า “ต้นไม้ของฉัน” แล้วตารางดูแลจะขึ้นที่นี่</p>
+                        </div>
+
+                        <!-- มีตาราง แต่ filter แล้วไม่เจอ (care.js เป็นคนเปิด/ปิด) -->
+                        <div class="empty care-empty" id="careFilterEmpty" hidden>
+                            <div class="care-empty-icon">🔍</div>
+                            <h3>ไม่มีรายการประเภทนี้</h3>
+                            <p class="muted">ลองเลือกประเภทการดูแลอื่นดูนะ</p>
+                        </div>
+
+                    </div>
+
+                </section>
+
+            </main>
+
+        </div>
+
+    </div>
+
+    <!--
+        การ์ด 1 รายการ (fragment ใช้ซ้ำทั้ง 3 กลุ่ม)
+        diff = วันนี้ - วันกำหนด  (บวก = เลยมาแล้วกี่วัน, ลบ = อีกกี่วัน)
+    -->
+    <th:block th:if="false">
+        <article class="care-task-card" th:fragment="careCard(schedule, group)" th:classappend="${group}"
+            th:attr="data-action=${schedule.actionType.name()},data-group=${group}" th:with="diff=${#temporals.createToday().toEpochDay() - schedule.nextDueDate.toEpochDay()},
+                     label=${schedule.actionType.name() == 'WATER' ? 'รดน้ำ'
+                           : (schedule.actionType.name() == 'FERTILIZE' ? 'ใส่ปุ๋ย'
+                           : (schedule.actionType.name() == 'REPOT' ? 'เปลี่ยนกระถาง'
+                           : (schedule.actionType.name() == 'CHECK_SUNLIGHT' ? 'เช็กแดด'
+                           : (schedule.actionType.name() == 'HEALTH_CHECK' ? 'ตรวจสุขภาพ' : schedule.actionType.name()))))},
+                     plantName=${schedule.plant.nickname != null and !#strings.isEmpty(schedule.plant.nickname)
+                           ? schedule.plant.nickname : schedule.plant.species.name}">
+
+            <!-- Icon -->
+            <div class="care-task-icon" th:switch="${schedule.actionType.name()}">
+                <span th:case="'WATER'">💧</span>
+                <span th:case="'FERTILIZE'">🌱</span>
+                <span th:case="'REPOT'">🪴</span>
+                <span th:case="'CHECK_SUNLIGHT'">☀️</span>
+                <span th:case="'HEALTH_CHECK'">🩺</span>
+                <span th:case="*">🌿</span>
+            </div>
+
+            <!-- Information -->
+            <div class="care-task-info">
+                <h3>
+                    <span th:text="${plantName}">ต้นไม้ของฉัน</span>
+                    <small class="care-task-species" th:if="${schedule.plant.species != null}"
+                        th:text="${schedule.plant.species.name}">มอนสเตอร่า</small>
+                </h3>
+
+                <div class="care-task-type" th:text="${label}">รดน้ำ</div>
+
+                <div class="care-task-date">
+                    กำหนด:
+                    <strong th:text="${#temporals.format(schedule.nextDueDate, 'd MMM yyyy')}">6 Oct 2026</strong>
+                </div>
+            </div>
+
+            <!-- Status + ปุ่มทำแล้ว -->
+            <div class="care-task-status">
+                <span class="badge s-CRITICAL" th:if="${diff > 0}" th:text="'เลยมา ' + ${diff} + ' วัน'">เลยมา 2
+                    วัน</span>
+                <span class="badge s-WARNING" th:if="${diff == 0}">ทำวันนี้</span>
+                <span class="badge s-HEALTHY" th:if="${diff < 0}"
+                    th:text="${diff == -1} ? 'พรุ่งนี้' : 'อีก ' + ${-diff} + ' วัน'">อีก 3 วัน</span>
+
+                <!-- เปิด popup #care-done (app.js เติม data-fill-* ลงช่อง data-fill ในฟอร์มให้) -->
+                <button type="button" class="btn btn-sm" th:classappend="${diff >= 0} ? 'btn-primary' : 'btn-soft'"
+                    data-open="care-done"
+                    th:attr="data-fill-id=${schedule.id},data-fill-title=${label} + ' · ' + ${plantName}">
+                    <span class="icon icon-check s16" aria-hidden="true"></span>
+                    ทำแล้ว
+                </button>
+            </div>
+
+        </article>
+    </th:block>
+
+    <!-- ===== Popup บันทึกการดูแล (กด "ทำแล้ว") ===== -->
+    <div class="modal-backdrop" id="care-done" hidden>
+        <div class="modal sm" role="dialog" aria-modal="true" aria-labelledby="care-done-title">
+
+            <div class="modal-head">
+                <div>
+                    <h2 id="care-done-title">บันทึกการดูแล</h2>
+                    <p data-fill="title">รดน้ำ · น้องเขียว</p>
+                </div>
+                <button class="btn btn-icon" type="button" data-close aria-label="ปิด">
+                    <span class="icon icon-close s20" aria-hidden="true"></span>
+                </button>
+            </div>
+
+            <!-- data-live = ส่งไป controller จริง (app.js จะไม่บล็อก) / th:action ใส่ CSRF token ให้เอง -->
+            <form method="post" th:action="@{/care/done}" data-live>
+                <input type="hidden" name="scheduleId" data-fill="id">
+
+                <div class="modal-body">
+                    <div class="field">
+                        <label for="care-notes">หมายเหตุ (ไม่บังคับ)</label>
+                        <textarea class="textarea" id="care-notes" name="notes" maxlength="500"
+                            placeholder="เช่น ใบเริ่มเหลือง ดินยังชื้นอยู่"></textarea>
+                    </div>
+                    <div class="info-box">
+                        <span class="icon icon-info" aria-hidden="true"></span>
+                        ระบบจะบันทึกลงประวัติการดูแล แล้วเลื่อนวันกำหนดไปรอบถัดไปให้อัตโนมัติ
+                    </div>
+                </div>
+
+                <div class="modal-foot form-actions">
+                    <button class="btn" type="button" data-close>ยกเลิก</button>
+                    <button class="btn btn-primary" type="submit">บันทึก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Shared Scripts -->
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+    <!-- Care JavaScript -->
+    <script th:src="@{/js/care.js}"></script>
+
+</body>
+
+</html>

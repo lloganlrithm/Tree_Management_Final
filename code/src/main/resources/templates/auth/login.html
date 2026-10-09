@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="th" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('เข้าสู่ระบบ')}"></head>
+<body>
+<div class="auth">
+
+  <section class="auth-art">
+    <img th:src="@{/img/mascot.svg}" alt="" width="150" height="150">
+    <h1 class="brand-title">PlantPal</h1>
+    <p>บันทึกการรดน้ำ ใส่ปุ๋ย และสุขภาพของต้นไม้ทุกต้นไว้ในที่เดียว มีน้องปุยคอยเตือนเมื่อถึงรอบ</p>
+  </section>
+
+  <section class="auth-form">
+    <form class="auth-box" th:action="@{/login}" method="post">
+      <div>
+        <h1>เข้าสู่ระบบ</h1>
+        <p class="muted">ยินดีต้อนรับกลับมา ต้นไม้คิดถึงคุณแล้ว</p>
+      </div>
+
+      <p class="error-text" th:if="${param.error}">อีเมลหรือรหัสผ่านไม่ถูกต้อง ลองใหม่อีกครั้ง</p>
+      <p class="error-text" th:if="${param.disabled}">บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ</p>
+      <p class="info-box" th:if="${param.logout}">ออกจากระบบเรียบร้อยแล้ว</p>
+      <p class="info-box" th:if="${param.registered}">สมัครสมาชิกสำเร็จ เข้าสู่ระบบได้เลย</p>
+
+      <div class="field">
+        <label for="l-email">อีเมล</label>
+        <input class="input" id="l-email" name="username" type="email"
+               autocomplete="email" required autofocus>
+      </div>
+
+      <div class="field">
+        <label for="l-pw">รหัสผ่าน</label>
+        <input class="input" id="l-pw" name="password" type="password"
+               autocomplete="current-password" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block">เข้าสู่ระบบ</button>
+
+      <p class="auth-switch">ยังไม่มีบัญชี? <a th:href="@{/register}">สมัครสมาชิก</a></p>
+    </form>
+  </section>
+
+</div>
+</body>
+</html>

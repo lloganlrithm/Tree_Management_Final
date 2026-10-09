@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="th" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/layout :: head('รายงานของฉัน')}"></head>
+
+<body>
+<div class="app">
+
+  <aside th:replace="~{fragments/layout :: sidebar('reports')}"></aside>
+
+  <div class="main">
+    <header th:replace="~{fragments/layout :: topbar}"></header>
+
+    <main class="content rp-page">
+      <link rel="stylesheet" th:href="@{/css/reports.css}" href="/css/reports.css">
+
+      <div class="page-head">
+        <div>
+          <h1>รายงานสุขภาพของฉัน</h1>
+          <p>ปัญหาที่แจ้งไว้และคำตอบจากผู้ดูแลระบบ</p>
+        </div>
+        <a class="btn btn-primary" th:href="@{/reports/new}" href="/reports/new"><span class="icon icon-plus" aria-hidden="true"></span>แจ้งปัญหา</a>
+      </div>
+
+      <div class="rp-flash ok" th:if="${success}" th:text="${success}">บันทึกแล้ว</div>
+      <div class="rp-flash err" th:if="${error}" th:text="${error}">เกิดข้อผิดพลาด</div>
+
+      <!-- ตัวกรองสถานะ: เป็นลิงก์ ?status=... ให้ Controller กรองจาก DB -->
+      <div class="card toolbar">
+        <div class="chips">
+          <span class="label">สถานะ</span>
+          <a class="chip" th:href="@{/reports}" th:classappend="${status == null} ? 'active'" href="/reports">ทั้งหมด</a>
+          <a class="chip" th:each="s : ${@reportLabels.statuses()}"
+             th:href="@{/reports(status=${s})}"
+             th:classappend="${status == s} ? 'active'"
+             th:text="${@reportLabels.status(s)}">รอตรวจ</a>
+        </div>
+      </div>
+
+      <div class="list" th:unless="${reports.isEmpty()}">
+        <a class="card list-item rp-item" th:each="r : ${reports.content}" th:href="@{/reports/{id}(id=${r.id})}" href="/reports/1">
+          <span class="icon-tile" th:classappend="${@reportLabels.severityTile(r.severity)}"><span class="icon icon-pulse s22" aria-hidden="true"></span></span>
+          <div class="body">
+            <div class="title-row">
+              <h3 th:text="${r.title}" data-field="health_reports.title">ใบเหลืองและมีจุดสีน้ำตาล</h3>
+              <span class="badge" th:classappend="${r.severity != null} ? ('sev-' + ${r.severity})"
+                    th:text="${@reportLabels.severity(r.severity)}" data-field="health_reports.severity">รุนแรง</span>
+              <span class="badge" th:classappend="'st-' + ${r.status}"
+                    th:text="${@reportLabels.status(r.status)}" data-field="health_reports.status">กำลังดำเนินการ</span>
+            </div>
+            <span class="kv muted">ต้นไม้ <b th:text="${r.plant.nickname != null ? r.plant.nickname : 'ไม่มีชื่อเล่น'}" data-field="plants.nickname">ฟิโลหัวใจ</b>
+              · แจ้งเมื่อ <time th:datetime="${r.createdAt}" th:text="${#temporals.format(r.createdAt, 'd MMM yyyy')}" data-field="health_reports.created_at">4 ต.ค. 2026</time></span>
+          </div>
+          <span class="rp-chev"><span class="icon icon-chevron-right s20" aria-hidden="true"></span></span>
+        </a>
+      </div>
+
+      <div class="card card-pad muted" style="text-align:center" th:if="${reports.isEmpty()}">
+        <span th:text="${status == null} ? 'ยังไม่มีรายงาน ถ้าต้นไม้ดูผิดปกติ กดปุ่มแจ้งปัญหาได้เลย' : 'ไม่มีรายงานในสถานะนี้'">ยังไม่มีรายงาน</span>
+      </div>
+
+      <!-- แบ่งหน้า: แสดงเมื่อมีมากกว่า 1 หน้า และเก็บตัวกรองสถานะไว้ในลิงก์ -->
+      <nav class="rp-pager" aria-label="แบ่งหน้า" th:if="${reports.totalPages > 1}">
+        <a th:if="${reports.hasPrevious()}" th:href="@{/reports(status=${status}, page=${reports.number - 1})}">ก่อนหน้า</a>
+        <span class="is-disabled" th:unless="${reports.hasPrevious()}">ก่อนหน้า</span>
+
+        <th:block th:each="i : ${#numbers.sequence(0, reports.totalPages - 1)}">
+          <span class="is-current" aria-current="page" th:if="${i == reports.number}" th:text="${i + 1}">1</span>
+          <a th:unless="${i == reports.number}" th:href="@{/reports(status=${status}, page=${i})}" th:text="${i + 1}">2</a>
+        </th:block>
+
+        <a th:if="${reports.hasNext()}" th:href="@{/reports(status=${status}, page=${reports.number + 1})}">ถัดไป</a>
+        <span class="is-disabled" th:unless="${reports.hasNext()}">ถัดไป</span>
+      </nav>
+    </main>
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+  </div>
+</div>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

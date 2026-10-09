@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="th" xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{fragments/layout :: head('การแจ้งเตือน')}"></head>
+
+  <body>
+    <div class="app">
+      <aside th:replace="~{fragments/layout :: sidebar('notifications')}"></aside>
+
+      <div class="main">
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+
+        <main class="content rp-page">
+          <link rel="stylesheet" th:href="@{/css/reports.css}" href="/css/reports.css" />
+
+          <div class="page-head">
+            <div>
+              <h1>การแจ้งเตือน</h1>
+              <!-- unreadCount มาจาก NotificationModelAdvice (ตัวเดียวกับเลขบนกระดิ่ง) -->
+              <p>ยังไม่อ่าน <b th:text="${unreadCount}">3</b> รายการ</p>
+            </div>
+            <form method="post" th:action="@{/notifications/read-all}" action="/notifications/read-all" data-live
+                  th:if="${unreadCount > 0}">
+              <button type="submit" class="btn btn-soft">
+                <span class="icon icon-check-double" aria-hidden="true"></span>อ่านทั้งหมด
+              </button>
+            </form>
+          </div>
+
+          <div class="rp-flash ok" th:if="${success}" th:text="${success}">อ่านแล้ว 3 รายการ</div>
+          <div class="rp-flash err" th:if="${error}" th:text="${error}">เกิดข้อผิดพลาด</div>
+
+          <div class="card toolbar">
+            <div class="chips">
+              <span class="label">แสดง</span>
+              <a class="chip" th:href="@{/notifications}" th:classappend="${!unread} ? 'active'" href="/notifications">ทั้งหมด</a>
+              <a class="chip" th:href="@{/notifications(unread=true)}" th:classappend="${unread} ? 'active'" href="/notifications?unread=true">ยังไม่อ่าน</a>
+            </div>
+          </div>
+
+          <ul class="card notes-list" style="list-style: none; margin: 0; padding: 0" th:unless="${notifications.isEmpty()}">
+            <li class="note" th:each="n : ${notifications.content}"
+                th:classappend="${(n.isRead ? '' : 'unread ') + 'rp-nt-' + n.type}">
+              <!-- ไอคอนตามประเภท: CARE_DUE หยดน้ำ / HEALTH_REPLY ฟองคำพูด / SYSTEM วงกลม i -->
+              <span class="icon-tile" th:switch="${n.type.name()}">
+                <span th:case="'CARE_DUE'" class="icon icon-water s20" aria-hidden="true"></span>
+                <span th:case="'HEALTH_REPLY'" class="icon icon-chat s20" aria-hidden="true"></span>
+                <span th:case="*" class="icon icon-info s20" aria-hidden="true"></span>
+              </span>
+              <div class="body">
+                <span class="rp-type" th:text="${@reportLabels.notificationType(n.type)}" data-field="notifications.type">ถึงเวลาดูแล</span>
+                <p class="rp-msg" th:text="${n.message}" data-field="notifications.message">ถึงเวลารดน้ำ ฟิโลหัวใจ แล้ว</p>
+                <a class="open" th:if="${n.plant != null}" th:href="@{/plants/{id}(id=${n.plant.id})}" href="/plants/1"
+                   data-field="notifications.plant_id">ดูต้นไม้ →</a>
+              </div>
+              <div class="side">
+                <time class="when" th:datetime="${n.createdAt}" th:text="${#temporals.format(n.createdAt, 'd MMM yyyy HH:mm')}"
+                      data-field="notifications.created_at">วันนี้ 08:00</time>
+                <form method="post" th:action="@{/notifications/{id}/read(id=${n.id})}" data-live th:unless="${n.isRead}">
+                  <button type="submit" class="btn btn-sm">อ่านแล้ว</button>
+                </form>
+              </div>
+            </li>
+          </ul>
+
+          <div class="card card-pad muted" style="text-align: center" th:if="${notifications.isEmpty()}"
+               th:text="${unread} ? 'ไม่มีการแจ้งเตือนที่ยังไม่อ่าน' : 'ยังไม่มีการแจ้งเตือน'">ยังไม่มีการแจ้งเตือน</div>
+
+          <nav class="rp-pager" aria-label="แบ่งหน้า" th:if="${notifications.totalPages > 1}">
+            <a th:if="${notifications.hasPrevious()}" th:href="@{/notifications(unread=${unread}, page=${notifications.number - 1})}">ก่อนหน้า</a>
+            <span class="is-disabled" th:unless="${notifications.hasPrevious()}">ก่อนหน้า</span>
+            <span class="is-current" aria-current="page" th:text="${notifications.number + 1} + ' / ' + ${notifications.totalPages}">1 / 2</span>
+            <a th:if="${notifications.hasNext()}" th:href="@{/notifications(unread=${unread}, page=${notifications.number + 1})}">ถัดไป</a>
+            <span class="is-disabled" th:unless="${notifications.hasNext()}">ถัดไป</span>
+          </nav>
+        </main>
+        <footer th:replace="~{fragments/layout :: footer}"></footer>
+      </div>
+    </div>
+
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+  </body>
+</html>

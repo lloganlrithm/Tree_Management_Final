@@ -1,0 +1,176 @@
+/* PlantPal — ประวัติการดูแล (C3): หน้า /care/history และ fragment ในหน้ารายละเอียดต้นไม้
+   ใช้ตัวแปรสี/ฟอนต์จาก base.css แบบเดียวกับ plants.css และ care.css */
+
+/* ===== ตัวกรองต้นไม้ ===== */
+.ch-plant-filter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.ch-plant-filter label {
+    color: var(--muted);
+    font-size: .88rem;
+}
+
+.ch-plant-filter .select {
+    width: auto;
+    min-width: 200px;
+}
+
+/* ===== สรุปตัวเลข ===== */
+.ch-summary {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+/* ===== รายการประวัติ ===== */
+.ch-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.ch-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.ch-item:last-child {
+    border-bottom: 0;
+}
+
+.ch-item[hidden] {
+    display: none;
+}
+
+.ch-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    background: var(--soft);
+    font-size: 1.15rem;
+}
+
+.ch-item .grow {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.ch-title {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.ch-title b {
+    font-family: var(--font-head);
+    font-weight: 600;
+}
+
+.ch-plant {
+    color: var(--primary);
+    text-decoration: none;
+    font-size: .9rem;
+}
+
+.ch-plant:hover {
+    text-decoration: underline;
+}
+
+.ch-notes {
+    margin-top: 4px;
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    color: var(--fg);
+    font-size: .85rem;
+}
+
+/* แบบย่อ (ใน fragment หน้ารายละเอียดต้นไม้) */
+.ch-list.compact .ch-item {
+    padding: 10px 0;
+    gap: 10px;
+}
+
+.ch-list.compact .ch-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    font-size: .95rem;
+}
+
+/* ===== fragment: ครั้งถัดไป ===== */
+.ch-sub {
+    font-size: .9rem;
+    color: var(--muted);
+    font-weight: 500;
+    margin: 4px 0 8px;
+}
+
+.ch-sub~.ch-sub {
+    margin-top: 20px;
+}
+
+.ch-next {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ch-next li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.ch-next .ch-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    font-size: .95rem;
+}
+
+.ch-next .grow {
+    flex: 1;
+    min-width: 80px;
+}
+
+/* ===== กล่องว่าง ===== */
+.ch-empty-icon {
+    font-size: 2.6rem;
+    line-height: 1;
+}
+
+/* จอแคบ: ป้ายลงไปอยู่ใต้ข้อมูล */
+@media (max-width: 640px) {
+    .ch-item {
+        flex-wrap: wrap;
+        align-items: flex-start;
+    }
+
+    .ch-item>.badge {
+        margin-left: 54px;
+    }
+
+    .ch-plant-filter .select {
+        flex: 1;
+        min-width: 0;
+    }
+}

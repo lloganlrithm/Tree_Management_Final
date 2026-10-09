@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="th" xmlns:th="http://www.thymeleaf.org">
+<!--เก็บแค่ fragment รายงานสุขภาพของต้นไม้ 1 ต้น ให้ดึงไปใส่ในหน้ารายละเอียดต้นไม้:
+     <section th:replace="~{fragments/reports :: plantReports}"></section>
+     ต้องมีใน model: plant (ต้นไม้ที่กำลังดู) และ plantReports
+     ใน PlantController.detail():  model.addAttribute("plantReports", healthReportService.findByPlant(id, email)); -->
+<body>
+
+<section class="card card-pad rp-page" th:fragment="plantReports">
+  <!-- layout ยังไม่ได้ลิงก์ reports.css เลยลิงก์ไว้ในตัว fragment -->
+  <link rel="stylesheet" th:href="@{/css/reports.css}" href="/css/reports.css">
+
+  <div class="section-head">
+    <h2>รายงานสุขภาพ</h2>
+    <!-- ส่ง id ต้นไม้ไปให้ฟอร์มเลือกต้นนี้ไว้ก่อน -->
+    <a class="btn btn-soft btn-sm" th:href="@{/reports/new(plantId=${plant.id})}" href="/reports/new?plantId=1">
+      <span class="icon icon-plus s16" aria-hidden="true"></span>แจ้งปัญหา
+    </a>
+  </div>
+
+  <!-- รายงานของต้นนี้ ใหม่สุดก่อน แสดง 5 รายการล่าสุด -->
+  <ul class="rp-mini" th:unless="${plantReports == null or #lists.isEmpty(plantReports)}">
+    <li th:each="r, it : ${plantReports}" th:if="${it.index < 5}">
+      <a th:href="@{/reports/{id}(id=${r.id})}" href="/reports/1">
+        <span class="grow">
+          <b th:text="${r.title}" data-field="health_reports.title">ใบเหลืองและมีจุดสีน้ำตาล</b>
+          <time class="muted small" th:datetime="${r.createdAt}" th:text="${#temporals.format(r.createdAt, 'd MMM yyyy')}"
+                data-field="health_reports.created_at">4 ต.ค. 2026</time>
+        </span>
+        <span class="badge" th:classappend="${r.severity != null} ? ('sev-' + ${r.severity})"
+              th:text="${@reportLabels.severity(r.severity)}" data-field="health_reports.severity">รุนแรง</span>
+        <span class="badge" th:classappend="'st-' + ${r.status}"
+              th:text="${@reportLabels.status(r.status)}" data-field="health_reports.status">กำลังดำเนินการ</span>
+      </a>
+    </li>
+  </ul>
+  <a class="muted small" th:if="${plantReports != null and plantReports.size() > 5}" th:href="@{/reports}" href="/reports">ดูรายงานทั้งหมด</a>
+
+  <!-- ต้นนี้ยังไม่มีรายงาน (หรือ Controller ยังไม่ได้ส่ง plantReports มา) -->
+  <p class="muted small" th:if="${plantReports == null or #lists.isEmpty(plantReports)}">ยังไม่เคยแจ้งปัญหาของต้นนี้</p>
+</section>
+
+</body>
+</html>

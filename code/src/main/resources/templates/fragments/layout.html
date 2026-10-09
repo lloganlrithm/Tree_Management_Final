@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="th" xmlns:th="http://www.thymeleaf.org">
+<!-- ไฟล์นี้ไม่ได้เปิดเป็นหน้าเว็บเอง เก็บแค่ "ชิ้นส่วน" (fragment) ให้หน้าอื่นดึงไปใช้ -->
+
+<!-- 1) ส่วน <head>: รับชื่อหน้าเป็นพารามิเตอร์ -->
+<head th:fragment="head(title)">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title th:text="${title} + ' · PlantPal'">PlantPal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600&family=Prompt:wght@500;600;700&display=swap">
+  <link rel="stylesheet" th:href="@{/css/base.css}">
+</head>
+
+<body>
+
+<!-- 2) Sidebar: รับชื่อเมนูที่กำลังเปิด เพื่อไฮไลต์ (dashboard, plants, care, calendar, reports, notifications,
+     admin-users, admin-species, admin-reports) -->
+<aside class="sidebar" th:fragment="sidebar(active)">
+    <a class="brand" th:href="@{/dashboard}"><span class="brand-mark"><span class="icon icon-leaf s26" aria-hidden="true"></span></span><span><span class="brand-name">PlantPal</span><br><span class="brand-tag">ดูแลต้นไม้... ให้เติบโตไปกับคุณ</span></span></a>
+    
+    <!-- เมนู ADMIN: แสดงเมื่อ isAdmin = true (มาจาก GlobalWebModelAdvice) -->
+    <th:block th:if="${isAdmin}">
+      <div class="mode admin"><span><span class="dot"></span>ผู้ดูแลระบบ</span><span class="small">ADMIN</span></div>
+      <nav class="nav" aria-label="เมนูผู้ดูแลระบบ"><a th:href="@{/admin/reports}" th:classappend="${active == 'admin-reports'} ? 'active'"><span class="icon icon-pulse s20" aria-hidden="true"></span>รายงานสุขภาพ</a><a th:href="@{/admin/species}" th:classappend="${active == 'admin-species'} ? 'active'"><span class="icon icon-species s20" aria-hidden="true"></span>พันธุ์ไม้</a><a th:href="@{/admin/users}" th:classappend="${active == 'admin-users'} ? 'active'"><span class="icon icon-users s20" aria-hidden="true"></span>ผู้ใช้</a></nav>
+    </th:block>
+
+    <!-- เมนู USER -->
+    <nav class="nav" aria-label="เมนูหลัก" th:unless="${isAdmin}"><a th:href="@{/dashboard}" th:classappend="${active == 'dashboard'} ? 'active'"><span class="icon icon-home s20" aria-hidden="true"></span>หน้าหลัก</a><a th:href="@{/plants}" th:classappend="${active == 'plants'} ? 'active'"><span class="icon icon-sprout s20" aria-hidden="true"></span>ต้นไม้ของฉัน</a><a th:href="@{/care}" th:classappend="${active == 'care'} ? 'active'"><span class="icon icon-calendar-check s20" aria-hidden="true"></span>การดูแล</a><a th:href="@{/care/calendar}" th:classappend="${active == 'calendar'} ? 'active'"><span class="icon icon-calendar s20" aria-hidden="true"></span>ปฏิทิน</a><a th:href="@{/reports}" th:classappend="${active == 'reports'} ? 'active'"><span class="icon icon-pulse s20" aria-hidden="true"></span>สุขภาพ</a><a th:href="@{/notifications}" th:classappend="${active == 'notifications'} ? 'active'"><span class="icon icon-bell s20" aria-hidden="true"></span>แจ้งเตือน</a></nav>
+
+    
+    <div class="buddy"><img th:src="@{/img/mascot.svg}" width="44" height="44" alt=""><div><strong>น้องปุยคู่ใจ</strong><span th:text="${isAdmin} ? 'ตรวจรายงานที่รอตอบก่อนนะ' : 'ต้นไม้สดชื่น วันนี้ดูแลไปแล้วหรือยังนะ?'">ต้นไม้สดชื่น วันนี้ดูแลไปแล้วหรือยังนะ?</span></div></div>
+    <!-- logout ต้องเป็น POST (Spring Security) th:action ใส่ CSRF token ให้เอง -->
+    <form class="logout-form" th:action="@{/logout}" method="post" data-live><button type="submit" class="logout"><span class="icon icon-logout" aria-hidden="true"></span>ออกจากระบบ</button></form>
+  </aside>
+
+<!-- 3) Topbar -->
+<header class="topbar" th:fragment="topbar">
+      <span class="date-pill"><span class="icon icon-calendar-blank s16" aria-hidden="true"></span>วันนี้คือ <b th:text="${#temporals.format(#temporals.createToday(), 'd MMM yyyy')}">19 ก.ย. 2026</b></span>
+      <div class="top-right">
+        <!-- กระดิ่งแจ้งเตือน (fragment ของเปรม) ข้อมูลส่งมาจาก NotificationModelAdvice -->
+        <div th:replace="~{fragments/notification-bell :: bell}"></div>
+        <a class="user-chip" th:href="@{/profile}"><span class="avatar"><img th:if="${navUser != null and navUser.avatarUrl != null}" th:src="@{${navUser.avatarUrl}}" alt="" width="40" height="40"><th:block th:unless="${navUser != null and navUser.avatarUrl != null}"><img th:src="@{/img/mascot.svg}" width="40" height="40" alt=""></th:block></span><span class="who"><b th:text="${navUser != null} ? ${navUser.name} : ''">มุกดา</b><small data-field="users.role" th:text="${isAdmin} ? 'ผู้ดูแลระบบ' : 'สมาชิก'">สมาชิก</small></span></a>
+      </div>
+    </header>
+
+<!-- 4) Footer: วางไว้ใน <div class="main"> ต่อจาก </main> -->
+<footer class="footer" th:fragment="footer">
+  <span>© <span th:text="${#temporals.year(#temporals.createToday())}">2026</span> PlantPal</span>
+  <span class="muted">CP353002 Principles Of Software Design </span>
+</footer>
+
+<!-- 5) Script ท้ายหน้า -->
+<th:block th:fragment="scripts">
+  <script th:src="@{/js/app.js}"></script>
+</th:block>
+
+</body>
+</html>

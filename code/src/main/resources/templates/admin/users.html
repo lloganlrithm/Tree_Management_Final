@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="th" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('จัดการผู้ใช้')}"></head>
+<body>
+<link rel="stylesheet" th:href="@{/css/users.css}">
+<div class="app">
+  <aside th:replace="~{fragments/layout :: sidebar('admin-users')}"></aside>
+
+  <div class="main">
+    <header th:replace="~{fragments/layout :: topbar}"></header>
+
+    <main class="content">
+      <div class="page-head">
+        <div>
+          <h1>ผู้ใช้</h1>
+          <p>กำหนดบทบาท และระงับหรือเปิดใช้งานบัญชี</p>
+        </div>
+      </div>
+
+      <div class="flash ok" th:if="${success}" th:text="${success}">บันทึกแล้ว</div>
+      <div class="flash err" th:if="${error}" th:text="${error}">เกิดข้อผิดพลาด</div>
+
+      <!-- Command pattern: ย้อนคำสั่งล่าสุดของ admin คนนี้ -->
+      <form class="undo-bar" th:if="${lastCommand}" th:action="@{/admin/users/undo}" method="post" data-live>
+        <input type="hidden" name="q" th:value="${q}">
+        <input type="hidden" name="page" th:value="${users.number + 1}">
+        <span>ล่าสุด: <b th:text="${lastCommand}">ระงับบัญชี a@b.com</b></span>
+        <button type="submit" class="btn btn-sm">ย้อนกลับ</button>
+      </form>
+
+      <!-- ค้นหา (GET ไม่ต้องมี CSRF) -->
+      <form class="card toolbar" th:action="@{/admin/users}" method="get" data-live>
+        <div class="admin-toolbar">
+          <label class="search" for="user-search">
+            <span class="icon icon-search" aria-hidden="true"></span>
+            <input id="user-search" type="search" name="q" th:value="${q}" placeholder="ค้นหาจากชื่อ นามสกุล หรืออีเมล..." autocomplete="off">
+          </label>
+          <button type="submit" class="btn">ค้นหา</button>
+        </div>
+      </form>
+
+      <section class="card table-wrap">
+        <table class="data">
+          <thead>
+            <tr><th>ผู้ใช้</th><th>บทบาท</th><th>ต้นไม้</th><th>สมัครเมื่อ</th><th>ใช้งาน</th></tr>
+          </thead>
+          <tbody>
+            <tr th:each="u : ${users.content}">
+              <td>
+                <div class="plant-cell">
+                  <span class="avatar"><img th:src="${u.avatarUrl != null} ? @{${u.avatarUrl}} : @{/img/mascot.svg}" alt=""></span>
+                  <span><b th:text="${u.fullName}">มุกดา บุญประจันทร์</b><small th:text="${u.email}">mukda@example.com</small></span>
+                </div>
+              </td>
+              <td>
+                <!-- เปลี่ยนค่าแล้วส่งฟอร์มทันที (users.js) / แถวของตัวเองแก้ไม่ได้ -->
+                <form th:action="@{/admin/users/{id}/role(id=${u.id})}" method="post" data-live>
+                  <input type="hidden" name="q" th:value="${q}">
+                  <input type="hidden" name="page" th:value="${users.number + 1}">
+                  <select class="select role-select" name="role" aria-label="บทบาท" data-autosubmit th:disabled="${u.self}">
+                    <option value="USER" th:selected="${u.role.name() == 'USER'}">สมาชิก</option>
+                    <option value="ADMIN" th:selected="${u.role.name() == 'ADMIN'}">ผู้ดูแลระบบ</option>
+                  </select>
+                </form>
+              </td>
+              <td class="num" th:text="${u.plantCount} + ' ต้น'">8 ต้น</td>
+              <td class="num" th:text="${#temporals.format(u.createdAt, 'd MMM yyyy')}">3 พ.ค. 2026</td>
+              <td>
+                <form th:action="@{/admin/users/{id}/active(id=${u.id})}" method="post" data-live>
+                  <input type="hidden" name="q" th:value="${q}">
+                  <input type="hidden" name="page" th:value="${users.number + 1}">
+                  <label class="switch" aria-label="เปิดใช้งานบัญชี">
+                    <input type="checkbox" name="active" value="true" data-autosubmit
+                           th:checked="${u.active}" th:disabled="${u.self}"><span></span>
+                  </label>
+                </form>
+              </td>
+            </tr>
+            <tr th:if="${users.empty}">
+              <td colspan="5" class="empty">ไม่พบผู้ใช้</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- แบ่งหน้า: แสดงเมื่อมีมากกว่า 1 หน้า -->
+      <nav class="pagination" th:if="${users.totalPages > 1}" aria-label="หน้า">
+        <a th:href="@{/admin/users(q=${q}, page=${users.number})}" th:classappend="${users.first} ? 'disabled'">ก่อนหน้า</a>
+        <th:block th:each="i : ${#numbers.sequence(1, users.totalPages)}">
+          <span class="current" th:if="${i == users.number + 1}" th:text="${i}">1</span>
+          <a th:unless="${i == users.number + 1}" th:href="@{/admin/users(q=${q}, page=${i})}" th:text="${i}">2</a>
+        </th:block>
+        <a th:href="@{/admin/users(q=${q}, page=${users.number + 2})}" th:classappend="${users.last} ? 'disabled'">ถัดไป</a>
+      </nav>
+    </main>
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+  </div>
+</div>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<script th:src="@{/js/users.js}"></script>
+</body>
+</html>

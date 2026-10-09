@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="th" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/layout :: head('ต้นไม้ของฉัน')}"></head>
+
+<body>
+  <link rel="stylesheet" th:href="@{/css/plants.css}">
+  <div class="app">
+
+    <aside th:replace="~{fragments/layout :: sidebar('plants')}"></aside>
+
+    <div class="main">
+      <header th:replace="~{fragments/layout :: topbar}"></header>
+
+      <main class="content">
+
+        <!-- ===== หัวหน้า + ปุ่มเพิ่มต้นไม้ ===== -->
+        <div class="page-head">
+          <div>
+            <h1>ต้นไม้ของฉัน</h1>
+            <p>จัดการและติดตามการเติบโตของเพื่อนตัวเขียวทั้งหมด <span th:text="${#lists.size(plants)}">0</span> ต้น</p>
+          </div>
+          <button class="btn btn-primary" type="button" data-open="add-plant">
+            <span class="icon icon-plus" aria-hidden="true"></span>
+            เพิ่มต้นไม้
+          </button>
+        </div>
+        <div class="flash ok" th:if="${success}" th:text="${success}">บันทึกแล้ว</div>
+        <div class="flash err" th:if="${error}" th:text="${error}">เกิดข้อผิดพลาด</div>
+
+        <!-- ===== ค้นหา + กรองสถานะ ===== -->
+        <section class="card toolbar">
+          <label class="search" for="plant-search">
+            <span class="icon icon-search" aria-hidden="true"></span>
+            <input id="plant-search" type="search" placeholder="ค้นหาตามชื่อเล่นหรือพันธุ์ไม้..." autocomplete="off">
+          </label>
+          <div class="chips" data-target="#plant-grid">
+            <span class="label">
+              <span class="icon icon-filter s16" aria-hidden="true"></span>
+              สถานะ:
+            </span>
+            <button type="button" class="chip active" data-filter="all">ทั้งหมด</button>
+            <button type="button" class="chip" data-filter="HEALTHY">ปกติดี</button>
+            <button type="button" class="chip" data-filter="SICK">ป่วย</button>
+            <button type="button" class="chip" data-filter="RECOVERING">กำลังฟื้นตัว</button>
+            <button type="button" class="chip" data-filter="DEAD">ตายแล้ว</button>
+          </div>
+        </section>
+
+        <!-- ===== กล่องการ์ดต้นไม้ (เว้นว่างไว้ รอบต่อ Service ใช้ th:each) ===== -->
+              <!-- ===== การ์ดต้นไม้ (1 การ์ด ต่อ 1 ต้น จาก DB) ===== -->
+      <section class="grid" id="plant-grid" th:unless="${#lists.isEmpty(plants)}">
+        <a class="card plant-card" th:each="p : ${plants}"
+           th:href="@{/plants/{id}(id=${p.id})}"
+           th:attr="data-tags=${p.healthStatus}, data-search=${(p.nickname ?: '') + ' ' + p.species.name}">
+          <div class="row">
+            <span class="plant-tile" th:classappend="'t-' + ${p.healthStatus}">
+              <span style="color: var(--primary)" class="icon icon-sprout s36" aria-hidden="true"></span>
+            </span>
+            <span class="badge" th:classappend="'s-' + ${p.healthStatus}" th:switch="${p.healthStatus.name()}">
+              <th:block th:case="'HEALTHY'">ปกติดี</th:block>
+              <th:block th:case="'SICK'">ป่วย</th:block>
+              <th:block th:case="'RECOVERING'">กำลังฟื้นตัว</th:block>
+              <th:block th:case="'DEAD'">ตายแล้ว</th:block>
+            </span>
+          </div>
+          <span class="name" th:text="${p.nickname ?: p.species.name}">ม่อนม่อน</span>
+          <span class="species" th:text="${p.species.name}">มอนสเตอร่า</span>
+          <div class="foot">
+            <span>รดน้ำทุก <th:block th:text="${p.species.waterIntervalDays}">7</th:block> วัน</span>
+            <span th:if="${p.plantedDate}" th:text="${#temporals.format(p.plantedDate, 'dd/MM/yyyy')}">01/10/2026</span>
+          </div>
+        </a>
+      </section>
+
+        <!-- ===== ยังไม่มีต้นไม้ (รอบต่อ Service ใช้ th:if) ===== -->
+              <!-- ===== ยังไม่มีต้นไม้ ===== -->
+      <section class="card empty-state" th:if="${#lists.isEmpty(plants)}">
+          <span class="plant-tile lg">
+            <span class="icon icon-sprout s48" aria-hidden="true"></span>
+          </span>
+          <h2>ยังไม่มีต้นไม้</h2>
+          <p class="muted">เพิ่มต้นไม้ต้นแรกของคุณ แล้วระบบจะช่วยเตือนเวลาดูแลให้</p>
+          <button class="btn btn-primary" type="button" data-open="add-plant">เพิ่มต้นไม้ต้นแรก</button>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ===== Popup เพิ่มต้นไม้ ===== -->
+  <div class="modal-backdrop" id="add-plant" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="add-plant-title">
+
+      <div class="modal-head">
+        <div>
+          <h2 id="add-plant-title">เพิ่มต้นไม้</h2>
+          <p>กรอกข้อมูลต้นไม้ต้นใหม่ของคุณ</p>
+        </div>
+        <button class="btn btn-icon" type="button" data-close aria-label="ปิด">
+          <span class="icon icon-close s20" aria-hidden="true"></span>
+        </button>
+      </div>
+
+      <form method="post" th:action="@{/plants}" data-live>
+        <div class="modal-body">
+
+          <div class="field">
+            <label for="nickname">ชื่อเล่นต้นไม้</label>
+            <input class="input" id="nickname" name="nickname" maxlength="100" placeholder="เช่น ม่อนม่อน">
+          </div>
+
+          <div class="field">
+            <label for="speciesId">พันธุ์ไม้</label>
+            <select class="select" id="speciesId" name="speciesId" required>
+              <option value="">เลือกพันธุ์ไม้</option>
+              <option th:each="sp : ${speciesList}" th:value="${sp.id}" th:text="${sp.name}">มอนสเตอร่า</option>
+            </select>
+            <span class="hint">รอบรดน้ำและแสงที่ต้องการจะดึงจากพันธุ์ไม้ที่เลือก</span>
+          </div>
+
+          <div class="form-grid">
+            <div class="field">
+              <label for="plantedDate">วันที่ปลูก</label>
+              <input class="input" type="date" id="plantedDate" name="plantedDate"
+                th:value="${#temporals.format(#temporals.createToday(), 'yyyy-MM-dd')}">
+            </div>
+
+          </div>
+
+          <div class="info-box">
+            <span class="icon icon-info" aria-hidden="true"></span>
+            ระบบจะสร้างตารางรดน้ำให้อัตโนมัติ ตามรอบของพันธุ์ไม้ที่เลือก
+          </div>
+        </div>
+
+        <div class="modal-foot form-actions">
+          <button class="btn" type="button" data-close>ยกเลิก</button>
+          <button class="btn btn-primary" type="submit">บันทึกต้นไม้</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+
+</html>

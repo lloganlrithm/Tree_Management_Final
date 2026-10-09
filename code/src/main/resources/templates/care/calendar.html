@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="th" xmlns:th="http://www.thymeleaf.org">
+
+<!--
+    หน้า C4: ปฏิทินการดูแล 30 วันข้างหน้า
+    CareCalendarController ส่งมาให้:
+      days          = List<CareCalendarDay> (Iterator เดินมาให้ทีละวัน เรียงจากวันนี้)
+      leadingBlanks = จำนวนช่องว่างก่อนวันแรก ให้ตรงคอลัมน์วันในสัปดาห์
+      taskCount     = จำนวนงานทั้งหมดใน 30 วัน
+      overdueCount  = จำนวนงานที่เลยกำหนดแล้ว (ไม่อยู่ในปฏิทิน)
+-->
+
+<head>
+    <th:block th:replace="~{fragments/layout :: head('ปฏิทินการดูแล')}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/calendar.css}">
+</head>
+
+<body>
+
+    <div class="app">
+
+        <aside th:replace="~{fragments/layout :: sidebar('calendar')}"></aside>
+
+        <div class="main">
+
+            <header th:replace="~{fragments/layout :: topbar}"></header>
+
+            <main class="content">
+
+                <!-- Page Header -->
+                <div class="page-head">
+                    <div>
+                        <h1>ปฏิทินการดูแล</h1>
+                        <p>งานดูแลต้นไม้ของคุณใน 30 วันข้างหน้า</p>
+                    </div>
+                    <a class="btn" th:href="@{/care}">
+                        <span class="icon icon-calendar-check" aria-hidden="true"></span>
+                        ไปหน้าการดูแล
+                    </a>
+                </div>
+
+                <!-- แถบเตือนงานที่เลยกำหนด (เป็นอดีต เลยไม่อยู่ในปฏิทิน) -->
+                <a class="cal-overdue" th:if="${overdueCount > 0}" th:href="@{/care}">
+                    <span class="cal-overdue-dot"></span>
+                    <span>มีงานที่เลยกำหนดแล้ว <b th:text="${overdueCount}">2</b> รายการ</span>
+                    <span class="cal-overdue-link">ไปบันทึกการดูแล →</span>
+                </a>
+
+                <section class="card card-pad">
+
+                    <div class="section-head">
+                        <div>
+                            <h2
+                                th:text="${#temporals.format(days[0].date, 'd MMM')} + ' – ' + ${#temporals.format(days[days.size() - 1].date, 'd MMM yyyy')}">
+                                8 Oct – 6 Nov 2026
+                            </h2>
+                            <p class="muted small">แต่ละวันแสดงงานดูแลที่ครบกำหนดวันนั้น</p>
+                        </div>
+                        <span class="badge plain s-HEALTHY" th:text="${taskCount} + ' งาน'">0 งาน</span>
+                    </div>
+
+                    <!-- หัวคอลัมน์วันในสัปดาห์ (ซ่อนบนมือถือ) -->
+                    <div class="cal-weekdays" aria-hidden="true">
+                        <span>อา</span><span>จ</span><span>อ</span><span>พ</span><span>พฤ</span><span>ศ</span><span>ส</span>
+                    </div>
+
+                    <ol class="cal-grid">
+
+                        <!-- ช่องว่างก่อนวันแรก -->
+                        <th:block th:if="${leadingBlanks > 0}">
+                            <li class="cal-blank" th:each="i : ${#numbers.sequence(1, leadingBlanks)}"
+                                aria-hidden="true"></li>
+                        </th:block>
+
+                        <!-- 1 ช่อง = 1 วัน (มาจาก CareCalendarIterator) -->
+                        <li class="cal-day" th:each="day : ${days}"
+                            th:classappend="${day.today ? 'is-today' : ''} + ${day.tasks.isEmpty() ? ' is-empty' : ''}">
+
+                            <div class="cal-date">
+                                <span class="cal-num" th:text="${day.date.dayOfMonth}">8</span>
+                                <!-- โชว์ชื่อเดือนที่วันแรกของปฏิทิน และวันที่ 1 ของเดือน -->
+                                <span class="cal-month" th:if="${day.today or day.date.dayOfMonth == 1}"
+                                    th:text="${#temporals.format(day.date, 'MMM')}">Oct</span>
+                                <!-- ชื่อวันโชว์เฉพาะบนมือถือ (ตอนเป็นรายการแนวตั้ง) -->
+                                <span class="cal-dow"
+                                    th:text="${ {'จันทร์','อังคาร','พุธ','พฤหัสฯ','ศุกร์','เสาร์','อาทิตย์'}[day.date.dayOfWeek.value - 1] }">พฤหัสฯ</span>
+                                <span class="cal-today-tag" th:if="${day.today}">วันนี้</span>
+                            </div>
+
+                            <ul class="cal-tasks" th:unless="${day.tasks.isEmpty()}">
+                                <li th:each="t : ${day.tasks}" th:with="label=${t.actionType.name() == 'WATER' ? 'รดน้ำ'
+                                               : (t.actionType.name() == 'FERTILIZE' ? 'ใส่ปุ๋ย'
+                                               : (t.actionType.name() == 'REPOT' ? 'เปลี่ยนกระถาง'
+                                               : (t.actionType.name() == 'CHECK_SUNLIGHT' ? 'เช็กแดด'
+                                               : (t.actionType.name() == 'HEALTH_CHECK' ? 'ตรวจสุขภาพ' : t.actionType.name()))))},
+                                             plantName=${t.plant.nickname != null and !#strings.isEmpty(t.plant.nickname)
+                                               ? t.plant.nickname : t.plant.species.name}">
+                                    <a class="cal-task" th:href="@{/care}"
+                                        th:classappend="'a-' + ${t.actionType.name()}"
+                                        th:title="${label} + ' · ' + ${plantName}">
+                                        <span class="cal-task-icon" aria-hidden="true"
+                                            th:switch="${t.actionType.name()}">
+                                            <th:block th:case="'WATER'">💧</th:block>
+                                            <th:block th:case="'FERTILIZE'">🌱</th:block>
+                                            <th:block th:case="'REPOT'">🪴</th:block>
+                                            <th:block th:case="'CHECK_SUNLIGHT'">☀️</th:block>
+                                            <th:block th:case="'HEALTH_CHECK'">🩺</th:block>
+                                            <th:block th:case="*">🌿</th:block>
+                                        </span>
+                                        <span class="cal-task-text">
+                                            <span class="sr-label" th:text="${label} + ' '">รดน้ำ </span><span
+                                                th:text="${plantName}">น้องเขียว</span>
+                                        </span>
+                                    </a>
+                                </li>
+                            </ul>
+
+                        </li>
+                    </ol>
+
+                    <!-- ไม่มีงานเลยใน 30 วัน -->
+                    <div class="empty cal-empty" th:if="${taskCount == 0}">
+                        <div class="cal-empty-icon">🗓️</div>
+                        <h3>ยังไม่มีงานดูแลใน 30 วันข้างหน้า</h3>
+                        <p class="muted">เพิ่มต้นไม้ในหน้า “ต้นไม้ของฉัน” แล้วตารางดูแลจะขึ้นในปฏิทินนี้</p>
+                    </div>
+
+                    <!-- คำอธิบายไอคอน -->
+                    <div class="cal-legend" th:unless="${taskCount == 0}">
+                        <span>💧 รดน้ำ</span><span>🌱 ใส่ปุ๋ย</span><span>🪴 เปลี่ยนกระถาง</span>
+                        <span>☀️ เช็กแดด</span><span>🩺 ตรวจสุขภาพ</span>
+                    </div>
+
+                </section>
+
+            </main>
+
+        </div>
+
+    </div>
+
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+</body>
+
+</html>

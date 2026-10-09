@@ -1,0 +1,175 @@
+/* =========================================================
+   reports.css — หน้ารายงานสุขภาพและแจ้งเตือน (เปรม)
+   ปุ่ม การ์ด ฟอร์ม ตาราง .badge .st-* .sev-* .note .reply มาจาก style.css
+   ไฟล์นี้เขียนเฉพาะสิ่งที่หน้าของเปรมมีเอง ทุก class ขึ้นต้นด้วย rp-
+   ========================================================= */
+
+/* ---------- หน้ารายงานทั้งฝั่งผู้ใช้และ admin: ลิงก์ไม่ขีดเส้นใต้ (ชิปตัวกรอง ชื่อต้นไม้ ประวัติ ฯลฯ) ---------- */
+.rp-page a, .rp-page a:hover { text-decoration: none; }
+
+/* ---------- ป้ายสถานะที่เพิ่มทีหลัง (4 ตัวแรกอยู่ใน base.css) ---------- */
+.st-FOLLOWED_UP { background: #efe9f6; color: #7a5aa6; }
+.st-AUTO_CLOSED { background: #eceeec; color: var(--muted); }
+
+/* ---------- หน้า admin: ป้าย "รอบที่ N" + รอบก่อนหน้าในแผงตอบ ---------- */
+.rp-round { margin-left: 6px; background: #efe9f6; color: #7a5aa6; font-size: .72rem; }
+.rp-rounds { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.rp-round-item {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--bg);
+}
+.rp-round-item p { margin: 0; overflow-wrap: anywhere; }
+.rp-round-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rp-round-head .badge { margin-left: auto; }
+
+/* ---------- กล่องข้อความหลังบันทึก (flash จาก Controller) ---------- */
+.rp-flash { padding: 12px 16px; border-radius: var(--radius-md); font-weight: 500; }
+.rp-flash.ok  { background: var(--soft); color: var(--primary-strong); }
+.rp-flash.err { background: var(--crit-soft); color: var(--crit); }
+
+/* ---------- ฟอร์มแจ้งปัญหา ---------- */
+.rp-form { padding: 24px; display: flex; flex-direction: column; gap: 18px; max-width: 760px; }
+.rp-fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.rp-fieldset legend { padding: 0; margin-bottom: 6px; font-weight: 500; font-size: .9rem; }
+.rp-seg input:checked + .rp-opt-MEDIUM { background: var(--warn); border-color: var(--warn); }
+.rp-seg input:checked + .rp-opt-HIGH { background: var(--crit); border-color: var(--crit); }
+.rp-preview {
+  min-height: 140px; display: grid; place-items: center; overflow: hidden;
+  border: 1.5px dashed var(--soft-strong); border-radius: var(--radius-md);
+  background: var(--bg); color: var(--muted); font-size: .85rem; text-align: center; padding: 8px;
+}
+.rp-preview img { display: block; max-width: 100%; max-height: 260px; object-fit: contain; border-radius: var(--radius-sm); }
+
+/* ---------- รายการรายงาน ---------- */
+.rp-item { text-decoration: none; }
+.rp-item:hover { border-color: var(--soft-strong); }
+.rp-chev { color: var(--muted); flex: none; display: grid; }
+
+/* ---------- แบ่งหน้า ---------- */
+.rp-pager { display: flex; justify-content: center; align-items: center; gap: 6px; flex-wrap: wrap; }
+.rp-pager a, .rp-pager span {
+  min-width: 36px; height: 36px; padding: 0 10px; border-radius: 999px;
+  display: inline-grid; place-items: center; text-decoration: none; font-size: .88rem;
+  border: 1px solid var(--line); background: var(--surface);
+}
+.rp-pager a:hover { background: var(--bg); }
+.rp-pager .is-current { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.rp-pager .is-disabled { color: var(--muted); opacity: .6; }
+
+/* ---------- รายละเอียดรายงาน ---------- */
+.rp-dl { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 12px 16px; margin: 0; }
+.rp-dl dt { color: var(--muted); font-size: .88rem; }
+.rp-dl dd { margin: 0; overflow-wrap: anywhere; }
+.rp-photo {
+  min-height: 120px; display: grid; place-items: center; gap: 6px;
+  border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--bg);
+  color: var(--muted); font-size: .85rem; overflow: hidden;
+}
+.rp-photo img { display: block; width: 100%; max-height: 320px; object-fit: cover; }
+.rp-steps { list-style: none; margin: 0; padding: 0; }
+.rp-steps li { position: relative; padding: 0 0 22px 28px; }
+.rp-steps li:last-child { padding-bottom: 0; }
+.rp-steps li::before {
+  content: ""; position: absolute; left: 0; top: 6px; width: 12px; height: 12px;
+  border-radius: 50%; border: 2px solid var(--soft-strong); background: var(--surface);
+}
+.rp-steps li::after { content: ""; position: absolute; left: 5px; top: 20px; bottom: -2px; width: 2px; background: var(--line); }
+.rp-steps li:last-child::after { display: none; }
+.rp-steps li.is-done::before { background: var(--primary); border-color: var(--primary); }
+.rp-steps b { display: block; font-size: .92rem; }
+.rp-steps time, .rp-steps small { font-size: .84rem; color: var(--muted); }
+
+/* ---------- ผู้ใช้อัปเดตผล + ประวัติรายงานของต้นนี้ ---------- */
+.rp-followup-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
+.rp-mini .is-current a { background: var(--soft); border-radius: var(--radius-sm); padding-left: 10px; padding-right: 10px; }
+
+/* ---------- Admin ตอบรายงาน ---------- */
+.rp-filters { padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+.rp-row { cursor: pointer; }
+.rp-thumb {
+  display: block; width: 44px; height: 44px; margin-top: 6px;
+  object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--line);
+}
+.rp-reply-img {
+  display: block; width: 100%; max-height: 280px; object-fit: contain;
+  border-radius: var(--radius-md); background: var(--bg);
+}
+
+/* แผงตอบรายงาน: กล่องคงมุมโค้ง เลื่อนแค่เนื้อหาข้างใน ปุ่มบันทึกติดด้านล่างเสมอ
+   (เฉพาะ #reply-modal ไม่กระทบ modal ของหน้าอื่น) */
+#reply-modal .modal { overflow: hidden; }
+#reply-modal form { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+#reply-modal .modal-body {
+  overflow-y: auto; min-height: 0;
+  scrollbar-width: thin; scrollbar-color: var(--soft-strong) transparent;
+}
+#reply-modal .modal-body::-webkit-scrollbar { width: 8px; }
+#reply-modal .modal-body::-webkit-scrollbar-track { background: transparent; margin: 8px 0; }
+#reply-modal .modal-body::-webkit-scrollbar-thumb { background: var(--soft-strong); border-radius: 999px; }
+#reply-modal .modal-foot { padding-top: 14px; border-top: 1px solid var(--line); }
+.rp-row:hover td { background: var(--bg); }
+
+/* ---------- หน้าแจ้งเตือน ---------- */
+.rp-nt-CARE_DUE .icon-tile { color: var(--primary); }
+.rp-nt-HEALTH_REPLY .icon-tile { color: var(--recover); }
+.rp-nt-SYSTEM .icon-tile { color: var(--muted); }
+.note.unread .rp-msg { font-weight: 600; }
+.rp-type { font-size: .76rem; color: var(--muted); }
+
+/* ---------- fragment: รายงานของต้นไม้ (ใส่ในหน้ารายละเอียดต้นไม้) ---------- */
+.rp-mini { list-style: none; margin: 0; padding: 0; }
+.rp-mini a {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px;
+  padding: 12px 0; border-bottom: 1px solid var(--line); text-decoration: none;
+}
+.rp-mini li:last-child a { border-bottom: 0; }
+.rp-mini a:hover b { color: var(--primary); }
+.rp-mini .grow { flex: 1; min-width: 140px; display: flex; flex-direction: column; }
+
+/* ---------- fragment: กระดิ่งแจ้งเตือนใน Navbar ---------- */
+.rp-bell-wrap { position: relative; display: inline-flex; }   /* แทน .bell-slot เดิมใน layout */
+.rp-bell { position: relative; }
+.rp-bell > summary { list-style: none; cursor: pointer; }
+.rp-bell > summary::-webkit-details-marker { display: none; }
+.rp-bell[open] > summary { background: var(--bg); }
+.rp-bell-count {
+  position: absolute; top: -2px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px;
+  display: grid; place-items: center; border-radius: 9px; border: 2px solid var(--surface);
+  background: var(--crit); color: #fff; font-size: .68rem; font-weight: 600; line-height: 1;
+}
+.rp-bell-menu {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 40;
+  width: 340px; max-width: calc(100vw - 24px);
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md);
+  box-shadow: 0 12px 32px rgba(34, 48, 42, .14); overflow: hidden;
+}
+.rp-bell-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); font-weight: 600; font-size: .9rem; }
+.rp-bell-list { list-style: none; margin: 0; padding: 0; max-height: 340px; overflow-y: auto; }
+.rp-bell-list a { display: flex; gap: 10px; padding: 10px 16px; text-decoration: none; border-bottom: 1px solid var(--line); }
+.rp-bell-list a:hover { background: var(--bg); }
+.rp-bell-list .unread { background: #f3f8f1; }
+.rp-dot { width: 8px; height: 8px; margin-top: 8px; border-radius: 50%; flex: none; }
+.rp-bell-list .unread .rp-dot { background: var(--crit); }
+.rp-bell-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: .86rem; }
+.rp-bell-text small { color: var(--muted); font-size: .76rem; }
+.rp-bell-list li { display: flex; align-items: stretch; border-bottom: 1px solid var(--line); }
+.rp-bell-list li > a { flex: 1; min-width: 0; border-bottom: 0; }
+.rp-bell-check {
+  flex: none; width: 40px; border: 0; background: transparent; color: var(--muted); cursor: pointer;
+  display: grid; place-items: center;
+}
+.rp-bell-check:hover { background: var(--soft); color: var(--primary); }
+.rp-bell-readall {
+  border: 0; background: transparent; padding: 0; cursor: pointer;
+  color: var(--primary); font-size: .8rem; font-weight: 500;
+}
+.rp-bell-readall:hover { text-decoration: underline; }
+.rp-bell-all { display: block; padding: 10px 16px; text-align: center; font-size: .86rem; text-decoration: none; color: var(--primary); font-weight: 500; }
+
+/* ---------- จอเล็ก ---------- */
+@media (max-width: 560px) {
+  .rp-form { padding: 16px; }
+  .rp-dl { grid-template-columns: 1fr; gap: 2px; }
+  .rp-dl dd { margin-bottom: 10px; }
+  .note { padding: 14px 16px; }
+}

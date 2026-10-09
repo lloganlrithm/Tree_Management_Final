@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="th" xmlns:th="http://www.thymeleaf.org">
+<!--
+    fragment การดูแลของเปียโน (C3) — ไฟล์นี้ไม่ได้เปิดเป็นหน้าเว็บเอง
+
+    1) plantCare : กล่อง "การดูแล" ของต้นไม้ 1 ต้น ให้ใส่ในหน้ารายละเอียดต้นไม้ (plants/detail.html)
+         <section th:replace="~{fragments/care-detail :: plantCare}"></section>
+       ต้องมีใน model: plant (ต้นไม้ที่กำลังดู), plantSchedules และ plantCareLogs
+       ใน PlantController.detail():
+         User me = currentUserService.getCurrentUser();
+         model.addAttribute("plantSchedules", careService.findPlantSchedules(id, me));
+         model.addAttribute("plantCareLogs", careService.findPlantHistory(id, me));
+
+    2) careLogRow(log) : แถวประวัติ 1 รายการ (ใช้ร่วมกันใน care/history.html และ plantCare)
+-->
+
+<body>
+
+    <!-- ===================== 1) กล่องการดูแลในหน้ารายละเอียดต้นไม้ ===================== -->
+    <section class="card card-pad" th:fragment="plantCare">
+        <!-- layout ไม่ได้ลิงก์ care-history.css เลยลิงก์ไว้ในตัว fragment (แบบเดียวกับ fragments/reports) -->
+        <link rel="stylesheet" th:href="@{/css/care-history.css}" href="/css/care-history.css">
+
+        <div class="section-head">
+            <h2>การดูแล</h2>
+            <a class="muted small" th:href="@{/care/history(plantId=${plant.id})}"
+                href="/care/history?plantId=1">ดูประวัติทั้งหมด</a>
+        </div>
+
+        <!-- ตารางดูแลครั้งถัดไปของต้นนี้ -->
+        <h3 class="ch-sub">ครั้งถัดไป</h3>
+        <ul class="ch-next" th:unless="${plantSchedules == null or #lists.isEmpty(plantSchedules)}">
+            <li th:each="s : ${plantSchedules}"
+                th:with="diff=${s.nextDueDate.toEpochDay() - #temporals.createToday().toEpochDay()}">
+                <span class="ch-icon" aria-hidden="true" th:switch="${s.actionType.name()}">
+                    <th:block th:case="'WATER'">💧</th:block>
+                    <th:block th:case="'FERTILIZE'">🌱</th:block>
+                    <th:block th:case="'REPOT'">🪴</th:block>
+                    <th:block th:case="'CHECK_SUNLIGHT'">☀️</th:block>
+                    <th:block th:case="'HEALTH_CHECK'">🩺</th:block>
+                    <th:block th:case="*">🌿</th:block>
+                </span>
+                <span class="grow" th:switch="${s.actionType.name()}">
+                    <b th:case="'WATER'">รดน้ำ</b>
+                    <b th:case="'FERTILIZE'">ใส่ปุ๋ย</b>
+                    <b th:case="'REPOT'">เปลี่ยนกระถาง</b>
+                    <b th:case="'CHECK_SUNLIGHT'">เช็กแดด</b>
+                    <b th:case="'HEALTH_CHECK'">ตรวจสุขภาพ</b>
+                    <b th:case="*" th:text="${s.actionType.name()}">อื่นๆ</b>
+                </span>
+                <span class="muted small" th:text="${#temporals.format(s.nextDueDate, 'd MMM yyyy')}">15 Oct 2026</span>
+                <span class="badge s-CRITICAL" th:if="${diff < 0}" th:text="'เลยมา ' + ${-diff} + ' วัน'">เลยมา 2
+                    วัน</span>
+                <span class="badge s-WARNING" th:if="${diff == 0}">วันนี้</span>
+                <span class="badge s-HEALTHY" th:if="${diff > 0}" th:text="'อีก ' + ${diff} + ' วัน'">อีก 7 วัน</span>
+            </li>
+        </ul>
+        <p class="muted small" th:if="${plantSchedules == null or #lists.isEmpty(plantSchedules)}">
+            ยังไม่มีตารางดูแลของต้นนี้</p>
+
+        <!-- ประวัติล่าสุด 5 ครั้ง -->
+        <h3 class="ch-sub">ประวัติล่าสุด</h3>
+        <ul class="ch-list compact" th:unless="${plantCareLogs == null or #lists.isEmpty(plantCareLogs)}">
+            <th:block th:each="log, it : ${plantCareLogs}" th:if="${it.index < 5}">
+                <li th:replace="~{fragments/care-detail :: careLogRow(${log})}"></li>
+            </th:block>
+        </ul>
+        <p class="muted small" th:if="${plantCareLogs == null or #lists.isEmpty(plantCareLogs)}">
+            ยังไม่เคยบันทึกการดูแลต้นนี้</p>
+    </section>
+
+
+    <!-- ===================== 2) แถวประวัติ 1 รายการ ===================== -->
+    <!-- diff = วันที่ทำจริง - วันกำหนด (บวก = ช้า, 0 = ตรงวัน, ลบ = ทำก่อนกำหนด) -->
+    <li class="ch-item" th:fragment="careLogRow(log)" th:attr="data-tags=${log.actionType.name()}"
+        th:with="diff=${log.dueDate != null ? log.performedAt.toLocalDate().toEpochDay() - log.dueDate.toEpochDay() : null}">
+
+        <span class="ch-icon" aria-hidden="true" th:switch="${log.actionType.name()}">
+            <th:block th:case="'WATER'">💧</th:block>
+            <th:block th:case="'FERTILIZE'">🌱</th:block>
+            <th:block th:case="'REPOT'">🪴</th:block>
+            <th:block th:case="'CHECK_SUNLIGHT'">☀️</th:block>
+            <th:block th:case="'HEALTH_CHECK'">🩺</th:block>
+            <th:block th:case="*">🌿</th:block>
+        </span>
+
+        <span class="grow">
+            <span class="ch-title">
+                <b th:switch="${log.actionType.name()}">
+                    <th:block th:case="'WATER'">รดน้ำ</th:block>
+                    <th:block th:case="'FERTILIZE'">ใส่ปุ๋ย</th:block>
+                    <th:block th:case="'REPOT'">เปลี่ยนกระถาง</th:block>
+                    <th:block th:case="'CHECK_SUNLIGHT'">เช็กแดด</th:block>
+                    <th:block th:case="'HEALTH_CHECK'">ตรวจสุขภาพ</th:block>
+                    <th:block th:case="*" th:text="${log.actionType.name()}">อื่นๆ</th:block>
+                </b>
+                <a class="ch-plant" th:href="@{/plants/{id}(id=${log.plant.id})}" href="/plants/1"
+                    th:text="${log.plant.nickname != null and !#strings.isEmpty(log.plant.nickname)} ? ${log.plant.nickname} : ${log.plant.species.name}">น้องเขียว</a>
+            </span>
+            <span class="muted small">
+                ทำเมื่อ <time th:datetime="${log.performedAt}"
+                    th:text="${#temporals.format(log.performedAt, 'd MMM yyyy HH:mm')}">8 Oct 2026 18:40</time>
+                <th:block th:if="${log.dueDate != null}">
+                    · กำหนด <span th:text="${#temporals.format(log.dueDate, 'd MMM yyyy')}">8 Oct 2026</span>
+                </th:block>
+            </span>
+            <span class="ch-notes" th:if="${log.notes != null and !#strings.isEmpty(log.notes)}"
+                th:text="${log.notes}">ใบเริ่มเหลือง</span>
+        </span>
+
+        <span class="badge plain" th:if="${diff == null}">ไม่มีกำหนด</span>
+        <span class="badge s-HEALTHY" th:if="${diff != null and diff == 0}">ตรงเวลา</span>
+        <span class="badge s-HEALTHY" th:if="${diff != null and diff < 0}"
+            th:text="'ก่อนกำหนด ' + ${-diff} + ' วัน'">ก่อนกำหนด 1 วัน</span>
+        <span class="badge s-CRITICAL" th:if="${diff != null and diff > 0}" th:text="'ช้า ' + ${diff} + ' วัน'">ช้า 3
+            วัน</span>
+    </li>
+
+</body>
+
+</html>

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="th" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/layout :: head('รายละเอียดต้นไม้')}"></head>
+
+<body>
+  <link rel="stylesheet" th:href="@{/css/plants.css}">
+  <div class="app">
+
+    <aside th:replace="~{fragments/layout :: sidebar('plants')}"></aside>
+
+    <div class="main">
+      <header th:replace="~{fragments/layout :: topbar}"></header>
+
+      <main class="content">
+
+        <a class="back" th:href="@{/plants}">
+          <span class="icon icon-chevron-left s16" aria-hidden="true"></span>
+          กลับไปต้นไม้ของฉัน
+        </a>
+        <div class="flash ok" th:if="${success}" th:text="${success}">บันทึกแล้ว</div>
+        <div class="flash err" th:if="${error}" th:text="${error}">เกิดข้อผิดพลาด</div>
+
+        <!-- ===== ข้อมูลต้นไม้ (ตาราง plants) ===== -->
+        <section class="card">
+          <div class="detail-head">
+            <span class="plant-tile lg" th:classappend="'t-' + ${plant.healthStatus}">
+              <span style="color: var(--primary)" class="icon icon-sprout s48" aria-hidden="true"></span>
+            </span>
+            <div class="grow">
+              <h1 th:text="${plant.nickname ?: plant.species.name}">ม่อนม่อน</h1>
+              <div class="chips">
+                <span class="badge" th:classappend="'s-' + ${plant.healthStatus}"
+                  th:switch="${plant.healthStatus.name()}">
+                  <th:block th:case="'HEALTHY'">ปกติดี</th:block>
+                  <th:block th:case="'SICK'">ป่วย</th:block>
+                  <th:block th:case="'RECOVERING'">กำลังฟื้นตัว</th:block>
+                  <th:block th:case="'DEAD'">ตายแล้ว</th:block>
+                </span>
+                <span class="muted small" th:text="${plant.species.name}">มอนสเตอร่า</span>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn btn-soft" type="button" data-open="edit-plant">แก้ไข</button>
+              <!-- ย้อนการแก้ไขล่าสุด (Memento) แสดงเฉพาะตอนมีให้ย้อน -->
+              <form method="post" data-live th:action="@{/plants/{id}/undo(id=${plant.id})}" th:if="${canUndo}"
+                style="display:inline;">
+                <button class="btn btn-soft" type="submit">ย้อนการแก้ไขล่าสุด</button>
+              </form>
+              <a class="btn" th:href="@{/reports/new(plantId=${plant.id})}">แจ้งปัญหา</a>
+              <button class="btn btn-danger" type="button" data-open="delete-plant">ลบ</button>
+            </div>
+          </div>
+          <div class="facts">
+            <div class="fact">
+              <div class="k">วันที่ปลูก</div>
+              <div class="v"
+                th:text="${plant.plantedDate != null} ? ${#temporals.format(plant.plantedDate, 'dd/MM/yyyy')} : '-'">
+                19/09/2026</div>
+            </div>
+            <div class="fact">
+              <div class="k">เพิ่มในระบบเมื่อ</div>
+              <div class="v" th:text="${#temporals.format(plant.createdAt, 'dd/MM/yyyy')}">19/09/2026</div>
+            </div>
+            <div class="fact">
+              <div class="k">ฟื้นตัวมาแล้ว</div>
+              <div class="v">
+                <th:block th:text="${plant.recoveryCount}">0</th:block> ครั้ง
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== เปลี่ยนสถานะสุขภาพ: แสดงเฉพาะปุ่มที่สถานะปัจจุบันอนุญาต (State pattern) ===== -->
+          <form method="post" th:action="@{/plants/{id}/health(id=${plant.id})}" data-live
+            th:unless="${#lists.isEmpty(nextStatuses)}"
+            style="display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:0 24px 24px;">
+            <span class="muted small">เปลี่ยนสถานะเป็น</span>
+            <button class="btn btn-soft" type="submit" name="status" th:each="s : ${nextStatuses}"
+              th:unless="${s.name() == 'DEAD'}" th:value="${s}">
+              <th:block th:switch="${s.name()}">
+                <th:block th:case="'HEALTHY'">ปกติดี</th:block>
+                <th:block th:case="'SICK'">ป่วย</th:block>
+                <th:block th:case="'RECOVERING'">กำลังฟื้นตัว</th:block>
+              </th:block>
+            </button>
+            <!-- ปุ่มตายแล้วเปลี่ยนกลับไม่ได้ จึงเปิด popup ให้ยืนยันก่อน (ไม่ submit ทันที) -->
+            <button class="btn btn-danger" type="button" data-open="dead-plant" th:each="s : ${nextStatuses}"
+              th:if="${s.name() == 'DEAD'}">ตายแล้ว</button>
+          </form>
+          <p class="muted small" th:if="${#lists.isEmpty(nextStatuses)}" style="padding:0 24px 24px;">
+            ต้นไม้นี้ตายแล้ว เปลี่ยนสถานะไม่ได้</p>
+        </section>
+
+        <!-- ===== ข้อมูลสายพันธุ์ (ตาราง species) ===== -->
+        <section class="card card-pad">
+          <div class="section-head">
+            <h2>ข้อมูลพันธุ์ไม้</h2>
+          </div>
+          <div class="species-facts">
+            <div class="sp-item">
+              <span class="k">รดน้ำทุก</span>
+              <span class="v"><b th:text="${plant.species.waterIntervalDays}">7</b> วัน</span>
+            </div>
+            <div class="sp-item" th:if="${plant.species.fertilizeIntervalDays}">
+              <span class="k">ใส่ปุ๋ยทุก</span>
+              <span class="v"><b th:text="${plant.species.fertilizeIntervalDays}">30</b> วัน</span>
+            </div>
+            <div class="sp-item" th:if="${plant.species.repotIntervalDays}">
+              <span class="k">เปลี่ยนกระถางทุก</span>
+              <span class="v"><b th:text="${plant.species.repotIntervalDays}">365</b> วัน</span>
+            </div>
+            <div class="sp-item" th:if="${plant.species.sunlightRequirement}">
+              <span class="k">แสงที่ต้องการ</span>
+              <span class="v" th:switch="${plant.species.sunlightRequirement.name()}">
+                <th:block th:case="'LOW'">แดดน้อย</th:block>
+                <th:block th:case="'MEDIUM'">แดดปานกลาง</th:block>
+                <th:block th:case="'HIGH'">แดดจัด</th:block>
+              </span>
+            </div>
+          </div>
+          <p class="sp-desc" th:if="${plant.species.description}" th:text="${plant.species.description}">
+            คำอธิบายพันธุ์ไม้</p>
+        </section>
+
+        <!-- ===== การดูแล (fragments/care-detail.html ของเปียโน) + รายงานสุขภาพ (fragments/reports.html ของเปรม) ===== -->
+        <div class="two-col">
+          <section th:replace="~{fragments/care-detail :: plantCare}"></section>
+          <section th:replace="~{fragments/reports :: plantReports}"></section>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ===== Popup แก้ไขต้นไม้ (ใส่ข้อมูลเดิมไว้แล้ว) ===== -->
+  <div class="modal-backdrop" id="edit-plant" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="edit-plant-title">
+      <div class="modal-head">
+        <div>
+          <h2 id="edit-plant-title">แก้ไขต้นไม้</h2>
+          <p>แก้ไขข้อมูลของ <span th:text="${plant.nickname ?: plant.species.name}">ม่อนม่อน</span></p>
+        </div>
+        <button class="btn btn-icon" type="button" data-close aria-label="ปิด">
+          <span class="icon icon-close s20" aria-hidden="true"></span>
+        </button>
+      </div>
+      <form method="post" th:action="@{/plants}" data-live>
+        <!-- มี id = แก้ไขต้นเดิม (PlantController.save ดูจาก id นี้) -->
+        <input type="hidden" name="id" th:value="${plant.id}">
+        <div class="modal-body">
+          <div class="field">
+            <label for="nickname">ชื่อเล่นต้นไม้</label>
+            <input class="input" id="nickname" name="nickname" maxlength="100" th:value="${plant.nickname}">
+          </div>
+          <div class="field">
+            <label for="speciesId">พันธุ์ไม้</label>
+            <select class="select" id="speciesId" name="speciesId" required>
+              <option th:each="sp : ${speciesList}" th:value="${sp.id}" th:text="${sp.name}"
+                th:selected="${sp.id == plant.species.id}">มอนสเตอร่า</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="plantedDate">วันที่ปลูก</label>
+            <input class="input" type="date" id="plantedDate" name="plantedDate" th:value="${plant.plantedDate}">
+          </div>
+        </div>
+        <div class="modal-foot form-actions">
+          <button class="btn" type="button" data-close>ยกเลิก</button>
+          <button class="btn btn-primary" type="submit">บันทึกการแก้ไข</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== Popup ยืนยันลบ ===== -->
+  <div class="modal-backdrop" id="delete-plant" hidden>
+    <div class="modal sm" role="dialog" aria-modal="true" aria-labelledby="delete-plant-title">
+      <div class="modal-head">
+        <div>
+          <h2 id="delete-plant-title">ลบ “<span th:text="${plant.nickname ?: plant.species.name}">ม่อนม่อน</span>” ?
+          </h2>
+          <p>ตารางดูแล ประวัติการดูแล และรายงานสุขภาพของต้นนี้จะถูกลบไปด้วย ย้อนกลับไม่ได้</p>
+        </div>
+      </div>
+      <form class="modal-foot form-actions" method="post" th:action="@{/plants/delete}" data-live>
+        <input type="hidden" name="id" th:value="${plant.id}">
+        <button class="btn" type="button" data-close>ยกเลิก</button>
+        <button class="btn btn-danger-solid" type="submit">ลบต้นไม้</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== Popup ยืนยันเปลี่ยนเป็นตายแล้ว ===== -->
+  <div class="modal-backdrop" id="dead-plant" hidden>
+    <div class="modal sm" role="dialog" aria-modal="true" aria-labelledby="dead-plant-title">
+      <div class="modal-head">
+        <div>
+          <h2 id="dead-plant-title">เปลี่ยน “<span th:text="${plant.nickname ?: plant.species.name}">ม่อนม่อน</span>” เป็นตายแล้ว ?
+          </h2>
+          <p>ต้นไม้ที่ตายแล้วจะเปลี่ยนกลับเป็นสถานะอื่นไม่ได้อีก และกดย้อนกลับไม่ได้</p>
+        </div>
+      </div>
+      <form class="modal-foot form-actions" method="post" th:action="@{/plants/{id}/health(id=${plant.id})}" data-live>
+        <input type="hidden" name="status" value="DEAD">
+        <button class="btn" type="button" data-close>ยกเลิก</button>
+        <button class="btn btn-danger-solid" type="submit">ยืนยัน ตายแล้ว</button>
+      </form>
+    </div>
+  </div>
+
+  <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+
+</html>

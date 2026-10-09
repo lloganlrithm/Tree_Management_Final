@@ -1,0 +1,322 @@
+package com.example.plantpal.service.impl;
+
+import com.example.plantpal.domain.entity.HealthReport;
+import com.example.plantpal.domain.entity.Plant;
+import com.example.plantpal.domain.enums.HealthStatus;
+import com.example.plantpal.domain.enums.ReportStatus;
+import com.example.plantpal.domain.enums.Severity;
+import com.example.plantpal.dto.request.HealthReportRequest;
+import com.example.plantpal.dto.request.ReportFollowUpRequest;
+import com.example.plantpal.event.ReportAutoClosedEvent;
+import com.example.plantpal.event.ReportResolvedEvent;
+import com.example.plantpal.event.ReportSubmittedEvent;
+import com.example.plantpal.exception.DuplicateReportException;
+import com.example.plantpal.exception.InvalidRequestException;
+import com.example.plantpal.exception.ResourceNotFoundException;
+import com.example.plantpal.plant.state.PlantHealthStates;
+import com.example.plantpal.repository.HealthReportRepository;
+import com.example.plantpal.service.HealthReportService;
+import com.example.plantpal.service.ImageStorageService;
+import com.example.plantpal.service.PlantService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class HealthReportServiceImpl implements HealthReportService {
+
+    // รายงานที่ยังไม่ปิด = รอตรวจ หรือ กำลังดำเนินการ
+    private static final List<ReportStatus> OPEN_STATUSES = List.of(ReportStatus.PENDING, ReportStatus.IN_PROGRESS);
+    private static final String FOLLOW_UP_PREFIX = "ติดตามผล: ";
+
+    private final HealthReportRepository healthReportRepository;
+    // เรียกผ่าน Service ไม่เรียก PlantRepository ตรงๆ 
+    private final PlantService plantService;
+    private final ApplicationEventPublisher eventPublisher;
+    private final ImageStorageService imageStorageService;
+
+    @Override
+    public HealthReport create(HealthReportRequest request, String email) {
+        // findMyPlant โยน error ถ้าต้นไม้ไม่ใช่ของคนที่ login อยู่ = เช็คความเป็นเจ้าของไปในตัว
+        Plant plant = plantService.findMyPlant(request.getPlantId(), email);
+        // ต้นไม้ 1 ต้นมีรายงานที่ยังเปิดอยู่ได้ทีละ 1 อัน (เช็คก่อนอัปโหลดรูป จะได้ไม่อัปรูปทิ้งเปล่าๆ)
+        ensureNoOpenReport(plant.getId());
+
+        HealthReport report = new HealthReport();
+        report.setPlant(plant);
+        report.setTitle(request.getTitle().trim());
+        report.setDescription(blankToNull(request.getDescription()));
+        report.setSeverity(request.getSeverity());
+        // แนบรูปมา = อัปโหลดขึ้น Cloudinary ก่อน แล้วเก็บแค่ลิงก์ลง DB (ถ้าอัปไม่ผ่านจะ error และไม่บันทึกรายงาน)
+        if (request.getImage() != null && !request.getImage().isEmpty()) {
+            report.setImageUrl(imageStorageService.upload(request.getImage(), "reports"));
+        }
+        // status = PENDING ตาม default ใน entity
+        HealthReport saved = healthReportRepository.save(report);
+        publishSubmitted(saved, false);   // Observer: แจ้ง admin ว่ามีรายงานรอตรวจ
+        return saved;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<HealthReport> findMyReports(String email, ReportStatus status, Pageable pageable) {
+        return (status == null)
+                ? healthReportRepository.findByPlantUserEmail(email, pageable)
+                : healthReportRepository.findByPlantUserEmailAndStatus(email, status, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public HealthReport findMyReport(Long id, String email) {
+        // หาด้วย id + อีเมลเจ้าของ: รายงานของคนอื่นจะได้ "ไม่พบ" เหมือนไม่มีอยู่ (ไม่บอกว่ามีแต่ห้ามดู)
+        return healthReportRepository.findByIdAndPlantUserEmail(id, email)
+                .orElseThrow(() -> new ResourceNotFoundException("ไม่พบรายงานนี้"));
+    }
+
+    @Override
+    public void deleteMyReport(Long id, String email) {
+        healthReportRepository.delete(findMyReport(id, email));
+    }
+
+    @Override
+    public HealthReport markImproved(Long id, String email) {
+        HealthReport report = findMyInProgressReport(id, email);
+        report.setStatus(ReportStatus.RESOLVED);
+        report.setResolvedAt(LocalDateTime.now());
+        updatePlantHealth(report.getPlant(), ReportStatus.RESOLVED);   // State: ป่วย -> กำลังฟื้นตัว
+        return healthReportRepository.save(report);
+    }
+
+    @Override
+    public HealthReport followUp(Long id, ReportFollowUpRequest request, String email) {
+        HealthReport previous = findMyInProgressReport(id, email);
+
+        // อัปโหลดรูปก่อนแก้อะไรใน DB: ถ้าอัปไม่ผ่าน จะ error ออกไปโดยรอบเดิมยังเปิดอยู่เหมือนเดิม
+        String imageUrl = null;
+        if (request.getImage() != null && !request.getImage().isEmpty()) {
+            imageUrl = imageStorageService.upload(request.getImage(), "reports");
+        }
+
+        // จบรอบเดิมเป็น "ส่งต่อรอบใหม่" (ไม่ใช่แก้ไขแล้ว เพราะยังไม่หาย) ทำใน transaction เดียวกับการสร้างรายงานใหม่
+        previous.setStatus(ReportStatus.FOLLOWED_UP);
+        previous.setResolvedAt(LocalDateTime.now());
+        healthReportRepository.save(previous);
+
+        HealthReport next = new HealthReport();
+        next.setPlant(previous.getPlant());
+        next.setTitle(followUpTitle(previous.getTitle()));
+        String message = blankToNull(request.getMessage());
+        next.setDescription(message != null ? message : "ทำตามคำแนะนำแล้วแต่ยังไม่ดีขึ้น");
+        next.setSeverity(previous.getSeverity());
+        next.setImageUrl(imageUrl);
+        // status = PENDING ตาม default ใน entity -> ขึ้นในหน้า admin เป็นรายงานรอตรวจ
+        HealthReport saved = healthReportRepository.save(next);
+        publishSubmitted(saved, true);
+        return saved;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<HealthReport> findStaleInProgress(LocalDateTime before) {
+        return healthReportRepository.findByStatusAndCreatedAtBefore(ReportStatus.IN_PROGRESS, before);
+    }
+
+    @Override
+    public void autoClose(HealthReport report, int staleDays) {
+        // ไม่แตะสถานะต้นไม้: ไม่รู้ว่าดีขึ้นหรือไม่ แค่จบรายงานที่ค้าง ถ้ายังมีปัญหาผู้ใช้แจ้งใหม่ได้
+        report.setStatus(ReportStatus.AUTO_CLOSED);
+        report.setResolvedAt(LocalDateTime.now());
+        healthReportRepository.save(report);
+
+        Plant plant = report.getPlant();
+        eventPublisher.publishEvent(new ReportAutoClosedEvent(
+                report.getId(), plant.getUser().getId(), plant.getId(), report.getTitle(), staleDays));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countPending(String email) {
+        return healthReportRepository.countByPlantUserEmailAndStatus(email, ReportStatus.PENDING);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<HealthReport> findByPlant(Long plantId, String email) {
+        return healthReportRepository.findByPlantIdAndPlantUserEmailOrderByCreatedAtDesc(plantId, email);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<HealthReport> findAll(ReportStatus status, Severity severity, Pageable pageable) {
+        if (status != null && severity != null) {
+            return healthReportRepository.findByStatusAndSeverity(status, severity, pageable);
+        }
+        if (status != null) {
+            return healthReportRepository.findByStatus(status, pageable);
+        }
+        if (severity != null) {
+            return healthReportRepository.findBySeverity(severity, pageable);
+        }
+        return healthReportRepository.findAllBy(pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<HealthReport> findLatestRounds(ReportStatus status, Severity severity, Pageable pageable) {
+        // เลือกสถานะเอง = แสดงสถานะนั้นตรงๆ (รวม "ส่งต่อรอบใหม่" ด้วย ถ้าเลือก)
+        if (status != null) {
+            return findAll(status, severity, pageable);
+        }
+        // ไม่เลือกสถานะ = ซ่อนรอบที่ส่งต่อไปแล้ว เหลือ 1 แถวต่อ 1 เรื่อง (แจ้งใหม่คนละเรื่องยังแยกแถวกัน)
+        return (severity == null)
+                ? healthReportRepository.findByStatusNot(ReportStatus.FOLLOWED_UP, pageable)
+                : healthReportRepository.findBySeverityAndStatusNot(severity, ReportStatus.FOLLOWED_UP, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Long, List<HealthReport>> findPreviousRounds(List<HealthReport> latest) {
+        Map<Long, List<HealthReport>> result = new HashMap<>();
+        if (latest.isEmpty()) return result;
+
+        // ดึงทุกรายงานของต้นในหน้านี้ทีเดียว แล้วแยกตามต้น (ใหม่สุดก่อน)
+        List<Long> plantIds = latest.stream().map(r -> r.getPlant().getId()).distinct().toList();
+        Map<Long, List<HealthReport>> byPlant = healthReportRepository.findByPlantIdInOrderByCreatedAtDesc(plantIds)
+                .stream()
+                .collect(Collectors.groupingBy(r -> r.getPlant().getId()));
+
+        for (HealthReport report : latest) {
+            result.put(report.getId(), chainBefore(report, byPlant.getOrDefault(report.getPlant().getId(), List.of())));
+        }
+        return result;
+    }
+
+    // รอบก่อนหน้าของเรื่องเดียวกัน: ย้อนจากรายงานนี้ไปเรื่อยๆ ตราบที่รอบก่อนเป็น "ส่งต่อรอบใหม่"
+    // เจอรอบที่จบแบบอื่น (ดีขึ้นแล้ว / ปฏิเสธ / หมดเวลา) = เป็นเรื่องเก่าคนละเรื่อง หยุด
+    private List<HealthReport> chainBefore(HealthReport report, List<HealthReport> plantReportsNewestFirst) {
+        List<HealthReport> chain = new ArrayList<>();
+        boolean found = false;
+        for (HealthReport r : plantReportsNewestFirst) {
+            if (!found) {
+                found = r.getId().equals(report.getId());
+                continue;
+            }
+            if (r.getStatus() != ReportStatus.FOLLOWED_UP) break;
+            chain.add(r);
+        }
+        return chain;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public HealthReport findById(Long id) {
+        return healthReportRepository.findWithPlantById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("ไม่พบรายงานนี้"));
+    }
+
+    @Override
+    public HealthReport reply(Long id, ReportStatus status, String adminReply, HealthStatus plantHealth) {
+        HealthReport report = findById(id);
+        String reply = blankToNull(adminReply);
+        validateAdminReply(report, status, reply);
+
+        // สถานะเดินเองตามสิ่งที่ admin ทำ: ส่งคำแนะนำ = กำลังดำเนินการ, ปฏิเสธ = จบพร้อมเหตุผล
+        // (สถานะจบแบบอื่นมาจากผู้ใช้บอกผล หรือ job รายงานที่เงียบนาน ไม่ใช่จาก admin)
+        report.setStatus(status);
+        report.setAdminReply(reply);
+        report.setResolvedAt(status == ReportStatus.REJECTED ? LocalDateTime.now() : null);
+        HealthReport saved = healthReportRepository.save(report);
+
+        Plant plant = saved.getPlant();
+        if (plantHealth != null) {
+            // admin เลือกเอง: ให้ State ของโป้ยตรวจ ถ้าเปลี่ยนไม่ได้จะโยน error แล้ว transaction ย้อนทั้งหมด (คำตอบก็ไม่ถูกบันทึก)
+            plantService.changeHealth(plant.getId(), plantHealth);
+        } else {
+            updatePlantHealth(plant, status);
+        }
+
+        // Observer: ประกาศว่ามีการตอบรายงาน ใครฟังอยู่ก็ทำงานของตัวเองต่อ (เช่น สร้างแจ้งเตือนให้เจ้าของ)
+        eventPublisher.publishEvent(new ReportResolvedEvent(
+                saved.getId(), plant.getUser().getId(), plant.getId(), saved.getTitle(), status));
+        return saved;
+    }
+
+    // admin ทำได้ 2 อย่าง: ส่งคำแนะนำ (IN_PROGRESS) หรือปฏิเสธ (REJECTED) และต้องเขียนข้อความเสมอ
+    private void validateAdminReply(HealthReport report, ReportStatus status, String reply) {
+        if (!OPEN_STATUSES.contains(report.getStatus())) {
+            throw new InvalidRequestException("รายงานนี้จบไปแล้ว ตอบเพิ่มไม่ได้");
+        }
+        if (status != ReportStatus.IN_PROGRESS && status != ReportStatus.REJECTED) {
+            throw new InvalidRequestException("ผู้ดูแลระบบทำได้แค่ส่งคำแนะนำ หรือปฏิเสธรายงาน");
+        }
+        if (reply == null) {
+            throw new InvalidRequestException(status == ReportStatus.REJECTED
+                    ? "กรุณาเขียนเหตุผลที่ปฏิเสธ"
+                    : "กรุณาเขียนคำแนะนำ");
+        }
+    }
+
+    // เปลี่ยนสถานะสุขภาพต้นไม้ตามผลการตรวจ ผ่าน State pattern ของโป้ย (ห้าม set healthStatus เอง)
+    //   IN_PROGRESS = admin ยืนยันว่ามีปัญหา -> SICK
+    //   RESOLVED    = ต้นไม้ดีขึ้นแล้ว         -> RECOVERING
+    //   อื่นๆ (รอตรวจ / ปฏิเสธ / ส่งต่อรอบใหม่ / หมดเวลา) -> ไม่เปลี่ยน
+    // ถ้าสถานะปัจจุบันเปลี่ยนไปไม่ได้ (เช่น HEALTHY -> RECOVERING, ต้นที่ตายแล้ว) ให้ข้าม ไม่ทำให้การตอบรายงานล้ม
+    private void updatePlantHealth(Plant plant, ReportStatus status) {
+        HealthStatus target = switch (status) {
+            case IN_PROGRESS -> HealthStatus.SICK;
+            case RESOLVED -> HealthStatus.RECOVERING;
+            case PENDING, REJECTED, FOLLOWED_UP, AUTO_CLOSED -> null;
+        };
+        if (target != null && PlantHealthStates.of(plant.getHealthStatus()).canChangeTo(target)) {
+            plantService.changeHealth(plant.getId(), target);
+        }
+    }
+
+    // อัปเดตผลได้เฉพาะรายงานของตัวเองที่ admin ตอบแล้วและยัง "กำลังดำเนินการ"
+    private HealthReport findMyInProgressReport(Long id, String email) {
+        HealthReport report = findMyReport(id, email);
+        if (report.getStatus() != ReportStatus.IN_PROGRESS) {
+            throw new InvalidRequestException("อัปเดตผลได้เฉพาะรายงานที่กำลังดำเนินการ");
+        }
+        return report;
+    }
+
+    // ประกาศว่ามีรายงานรอ admin ตรวจ (ผู้ฟังทำงานหลังบันทึกสำเร็จ ถ้าบันทึกพังจะไม่มีแจ้งเตือนหลุด)
+    private void publishSubmitted(HealthReport report, boolean followUp) {
+        Plant plant = report.getPlant();
+        String plantName = plant.getNickname() != null ? plant.getNickname() : "ไม่มีชื่อเล่น";
+        eventPublisher.publishEvent(new ReportSubmittedEvent(
+                report.getId(), plant.getUser().getId(), plantName, report.getTitle(), followUp));
+    }
+
+    // "ติดตามผล: ใบเหลือง" ติดตามซ้ำหลายรอบไม่ต้องเติมคำนำหน้าซ้ำ และไม่เกิน 150 ตัวอักษรตามคอลัมน์ title
+    private String followUpTitle(String title) {
+        String base = title.startsWith(FOLLOW_UP_PREFIX) ? title : FOLLOW_UP_PREFIX + title;
+        return base.length() > 150 ? base.substring(0, 150) : base;
+    }
+
+    private void ensureNoOpenReport(Long plantId) {
+        healthReportRepository.findFirstByPlantIdAndStatusInOrderByCreatedAtDesc(plantId, OPEN_STATUSES)
+                .ifPresent(open -> {
+                    throw new DuplicateReportException(
+                            "ต้นนี้มีรายงานที่ยังไม่ปิดอยู่แล้ว รอผู้ดูแลระบบตอบ หรืออัปเดตผลในรายงานเดิม", open.getId());
+                });
+    }
+
+    private String blankToNull(String value) {
+        return StringUtils.hasText(value) ? value.trim() : null;
+    }
+}

@@ -1,0 +1,38 @@
+# รันทั้งระบบในเครื่องด้วยคำสั่งเดียว: docker compose up --build
+# ได้แอป (http://localhost:8080) + PostgreSQL ของตัวเอง ไม่แตะ DB บน Neon ที่ทีมใช้ร่วมกัน
+# Flyway สร้างตาราง + ผู้ใช้ทดสอบ (V3) ให้เองตอนแอปเปิดครั้งแรก
+name: plantpal   # ไม่ตั้ง = ใช้ชื่อโฟลเดอร์ (code) image จะชื่อ code-app
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: plantpal
+      POSTGRES_USER: plantpal
+      POSTGRES_PASSWORD: plantpal
+    ports:
+      - "5433:5432"   # 5433 ฝั่งเครื่อง กันชนกับ PostgreSQL ที่ลงไว้ในเครื่องแล้ว
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U plantpal -d plantpal"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy   # รอ DB พร้อมก่อน แอปจะได้ไม่ล้มตอนเปิด
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/plantpal
+      SPRING_DATASOURCE_USERNAME: plantpal
+      SPRING_DATASOURCE_PASSWORD: plantpal
+      # อ่านจากไฟล์ .env (ไม่ขึ้น git) ไม่มีก็เปิดได้ แค่อัปโหลดรูปไม่ได้
+      CLOUDINARY_URL: ${CLOUDINARY_URL:-}
+    ports:
+      - "8080:8080"
+
+volumes:
+  db-data:
