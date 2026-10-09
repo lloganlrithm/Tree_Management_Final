@@ -5,10 +5,10 @@
 | # | Scenario | ผู้รับผิดชอบ | Pattern ที่เห็น |
 |---|---|---|---|
 | 1 | สมัครสมาชิก | Preemphat | Chain of Responsibility |
-| 2 | เข้าสู่ระบบ | Preemphat | — (Spring Security) |
+| 2 | เข้าสู่ระบบ | Preemphat | Spring Security |
 | 3 | เพิ่มต้นไม้ | Mukda | Observer, Strategy |
-| 4 | แอดมินตอบรายงานสุขภาพ | (เพื่อนเติม) | (เพื่อนเติม) |
-| 5 | บันทึกการดูแล (กด "ทำแล้ว") | Soranan | Strategy |
+| 4 | แอดมินตอบรายงานสุขภาพ | Kamolpon | State, Observer |
+| 5 | บันทึกการดูแล (กดทำแล้ว) | Soranan | Strategy |
 
 ## 1. สมัครสมาชิก
 
@@ -30,6 +30,7 @@ Spring Security หาผู้ใช้จากอีเมล → เช็�
 
 ## 4. แอดมินตอบรายงานสุขภาพ
 
+แอดมินกดตอบรายงาน → `AdminReportController` เรียก `HealthReportServiceImpl.reply()` → ตรวจคำตอบ แล้วบันทึกสถานะรายงาน (ส่งคำแนะนำ = กำลังดำเนินการ, ปฏิเสธ = ปิดพร้อมเหตุผล) → เปลี่ยนสุขภาพต้นไม้ผ่าน `PlantHealthStates` (State) เช่น กำลังดำเนินการ → ป่วย, แก้ไขแล้ว → กำลังฟื้นตัว ถ้าเปลี่ยนไม่ได้ก็ข้ามไป → ส่ง `ReportResolvedEvent` (Observer) ให้ `NotificationListener` สร้างแจ้งเตือนถึงเจ้าของต้นไม้ → กลับไปหน้ารายงาน
 ![Report Reply](diagrams/sequence-report-reply-diagram.png)
 
 ## 5. บันทึกการดูแล (กด "ทำแล้ว")
