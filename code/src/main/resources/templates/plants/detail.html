@@ -75,15 +75,17 @@
             th:unless="${#lists.isEmpty(nextStatuses)}"
             style="display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:0 24px 24px;">
             <span class="muted small">เปลี่ยนสถานะเป็น</span>
-            <button class="btn" type="submit" name="status" th:each="s : ${nextStatuses}" th:value="${s}"
-              th:classappend="${s.name() == 'DEAD'} ? 'btn-danger' : 'btn-soft'">
+            <button class="btn btn-soft" type="submit" name="status" th:each="s : ${nextStatuses}"
+              th:unless="${s.name() == 'DEAD'}" th:value="${s}">
               <th:block th:switch="${s.name()}">
                 <th:block th:case="'HEALTHY'">ปกติดี</th:block>
                 <th:block th:case="'SICK'">ป่วย</th:block>
                 <th:block th:case="'RECOVERING'">กำลังฟื้นตัว</th:block>
-                <th:block th:case="'DEAD'">ตายแล้ว</th:block>
               </th:block>
             </button>
+            <!-- ปุ่มตายแล้วเปลี่ยนกลับไม่ได้ จึงเปิด popup ให้ยืนยันก่อน (ไม่ submit ทันที) -->
+            <button class="btn btn-danger" type="button" data-open="dead-plant" th:each="s : ${nextStatuses}"
+              th:if="${s.name() == 'DEAD'}">ตายแล้ว</button>
           </form>
           <p class="muted small" th:if="${#lists.isEmpty(nextStatuses)}" style="padding:0 24px 24px;">
             ต้นไม้นี้ตายแล้ว เปลี่ยนสถานะไม่ได้</p>
@@ -184,6 +186,24 @@
         <input type="hidden" name="id" th:value="${plant.id}">
         <button class="btn" type="button" data-close>ยกเลิก</button>
         <button class="btn btn-danger-solid" type="submit">ลบต้นไม้</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== Popup ยืนยันเปลี่ยนเป็นตายแล้ว ===== -->
+  <div class="modal-backdrop" id="dead-plant" hidden>
+    <div class="modal sm" role="dialog" aria-modal="true" aria-labelledby="dead-plant-title">
+      <div class="modal-head">
+        <div>
+          <h2 id="dead-plant-title">เปลี่ยน “<span th:text="${plant.nickname ?: plant.species.name}">ม่อนม่อน</span>” เป็นตายแล้ว ?
+          </h2>
+          <p>ต้นไม้ที่ตายแล้วจะเปลี่ยนกลับเป็นสถานะอื่นไม่ได้อีก และกดย้อนกลับไม่ได้</p>
+        </div>
+      </div>
+      <form class="modal-foot form-actions" method="post" th:action="@{/plants/{id}/health(id=${plant.id})}" data-live>
+        <input type="hidden" name="status" value="DEAD">
+        <button class="btn" type="button" data-close>ยกเลิก</button>
+        <button class="btn btn-danger-solid" type="submit">ยืนยัน ตายแล้ว</button>
       </form>
     </div>
   </div>
