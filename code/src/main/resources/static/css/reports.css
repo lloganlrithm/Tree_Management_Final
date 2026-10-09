@@ -4,6 +4,9 @@
    ไฟล์นี้เขียนเฉพาะสิ่งที่หน้าของเปรมมีเอง ทุก class ขึ้นต้นด้วย rp-
    ========================================================= */
 
+/* ---------- หน้ารายงานทั้งฝั่งผู้ใช้และ admin: ลิงก์ไม่ขีดเส้นใต้ (ชิปตัวกรอง ชื่อต้นไม้ ประวัติ ฯลฯ) ---------- */
+.rp-page a, .rp-page a:hover { text-decoration: none; }
+
 /* ---------- ป้ายสถานะที่เพิ่มทีหลัง (4 ตัวแรกอยู่ใน base.css) ---------- */
 .st-FOLLOWED_UP { background: #efe9f6; color: #7a5aa6; }
 .st-AUTO_CLOSED { background: #eceeec; color: var(--muted); }
@@ -120,7 +123,7 @@
   padding: 12px 0; border-bottom: 1px solid var(--line); text-decoration: none;
 }
 .rp-mini li:last-child a { border-bottom: 0; }
-.rp-mini a:hover b { text-decoration: underline; }
+.rp-mini a:hover b { color: var(--primary); }
 .rp-mini .grow { flex: 1; min-width: 140px; display: flex; flex-direction: column; }
 
 /* ---------- fragment: กระดิ่งแจ้งเตือนใน Navbar ---------- */
