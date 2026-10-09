@@ -11,7 +11,7 @@
   <div class="main">
     <header th:replace="~{fragments/layout :: topbar}"></header>
 
-    <main class="content" th:with="closed=${@reportLabels.closed(report.status)}">
+    <main class="content rp-page" th:with="closed=${@reportLabels.closed(report.status)}">
       <link rel="stylesheet" th:href="@{/css/reports.css}" href="/css/reports.css">
 
       <a class="back" th:href="@{/reports}" href="/reports"><span class="icon icon-chevron-left s16" aria-hidden="true"></span>รายงานของฉัน</a>
