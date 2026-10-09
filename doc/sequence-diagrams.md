@@ -6,7 +6,7 @@
 |---|---|---|---|
 | 1 | สมัครสมาชิก | Preemphat | Chain of Responsibility |
 | 2 | เข้าสู่ระบบ | Preemphat | — (Spring Security) |
-| 3 | เพิ่มต้นไม้ | (เพื่อนเติม) | (เพื่อนเติม) |
+| 3 | เพิ่มต้นไม้ | Mukda | Observer, Strategy |
 | 4 | แอดมินตอบรายงานสุขภาพ | (เพื่อนเติม) | (เพื่อนเติม) |
 
 ## 1. สมัครสมาชิก
@@ -22,6 +22,8 @@ Spring Security หาผู้ใช้จากอีเมล → เช็�
 ![Login](diagrams/sequence-login-diagram.png)
 
 ## 3. เพิ่มต้นไม้
+
+ผู้ใช้ส่งฟอร์มเพิ่มต้นไม้ → `PlantController` ตรวจ `@Valid` → `PlantServiceImpl` หาเจ้าของและพันธุ์ไม้ (ไม่พบพันธุ์แสดง error) → บันทึก Plant สถานะ `HEALTHY` → ส่ง `PlantCreatedEvent` (Observer) → `CareServiceImpl` รับ event แล้วสร้างตาราง รดน้ำ / ใส่ปุ๋ย / เปลี่ยนกระถาง โดย `CareIntervalCalculator` คำนวณวันครบกำหนดตามพันธุ์ไม้ (Strategy) ทั้งหมดอยู่ใน transaction เดียว → กลับไปหน้ารายการต้นไม้
 
 ![Add Plant](diagrams/sequence-add-plant-diagram.png)
 
