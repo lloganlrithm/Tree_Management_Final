@@ -5,7 +5,7 @@
 
 ## แผนภาพ
 
-![Domain Model](domain-model.png)
+![Domain Model](diagrams/domain-model.png)
 
 ## Conceptual Classes
 
@@ -22,7 +22,7 @@
 
 ## Enumerations
 
-![Enumerations](domain-model-enums.png)
+![Enumerations](diagrams/domain-model-enums.png)
 
 | Enum | ใช้ใน | ค่าที่เป็นไปได้ |
 |---|---|---|
