@@ -70,7 +70,8 @@
 | `service/AdminUserService.java`  | `search()`, `changeRole()`, `setActive()`, `undoLast()`, `lastCommandDescription()` | ใช้เฉพาะหน้าแอดมินจัดการผู้ใช้ ผู้ใช้ทั่วไปไม่ต้องรู้จัก method พวกนี้ |
 | `service/CurrentUserService.java` | มีแค่ 3 method: `getCurrentUser()`, `getCurrentUserId()`, `isAdmin()` | service อื่นที่อยากรู้แค่ ใคร login อยู่ ขึ้นกับ interface เล็กๆ ตัวนี้ ไม่ต้องได้ method สมัครหรือแก้โปรไฟล์ติดมาด้วย |
 | `plant/state/PlantHealthState.java` | มีแค่ `status()`, `canChangeTo()` และ `onLeave()` ที่เป็น `default` | สถานะที่ไม่มีงานตอนออก (`HealthyState`, `DeadState`) ไม่ต้อง override `onLeave()` ทำเฉพาะ `SickState` กับ `RecoveringState` |
-| `service/AvatarStorageService.java` / `service/ImageStorageService.java`  | มีแค่ method เดียว: `store(file)` และ `upload(file, folder)` | คนที่เรียกต้องการแค่ "อัปโหลดแล้วได้ URL" จึงรู้จักแค่ method นี้ ไม่ต้องรู้ว่าข้างหลังเป็นเครื่องหรือ Cloudinary |
+| `service/AvatarStorageService.java` / `service/ImageStorageService.java` | แต่ละตัวมี method เดียว: `store(file)` และ `upload(file, folder)` | คนเรียกต้องการแค่ "อัปโหลดแล้วได้ URL" เลยรู้จักแค่ method นี้ ไม่ต้องรู้ว่าข้างหลังเก็บในเครื่องหรือ Cloudinary |
+| `config/ApiSecurityErrorHandler.java` | `implements AuthenticationEntryPoint, AccessDeniedHandler` | Spring Security แยก interface 401 กับ 403 ไว้เป็นสองตัวเล็กๆ class นี้ implement เฉพาะสองตัวที่ต้องใช้ |
 
 ---
 
