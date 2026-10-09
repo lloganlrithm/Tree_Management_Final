@@ -25,6 +25,9 @@
 | `command/UserCommandInvoker.java`  | รัน command, เก็บประวัติ, undo | ทำหน้าที่เดียวคือจัดการประวัติคำสั่ง ไม่รู้ว่าคำสั่งข้างในทำอะไร |
 | `exception/GlobalExceptionHandler.java`  | `@RestControllerAdvice` รวมการแปลง exception เป็น `ErrorResponse` | controller ไม่ต้อง try-catch เอง หน้าที่ "ตอบ error" อยู่ที่เดียว |
 | `service/impl/CurrentUserServiceImpl.java`  | `getCurrentUser()` ดึงผู้ใช้ที่ login อยู่จาก `SecurityContextHolder` | งานอ่าน session ของ Spring Security แยกมาไว้ที่นี่ service อื่นไม่ต้องยุ่งกับ security เอง |
+| `controller/api/PlantApiController.java` | รับ request แล้วเรียก `plantService` ส่งผลผ่าน `mapper.toResponse()` | controller ทำแค่เรื่อง HTTP (status code, Location) business อยู่ใน service |
+| `mapper/PlantMapper.java` | `toResponse()` แปลง `Plant` เป็น `PlantResponse` | งานแปลง entity เป็น DTO แยกมาที่เดียว controller กับ service ไม่ต้องทำเอง |
+| `plant/memento/PlantEditHistory.java` | `save()`, `canUndo()`, `take()` เก็บ/คืน `PlantSnapshot` | Caretaker เก็บ snapshot อย่างเดียว ไม่รู้ว่าข้างในมีอะไร การสร้าง/คืนค่าอยู่ที่ `PlantServiceImpl` |
 
 ---
 
@@ -38,6 +41,7 @@
 | `command/UserCommand.java`  | interface `execute()` / `undo()` / `description()` | จะเพิ่มคำสั่งแอดมินใหม่ เช่น รีเซ็ตรหัสผ่าน แค่สร้าง class ใหม่ที่ `implements UserCommand` invoker ใช้ได้ทันทีโดยไม่ต้องแก้ |
 | `service/impl/CloudinaryAvatarStorageService.java`  | `implements AvatarStorageService` ใช้ `@Primary` + `@ConditionalOnExpression` | ตอนเปลี่ยนที่เก็บรูปโปรไฟล์จากเครื่องไปใช้ Cloudinary ทำโดยเพิ่ม class ใหม่ ไม่ได้แก้ `LocalAvatarStorageService` หรือ `ProfileServiceImpl` เลย |
 | `service/strategy/CareIntervalStrategy.java`  | interface ของ Strategy คำนวณรอบการดูแล | งานดูแลชนิดใหม่ = เพิ่ม strategy class ใหม่ ไม่ต้องแก้ switch/if เดิม |
+| `plant/state/PlantHealthStates.java` | `register(new HealthyState())` ... ลงใน `EnumMap` | จะเพิ่มสถานะสุขภาพใหม่ แค่สร้าง class ที่ `implements PlantHealthState` แล้ว register ไม่ต้องแก้ if-else ใน `PlantServiceImpl` หรือ controller |
 
 ---
 
@@ -50,6 +54,7 @@
 | `validation/EmailFormatValidator.java`, `EmailNotTakenValidator.java`, `PasswordLengthValidator.java`, `PasswordMatchValidator.java` | ทุกตัว override `check()` และถ้าไม่ผ่านจะ throw `RegistrationException` แบบเดียวกัน | `RegisterValidator.validate()`  เรียก `check()` ของตัวไหนก็ได้โดยไม่ต้องรู้ว่าเป็นตัวไหน สลับลำดับหรือเปลี่ยนตัวใน chain แล้วยังทำงานถูก |
 | `command/ChangeRoleCommand.java`, `command/SetActiveCommand.java`  | implement ทั้ง `execute()` และ `undo()` จริงครบทุก method | `UserCommandInvoker.run()` / `undoLast()`  รับ `UserCommand` ตัวไหนก็ได้ ไม่มีตัวไหนที่ undo ไม่ได้หรือโยน exception ว่าไม่รองรับ |
 | `service/impl/LocalAvatarStorageService.java`, `service/impl/CloudinaryAvatarStorageService.java`  | ทั้งสองตัว `implements AvatarStorageService` และ `store()` คืน URL ของรูปเหมือนกัน | `ProfileServiceImpl`  เรียก `avatarStorageService.store(avatar)` ได้เหมือนเดิมไม่ว่า Spring จะฉีดตัวไหนมา |
+| `plant/state/HealthyState.java`, `SickState.java`, `RecoveringState.java`, `DeadState.java` | ทุกตัว implement `PlantHealthState` และเมื่อเปลี่ยนไม่ได้จะ throw `InvalidHealthTransitionException` แบบเดียวกัน | `PlantServiceImpl` เรียก `PlantHealthStates.of(status).changeTo(plant, target)` ได้โดยไม่ต้องรู้ว่าเป็นสถานะไหน สลับตัวไหนมาก็ทำงานถูก |
 | ทั้งโปรเจค | ค้นทั้ง `code/src/main` ไม่พบ `UnsupportedOperationException` | ไม่มี implementation ไหนที่ทำไม่ได้ แล้วโยน exception แทน |
 
 ---
@@ -64,6 +69,7 @@
 | `service/ProfileService.java`  | `getMyProfile()`, `updateMyProfile()`, `changeMyPassword()`, `getNavUser()` | ใช้เฉพาะหน้าโปรไฟล์ของตัวเอง |
 | `service/AdminUserService.java`  | `search()`, `changeRole()`, `setActive()`, `undoLast()`, `lastCommandDescription()` | ใช้เฉพาะหน้าแอดมินจัดการผู้ใช้ ผู้ใช้ทั่วไปไม่ต้องรู้จัก method พวกนี้ |
 | `service/CurrentUserService.java` | มีแค่ 3 method: `getCurrentUser()`, `getCurrentUserId()`, `isAdmin()` | service อื่นที่อยากรู้แค่ ใคร login อยู่ ขึ้นกับ interface เล็กๆ ตัวนี้ ไม่ต้องได้ method สมัครหรือแก้โปรไฟล์ติดมาด้วย |
+| `plant/state/PlantHealthState.java` | มีแค่ `status()`, `canChangeTo()` และ `onLeave()` ที่เป็น `default` | สถานะที่ไม่มีงานตอนออก (`HealthyState`, `DeadState`) ไม่ต้อง override `onLeave()` ทำเฉพาะ `SickState` กับ `RecoveringState` |
 | `service/AvatarStorageService.java` / `service/ImageStorageService.java` | แต่ละตัวมี method เดียว: `store(file)` และ `upload(file, folder)` | คนเรียกต้องการแค่ "อัปโหลดแล้วได้ URL" เลยรู้จักแค่ method นี้ ไม่ต้องรู้ว่าข้างหลังเก็บในเครื่องหรือ Cloudinary |
 | `config/ApiSecurityErrorHandler.java` | `implements AuthenticationEntryPoint, AccessDeniedHandler` | Spring Security แยก interface 401 กับ 403 ไว้เป็นสองตัวเล็กๆ class นี้ implement เฉพาะสองตัวที่ต้องใช้ |
 
@@ -81,6 +87,8 @@
 | `controller/web/AuthWebController.java`  | `private final UserService userService` | controller ขึ้นกับ interface ของ service ไม่ใช่ `UserServiceImpl` |
 | `controller/web/ProfileWebController.java`  | `private final ProfileService profileService` | เหมือนกัน |
 | `controller/web/AdminUserWebController.java`  | `private final AdminUserService adminUserService` | เหมือนกัน |
+| `controller/web/PlantController.java`, `controller/api/PlantApiController.java` | `private final PlantService plantService` | controller ทั้งหน้าเว็บและ REST API ขึ้นกับ interface `PlantService` ไม่ใช่ `PlantServiceImpl` |
+| `service/impl/PlantServiceImpl.java` | `ApplicationEventPublisher eventPublisher` ส่ง `PlantCreatedEvent` หลังเพิ่มต้นไม้ | ไม่เรียก `CareServiceImpl` ตรง ๆ จึงไม่ผูกกับโมดูลการดูแล ฝั่งไหนจะฟัง event ก็ได้ |
 | ทั้งโปรเจค | ค้นทั้ง `code/src/main` ไม่พบ `@Autowired` | ทุกที่ใช้ constructor injection (`@RequiredArgsConstructor` + `final`) ตามที่ใบงานกำหนด |
 
 ---
