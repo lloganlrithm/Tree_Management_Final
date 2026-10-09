@@ -62,7 +62,7 @@ jobs:
   deploy:
     # deploy เฉพาะตอน push เข้า develop และ test ผ่านแล้วเท่านั้น (PR ไม่ deploy)
     needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       # RENDER_DEPLOY_HOOK เก็บใน GitHub Secrets (ลิงก์นี้ใครมีก็สั่ง deploy ได้ ห้ามใส่ในไฟล์)
