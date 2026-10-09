@@ -12,7 +12,7 @@
     <header th:replace="~{fragments/layout :: topbar}"></header>
 
     <!-- backQs = ตัวกรอง + หน้าปัจจุบัน ส่งไปกับฟอร์มตอบ จะได้กลับมาหน้าเดิม -->
-    <main class="content"
+    <main class="content rp-page"
           th:with="backQs=${(status != null ? 'status=' + status.name() + '&' : '') + (severity != null ? 'severity=' + severity.name() + '&' : '') + 'page=' + reports.number}">
       <link rel="stylesheet" th:href="@{/css/reports.css}" href="/css/reports.css">
 
