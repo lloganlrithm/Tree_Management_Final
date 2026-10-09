@@ -5,10 +5,10 @@
 | # | Scenario | ผู้รับผิดชอบ | Pattern ที่เห็น |
 |---|---|---|---|
 | 1 | สมัครสมาชิก | Preemphat | Chain of Responsibility |
-| 2 | เข้าสู่ระบบ | Preemphat | — (Spring Security) |
+| 2 | เข้าสู่ระบบ | Preemphat | Spring Security |
 | 3 | เพิ่มต้นไม้ | Mukda | Observer, Strategy |
 | 4 | แจ้งปัญหาสุขภาพ → แอดมินตอบ → แจ้งเตือน | Kamolpon | Observer, State |
-| 5 | บันทึกการดูแล (กด "ทำแล้ว") | Soranan | Strategy |
+| 5 | บันทึกการดูแล (กดทำแล้ว) | Soranan | Strategy |
 
 ## 1. สมัครสมาชิก
 
