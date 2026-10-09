@@ -5,10 +5,10 @@
 | # | Scenario | ผู้รับผิดชอบ | Pattern ที่เห็น |
 |---|---|---|---|
 | 1 | สมัครสมาชิก | Preemphat | Chain of Responsibility |
-| 2 | เข้าสู่ระบบ | Preemphat | Spring Security |
+| 2 | เข้าสู่ระบบ | Preemphat | — (Spring Security) |
 | 3 | เพิ่มต้นไม้ | Mukda | Observer, Strategy |
-| 4 | แอดมินตอบรายงานสุขภาพ | Kamolpon | State, Observer |
-| 5 | บันทึกการดูแล (กดทำแล้ว) | Soranan | Strategy |
+| 4 | แจ้งปัญหาสุขภาพ → แอดมินตอบ → แจ้งเตือน | Kamolpon | Observer, State |
+| 5 | บันทึกการดูแล (กด "ทำแล้ว") | Soranan | Strategy |
 
 ## 1. สมัครสมาชิก
 
@@ -28,9 +28,14 @@ Spring Security หาผู้ใช้จากอีเมล → เช็�
 
 ![Add Plant](diagrams/sequence-add-plant-diagram.png)
 
-## 4. แอดมินตอบรายงานสุขภาพ
+## 4. แจ้งปัญหาสุขภาพ → แอดมินตอบ → แจ้งเตือน
 
-แอดมินกดตอบรายงาน → `AdminReportController` เรียก `HealthReportServiceImpl.reply()` → ตรวจคำตอบ แล้วบันทึกสถานะรายงาน (ส่งคำแนะนำ = กำลังดำเนินการ, ปฏิเสธ = ปิดพร้อมเหตุผล) → เปลี่ยนสุขภาพต้นไม้ผ่าน `PlantHealthStates` (State) เช่น กำลังดำเนินการ → ป่วย, แก้ไขแล้ว → กำลังฟื้นตัว ถ้าเปลี่ยนไม่ได้ก็ข้ามไป → ส่ง `ReportResolvedEvent` (Observer) ให้ `NotificationListener` สร้างแจ้งเตือนถึงเจ้าของต้นไม้ → กลับไปหน้ารายงาน
+**ส่วนที่ 1 ผู้ใช้แจ้งปัญหา:** ผู้ใช้ส่งฟอร์มรายงาน → `ReportController` ส่งให้ `HealthReportServiceImpl.create()` → เช็คว่าต้นไม้เป็นของผู้ใช้คนนี้ผ่าน `PlantService.findMyPlant()` → แนบรูปมาจะอัปขึ้น Cloudinary ผ่าน `ImageStorageService` ก่อน (อัปไม่ผ่านจะไม่บันทึกรายงาน) → บันทึกรายงานสถานะ `PENDING` → ส่ง `ReportSubmittedEvent` (Observer) → กลับไปหน้ารายงาน → หลังบันทึกสำเร็จ `NotificationListener` สร้างแจ้งเตือนให้แอดมินทุกคน
+
+**ส่วนที่ 2 แอดมินตอบรายงาน:** แอดมินส่งคำตอบ → `AdminReportController` ส่งให้ `HealthReportServiceImpl.reply()` → ตรวจว่าต้องเป็นส่งคำแนะนำ (`IN_PROGRESS`) หรือปฏิเสธ (`REJECTED`) และต้องมีข้อความ → บันทึกสถานะและคำตอบ → ถ้าเป็น `IN_PROGRESS` เปลี่ยนต้นไม้เป็น `SICK` ผ่าน `PlantService.changeHealth()` (State ตรวจว่าเปลี่ยนได้ไหม) → ส่ง `ReportResolvedEvent` (Observer) → กลับไปหน้ารายงานของแอดมิน → หลังบันทึกสำเร็จ `NotificationListener` สร้างแจ้งเตือนให้เจ้าของต้นไม้ ผู้ใช้เห็นที่กระดิ่งใน navbar
+
+แจ้งเตือนถูกสร้างหลัง transaction หลัก commit แล้วเท่านั้น (`@TransactionalEventListener`) ถ้าบันทึกรายงานพัง จะไม่มีแจ้งเตือนหลุดไป
+
 ![Report Reply](diagrams/sequence-report-reply-diagram.png)
 
 ## 5. บันทึกการดูแล (กด "ทำแล้ว")
