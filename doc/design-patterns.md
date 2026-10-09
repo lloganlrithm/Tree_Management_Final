@@ -101,6 +101,7 @@
   - เราเปลี่ยน การกระทำ ให้เป็น object แต่ละคำสั่งเลยจำได้เองว่าก่อนทำค่าเป็นอะไร พอกดย้อนก็แค่เรียก `undo()` ค่าก็กลับมาเหมือนเดิม
   - Invoker ใช้ `@SessionScope` แอดมินแต่ละคนมีประวัติของตัวเอง ไม่ปนกัน
   - จะเพิ่มคำสั่งใหม่ เช่น รีเซ็ตรหัสผ่าน แค่สร้างคลาสใหม่ที่ implements `UserCommand` ไม่ต้องแก้ invoker หรือคำสั่งเดิม 
+- **Class Diagram:**
 - ![Command](diagrams/pattern-command.png)
 
 ### 2.5 Chain of Responsibility
@@ -118,6 +119,7 @@
   - เรียงจากเช็คง่ายไปยาก รูปแบบอีเมลก่อน ค่อยไปถาม DB ว่าซ้ำไหม ถ้าอีเมลผิดรูปแบบก็ไม่ต้องเสียเวลาถาม DB
   - จะเพิ่มหรือสลับลำดับการตรวจ แก้ที่ `RegisterValidationChain` ที่เดียว ไม่ต้องแตะ `UserServiceImpl`
   - เขียน unit test แยกแต่ละตัวได้ (`RegisterValidationChainTest`)
+- **Class Diagram:**
 ![Chain of Responsibility](diagrams/pattern-chain-of-responsibility.png)
 
 ### 2.6 Memento
