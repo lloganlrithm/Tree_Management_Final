@@ -28,6 +28,9 @@
 | `controller/api/PlantApiController.java` | รับ request แล้วเรียก `plantService` ส่งผลผ่าน `mapper.toResponse()` | controller ทำแค่เรื่อง HTTP (status code, Location) business อยู่ใน service |
 | `mapper/PlantMapper.java` | `toResponse()` แปลง `Plant` เป็น `PlantResponse` | งานแปลง entity เป็น DTO แยกมาที่เดียว controller กับ service ไม่ต้องทำเอง |
 | `plant/memento/PlantEditHistory.java` | `save()`, `canUndo()`, `take()` เก็บ/คืน `PlantSnapshot` | Caretaker เก็บ snapshot อย่างเดียว ไม่รู้ว่าข้างในมีอะไร การสร้าง/คืนค่าอยู่ที่ `PlantServiceImpl` |
+| `event/NotificationListener.java` | ฟัง event 4 แบบ แล้วเรียก `notificationService.create(...)` อย่างเดียว | หน้าที่เดียวคือ "แปลง event เป็นแจ้งเตือน" ไม่มี business ของรายงานหรือการดูแลปนอยู่ |
+| `mapper/HealthReportMapper.java` | `toResponse(HealthReport)` | แปลง entity เป็น DTO อย่างเดียว ไม่ยุ่งกับการบันทึกหรือ validation |
+| `job/AbstractDailyJob.java` | `run()` จัดการ transaction, วันที่ (เวลาไทย), log ไว้ที่เดียว | งานส่วนกลางของ job รายวันอยู่ในคลาสแม่ คลาสลูกเขียนแค่ "หาอะไร / ทำอะไร" |
 
 ---
 
@@ -42,7 +45,8 @@
 | `service/impl/CloudinaryAvatarStorageService.java`  | `implements AvatarStorageService` ใช้ `@Primary` + `@ConditionalOnExpression` | ตอนเปลี่ยนที่เก็บรูปโปรไฟล์จากเครื่องไปใช้ Cloudinary ทำโดยเพิ่ม class ใหม่ ไม่ได้แก้ `LocalAvatarStorageService` หรือ `ProfileServiceImpl` เลย |
 | `service/strategy/CareIntervalStrategy.java`  | interface ของ Strategy คำนวณรอบการดูแล | งานดูแลชนิดใหม่ = เพิ่ม strategy class ใหม่ ไม่ต้องแก้ switch/if เดิม |
 | `plant/state/PlantHealthStates.java` | `register(new HealthyState())` ... ลงใน `EnumMap` | จะเพิ่มสถานะสุขภาพใหม่ แค่สร้าง class ที่ `implements PlantHealthState` แล้ว register ไม่ต้องแก้ if-else ใน `PlantServiceImpl` หรือ controller |
-
+| `job/AbstractDailyJob.java` | `CareDueReminderJob`, `OverdueCareReminderJob`, `StaleReportCloseJob` extends คลาสนี้ | เพิ่ม job รายวันตัวใหม่ = สร้างคลาสใหม่ที่ extends แล้วเขียน `findTargets()` กับ `process()` ไม่ต้องแก้คลาสแม่หรือ job เดิม |
+| `event/NotificationListener.java` | service ส่งแค่ `publishEvent(...)` ไม่รู้ว่าใครฟัง | จะเพิ่มการแจ้งเตือนแบบใหม่ เช่น ส่งอีเมล ทำได้ด้วยการเพิ่ม listener ใหม่ ฝั่ง `HealthReportServiceImpl` ที่ส่ง event ไม่ต้องแก้เลย |
 ---
 
 ## L : Liskov Substitution Principle
@@ -56,7 +60,7 @@
 | `service/impl/LocalAvatarStorageService.java`, `service/impl/CloudinaryAvatarStorageService.java`  | ทั้งสองตัว `implements AvatarStorageService` และ `store()` คืน URL ของรูปเหมือนกัน | `ProfileServiceImpl`  เรียก `avatarStorageService.store(avatar)` ได้เหมือนเดิมไม่ว่า Spring จะฉีดตัวไหนมา |
 | `plant/state/HealthyState.java`, `SickState.java`, `RecoveringState.java`, `DeadState.java` | ทุกตัว implement `PlantHealthState` และเมื่อเปลี่ยนไม่ได้จะ throw `InvalidHealthTransitionException` แบบเดียวกัน | `PlantServiceImpl` เรียก `PlantHealthStates.of(status).changeTo(plant, target)` ได้โดยไม่ต้องรู้ว่าเป็นสถานะไหน สลับตัวไหนมาก็ทำงานถูก |
 | ทั้งโปรเจค | ค้นทั้ง `code/src/main` ไม่พบ `UnsupportedOperationException` | ไม่มี implementation ไหนที่ทำไม่ได้ แล้วโยน exception แทน |
-
+| `job/CareDueReminderJob.java`, `OverdueCareReminderJob.java`, `StaleReportCloseJob.java` | ทั้ง 3 ตัว override แค่ `name()`, `findTargets()`, `process()` ส่วน `run()` เป็น `final` | ใช้ job ตัวไหนแทน `AbstractDailyJob` ก็ได้ เรียก `run()` แล้วลำดับขั้นตอนเหมือนกันทุกตัว ไม่มีตัวไหนข้ามขั้นหรือโยน exception ว่าไม่รองรับ |
 ---
 
 ## I : Interface Segregation Principle
@@ -90,5 +94,8 @@
 | `controller/web/PlantController.java`, `controller/api/PlantApiController.java` | `private final PlantService plantService` | controller ทั้งหน้าเว็บและ REST API ขึ้นกับ interface `PlantService` ไม่ใช่ `PlantServiceImpl` |
 | `service/impl/PlantServiceImpl.java` | `ApplicationEventPublisher eventPublisher` ส่ง `PlantCreatedEvent` หลังเพิ่มต้นไม้ | ไม่เรียก `CareServiceImpl` ตรง ๆ จึงไม่ผูกกับโมดูลการดูแล ฝั่งไหนจะฟัง event ก็ได้ |
 | ทั้งโปรเจค | ค้นทั้ง `code/src/main` ไม่พบ `@Autowired` | ทุกที่ใช้ constructor injection (`@RequiredArgsConstructor` + `final`) ตามที่ใบงานกำหนด |
+| `job/CareDueReminderJob.java`, `OverdueCareReminderJob.java` | `private final CareService careService` | job ขึ้นกับ interface `CareService` ไม่อ่าน `CareScheduleRepository` ของโมดูลการดูแลตรงๆ |
+| `job/StaleReportCloseJob.java` | `private final HealthReportService healthReportService` | ขึ้นกับ interface ไม่ใช่ `HealthReportServiceImpl` |
+| `event/NotificationListener.java` | `NotificationService`, `UserService` | หารายชื่อแอดมินผ่าน `UserService` (interface) ไม่เรียก `UserRepository` ตรงๆ |
 
 ---
