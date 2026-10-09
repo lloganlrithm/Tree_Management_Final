@@ -11,11 +11,11 @@
 | DTO + Mapper | Architectural |  | `dto/request/`, `dto/response/`, `mapper/` |  |
 | Dependency Injection | Architectural |  | Constructor Injection ทุก service/controller |  |
 | Strategy | GoF Behavioral |  | `service/strategy/` |  |
-| State | GoF Behavioral | ต้นไม้มี 4 สถานะที่เปลี่ยนไปหากันได้ไม่ครบทุกทาง ถ้าเขียน if-else ใน service กติกาจะกระจาย และอาจเปลี่ยนผิด เช่นต้นที่ตายแล้วกลับมาปกติ | `plant/state/` | _(ใส่ชื่อ)_ |
+| State |
 | Observer | GoF Behavioral | งานหลักหลายจุด (ตอบรายงาน, ส่งรายงาน, job รายวัน) ต้องสร้างแจ้งเตือน ถ้าเรียก NotificationService ตรงๆ ทุกโมดูลจะผูกกับระบบแจ้งเตือน | `event/` | Kamolpon |
 | Command | GoF Behavioral | แอดมินเปลี่ยน role / ระงับบัญชีผิดคน แล้วย้อนกลับไม่ได้ | `command/` | Preemphat |
 | Chain of Responsibility | GoF Behavioral | การตรวจข้อมูลสมัครสมาชิกกองรวมเป็น if-else ยาวใน service | `validation/` | Preemphat |
-| Memento | GoF Behavioral | ผู้ใช้แก้ข้อมูลต้นไม้ผิดแล้วกดบันทึกไป ค่าเดิมหาย ต้องจำแล้วแก้กลับเอง | `plant/memento/` | _(ใส่ชื่อ)_ |
+| Memento | GoF Behavioral | ผู้ใช้แก้ข้อมูลต้นไม้ผิดแล้วกดบันทึกไป ค่าเดิมหาย ต้องจำแล้วแก้กลับเอง | `plant/memento/` | Mukda |
 | Iterator | GoF Behavioral |  | `iterator/` |  |
 | Template Method | GoF Behavioral | job รายวัน 3 ตัวมีขั้นตอนเหมือนกัน (เปิด transaction, หาวันที่, วนทำ, เขียน log) ต่างกันแค่หาอะไร / ทำอะไร | `job/` | Kamolpon |
 
@@ -69,7 +69,7 @@
 
 ### 2.2 State
 
-- **ผู้รับผิดชอบ:** _(ใส่ชื่อ)_
+- **ผู้รับผิดชอบ:** Mukda
 - **ปัญหาที่แก้:**
   - ต้นไม้มี 4 สถานะ แต่เปลี่ยนไปหากันได้ไม่ครบทุกทาง เช่น DEAD เปลี่ยนไปสถานะอื่นไม่ได้อีก และ HEALTHY กระโดดไป RECOVERING ไม่ได้
   - ถ้าเขียน if-else ใน `PlantServiceImpl` กติกาจะกระจายอยู่หลายที่ ทั้งปุ่มในหน้าต้นไม้และตอนแอดมินตอบรายงาน
@@ -154,7 +154,7 @@
 
 ### 2.6 Memento
 
-- **ผู้รับผิดชอบ:** _(ใส่ชื่อ)_
+- **ผู้รับผิดชอบ:** Mukda
 - **ปัญหาที่แก้:** ผู้ใช้แก้ข้อมูลต้นไม้ผิดแล้วกดบันทึกไป ค่าเดิมหาย ต้องจำแล้วแก้กลับเอง ถ้าจะเก็บประวัติไว้ใน entity หรือ service ตรง ๆ โค้ดจะรก
 - **ไฟล์/คลาส:**
   - Memento: `plant/memento/PlantSnapshot` (record)
