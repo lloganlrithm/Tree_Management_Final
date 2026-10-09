@@ -11,12 +11,13 @@
 | DTO + Mapper | Architectural |  | `dto/request/`, `dto/response/`, `mapper/` |  |
 | Dependency Injection | Architectural |  | Constructor Injection ทุก service/controller |  |
 | Strategy | GoF Behavioral |  | `service/strategy/` |  |
-| State | GoF Behavioral |  | `plant/state/` |  |
-| Observer | GoF Behavioral |  | `event/` |  |
+| State | GoF Behavioral | ต้นไม้มี 4 สถานะที่เปลี่ยนไปหากันได้ไม่ครบทุกทาง ถ้าเขียน if-else ใน service กติกาจะกระจาย และอาจเปลี่ยนผิด เช่นต้นที่ตายแล้วกลับมาปกติ | `plant/state/` | _(ใส่ชื่อ)_ |
+| Observer | GoF Behavioral | งานหลักหลายจุด (ตอบรายงาน, ส่งรายงาน, job รายวัน) ต้องสร้างแจ้งเตือน ถ้าเรียก NotificationService ตรงๆ ทุกโมดูลจะผูกกับระบบแจ้งเตือน | `event/` | Kamolpon |
 | Command | GoF Behavioral | แอดมินเปลี่ยน role / ระงับบัญชีผิดคน แล้วย้อนกลับไม่ได้ | `command/` | Preemphat |
 | Chain of Responsibility | GoF Behavioral | การตรวจข้อมูลสมัครสมาชิกกองรวมเป็น if-else ยาวใน service | `validation/` | Preemphat |
-| Memento | GoF Behavioral |  | `plant/memento/` |  |
+| Memento | GoF Behavioral | ผู้ใช้แก้ข้อมูลต้นไม้ผิดแล้วกดบันทึกไป ค่าเดิมหาย ต้องจำแล้วแก้กลับเอง | `plant/memento/` | _(ใส่ชื่อ)_ |
 | Iterator | GoF Behavioral |  | `iterator/` |  |
+| Template Method | GoF Behavioral | job รายวัน 3 ตัวมีขั้นตอนเหมือนกัน (เปิด transaction, หาวันที่, วนทำ, เขียน log) ต่างกันแค่หาอะไร / ทำอะไร | `job/` | Kamolpon |
 
 ---
 
@@ -67,24 +68,53 @@
 - **Class Diagram:** _(รอใส่)_
 
 ### 2.2 State
-- **ผู้รับผิดชอบ:** _(รอใส่)_
-- **ปัญหาที่แก้:** _(รอใส่)_
-- **ไฟล์/คลาสที่ใช้:**
-  - `plant/state/PlantHealthState` (interface)
-  - `plant/state/HealthyState`, `SickState`, `RecoveringState`, `DeadState`
-  - `plant/state/PlantHealthStates`, `plant/state/InvalidHealthTransitionException`
-- **เหตุผลที่เลือก:** _(รอใส่)_
-- **Class Diagram:** _(รอใส่)_
+
+- **ผู้รับผิดชอบ:** _(ใส่ชื่อ)_
+- **ปัญหาที่แก้:**
+  - ต้นไม้มี 4 สถานะ แต่เปลี่ยนไปหากันได้ไม่ครบทุกทาง เช่น DEAD เปลี่ยนไปสถานะอื่นไม่ได้อีก และ HEALTHY กระโดดไป RECOVERING ไม่ได้
+  - ถ้าเขียน if-else ใน `PlantServiceImpl` กติกาจะกระจายอยู่หลายที่ ทั้งปุ่มในหน้าต้นไม้และตอนแอดมินตอบรายงาน
+  - `recovery_count` ต้องเพิ่มเฉพาะตอนที่ต้นไม้ฟื้นจริงเท่านั้น
+- **ไฟล์/คลาส:**
+  - `plant/state/PlantHealthState`, `HealthyState`, `SickState`, `RecoveringState`, `DeadState`, `PlantHealthStates`, `InvalidHealthTransitionException`
+  - `service/impl/PlantServiceImpl` (`changeHealth`, `changeMyPlantHealth`, `markSick`, `markRecovering`)
+  - `controller/web/PlantController` (`POST /plants/{id}/health`)
+- **เหตุผล:**
+  - แต่ละสถานะตัดสินเองผ่าน `canChangeTo` / `onLeave` ส่วน service เรียกแค่บรรทัดเดียวคือ `PlantHealthStates.of(current).changeTo(plant, target)`
+  - กติกาอยู่ที่เดียว ถ้าเปลี่ยนสถานะผิดจะ throw `InvalidHealthTransitionException` และ API ตอบ 409
+  - `nextOf()` ทำให้หน้าเว็บแสดงเฉพาะปุ่มที่กดได้จริง
+  - เป็นไปตาม Open/Closed: ถ้าจะเพิ่มสถานะใหม่ ก็แค่สร้างคลาสใหม่แล้วลงทะเบียนใน `PlantHealthStates`
+  - ใช้ instance ร่วมกันเก็บไว้ใน `EnumMap`
+  - มีเทสต์ใน `PlantHealthStateTest` และ `PlantServiceImplHealthTest`
+- **State Diagram:**
+
+![State Diagram](diagrams/state-plant-health.png)
+
+- **Class Diagram:**
+
+![State](diagrams/pattern-state.png)
 
 ### 2.3 Observer
-- **ผู้รับผิดชอบ:** _(รอใส่)_
-- **ปัญหาที่แก้:** _(รอใส่)_
+- **ผู้รับผิดชอบ:** Kamolpon
+- **ปัญหาที่แก้:**
+  - หลายเหตุการณ์ในระบบต้องแจ้งเตือนคนอื่น เช่น admin ตอบรายงาน → แจ้งเจ้าของต้นไม้, ผู้ใช้ส่งรายงาน → แจ้ง admin ทุกคน, งานดูแลถึงกำหนด → แจ้งเจ้าของ
+  - ถ้าให้ `HealthReportServiceImpl` หรือ job เรียก `NotificationService` ตรงๆ ทุกโมดูลจะต้องรู้จักระบบแจ้งเตือน แก้ข้อความหรือเพิ่มช่องทางแจ้งเตือนทีไรต้องไล่แก้หลายไฟล์
+  - ถ้าบันทึกรายงานพังแต่แจ้งเตือนถูกสร้างไปแล้ว ผู้ใช้จะได้แจ้งเตือนของสิ่งที่ไม่ได้เกิดขึ้นจริง
 - **ไฟล์/คลาสที่ใช้:**
-  - Event: `event/CareDueEvent`, `PlantCreatedEvent`, `ReportSubmittedEvent`, `ReportResolvedEvent`, `ReportAutoClosedEvent`
-  - Listener: `event/NotificationListener`
-  - ผู้ส่ง event: (service/job ไหนเรียก `publishEvent`) _(รอใส่)_
-- **เหตุผลที่เลือก:** _(รอใส่)_
-- **Class Diagram:** _(รอใส่)_
+  - Event: `event/ReportResolvedEvent`, `ReportSubmittedEvent`, `ReportAutoClosedEvent`, `CareDueEvent`, `PlantCreatedEvent`
+  - Listener: `event/NotificationListener` (`onReportResolved`, `onReportSubmitted`, `onReportAutoClosed`, `onCareDue`), `service/impl/CareServiceImpl.onPlantCreated`
+  - ผู้ส่ง event (เรียก `publishEvent`):
+    - `service/impl/HealthReportServiceImpl` → ตอบรายงาน, ส่งรายงาน / ติดตามผล, ปิดรายงานอัตโนมัติ
+    - `job/CareDueReminderJob`, `job/OverdueCareReminderJob` → งานดูแลพรุ่งนี้ / เลยกำหนด
+    - `service/impl/PlantServiceImpl` → เพิ่มต้นไม้ใหม่ (`CareServiceImpl` รับไปสร้างตารางดูแล)
+- **เหตุผลที่เลือก:**
+  - ผู้ส่งแค่ประกาศว่า "เกิดอะไรขึ้น" ผ่าน `ApplicationEventPublisher` ของ Spring ไม่ต้องรู้ว่าใครฟังอยู่ ระบบรายงานกับระบบแจ้งเตือนเลยแยกกันได้
+  - จะเพิ่มแจ้งเตือนแบบใหม่ แค่สร้าง event + เพิ่ม method ใน listener ไม่ต้องแก้ของเดิม (ตอนแรกมีผู้ฟังตัวเดียว ตอนนี้เพิ่มเป็น 4 โดยไม่แตะตัวแรก)
+  - ใช้ `@TransactionalEventListener` (ทำงานหลัง commit) แจ้งเตือนจะถูกสร้างก็ต่อเมื่อบันทึกข้อมูลหลักสำเร็จแล้วเท่านั้น และใช้ `REQUIRES_NEW` เปิด transaction ใหม่ให้บันทึกแจ้งเตือนได้
+  - event เก็บแค่ค่าที่ต้องใช้ (id, ชื่อ, สถานะ) ไม่ส่ง entity เพราะ listener ทำงานหลัง transaction เดิมปิดไปแล้ว
+  - เขียน unit test แยกได้ (`NotificationListenerTest`, `HealthReportServiceImplTest` เช็กว่าส่ง event จริง)
+- **Class Diagram:**
+
+![Observer](diagrams/pattern-observer.png)
 
 ### 2.4 Command
 - **ผู้รับผิดชอบ:** Preem
@@ -123,11 +153,25 @@
 ![Chain of Responsibility](diagrams/pattern-chain-of-responsibility.png)
 
 ### 2.6 Memento
-- **ผู้รับผิดชอบ:** _(รอใส่)_
-- **ปัญหาที่แก้:** _(รอใส่)_
-- **ไฟล์/คลาสที่ใช้:** `plant/memento/PlantSnapshot`, `plant/memento/PlantEditHistory`
-- **เหตุผลที่เลือก:** _(รอใส่)_
-- **Class Diagram:** _(รอใส่)_
+
+- **ผู้รับผิดชอบ:** _(ใส่ชื่อ)_
+- **ปัญหาที่แก้:** ผู้ใช้แก้ข้อมูลต้นไม้ผิดแล้วกดบันทึกไป ค่าเดิมหาย ต้องจำแล้วแก้กลับเอง ถ้าจะเก็บประวัติไว้ใน entity หรือ service ตรง ๆ โค้ดจะรก
+- **ไฟล์/คลาส:**
+  - Memento: `plant/memento/PlantSnapshot` (record)
+  - Caretaker: `plant/memento/PlantEditHistory` (`@SessionScope`)
+  - Originator: `service/impl/PlantServiceImpl` (`createSnapshot`, `restoreSnapshot`, `update`, `undoLastEdit`, `canUndo`)
+  - `controller/web/PlantController` (`POST /plants/{id}/undo`)
+- **เหตุผล:**
+  - ก่อน `update` จะถ่าย snapshot ของค่าเดิมเก็บไว้ก่อนทุกครั้ง
+  - `PlantSnapshot` เป็น record จึงแก้ค่าข้างในไม่ได้ (immutable)
+  - Caretaker แค่เก็บและคืน snapshot โดยไม่เข้าไปดูข้างใน
+  - เป็น session scope ผู้ใช้แต่ละคนจึงมีประวัติของตัวเอง และไม่ต้องสร้างตารางใน DB
+  - ไม่เก็บ `healthStatus` ใน snapshot เพราะการเปลี่ยนสถานะต้องผ่าน State pattern เท่านั้น
+  - undo ได้ครั้งเดียว เพราะ `take()` ดึง snapshot ออกไปแล้ว
+  - มีเทสต์ใน `PlantServiceImplUndoTest`
+- **Class Diagram:**
+
+![Memento](diagrams/pattern-memento.png)
 
 ### 2.7 Iterator
 - **ผู้รับผิดชอบ:** _(รอใส่)_
@@ -135,3 +179,26 @@
 - **ไฟล์/คลาสที่ใช้:** `iterator/CareCalendarIterator` (implements `Iterator<CareCalendarDay>`)
 - **เหตุผลที่เลือก:** _(รอใส่)_
 - **Class Diagram:** _(รอใส่)_
+
+### 2.8 Template Method
+- **ผู้รับผิดชอบ:** Kamolpon
+- **ปัญหาที่แก้:**
+  - ระบบมีงานที่ต้องรันเองทุกเช้า 3 งาน: เตือนงานดูแลพรุ่งนี้ (08:00), เตือนงานที่เลยกำหนด (08:05), ปิดรายงานที่ไม่มีการบอกผลเกิน 14 วัน (08:10)
+  - ทั้ง 3 งานมีขั้นตอนเหมือนกันหมด: หาวันที่วันนี้ (เวลาไทย) → เปิด transaction → หาว่าต้องทำกับอะไร → ทำทีละรายการ → เขียน log สรุป
+  - ถ้าเขียนแยก 3 คลาส โค้ดส่วนที่เหมือนกันจะก๊อปซ้ำ 3 ที่ ถ้าแก้ (เช่น เปลี่ยน timezone) ต้องแก้ 3 ที่และลืมได้ง่าย
+- **ไฟล์/คลาสที่ใช้:**
+  - `job/AbstractDailyJob<T>` (abstract class มี template method `run()` เป็น `final`)
+  - `job/CareDueReminderJob`, `job/OverdueCareReminderJob`, `job/StaleReportCloseJob` (คลาสลูก)
+  - `config/SchedulingConfig` (เปิดใช้ `@Scheduled`)
+- **เหตุผลที่เลือก:**
+  - คลาสแม่กำหนดลำดับขั้นตอนไว้ใน `run()` ที่เป็น `final` คลาสลูก override ไม่ได้ ทุก job ทำงานลำดับเดียวกันแน่นอน
+  - คลาสลูกเขียนแค่ส่วนที่ต่าง: `findTargets()` (หาอะไร) กับ `process()` (ทำอะไร) ส่วน `afterRun()` เป็น hook จะเขียนทับหรือไม่ก็ได้
+  - ส่วนที่เหมือนกันอยู่ที่เดียว: ใช้เวลาไทย `Asia/Bangkok` เสมอแม้ server บน Render เป็น UTC, ทั้งงานอยู่ใน transaction เดียวเลยอ่านข้อมูล LAZY ได้
+  - เพิ่ม job ใหม่แค่ extends `AbstractDailyJob` แล้วเขียน 3 method (ตอนแรกมี 2 job ทีหลังเพิ่ม `StaleReportCloseJob` โดยไม่ต้องแก้คลาสแม่)
+  - job ไม่เรียก repository ตรง เรียกผ่าน `CareService` / `HealthReportService` และส่งแจ้งเตือนผ่าน Observer (`CareDueEvent`)
+  - เขียน unit test เรียก `run()` ตรงๆ ได้โดยไม่ต้องรอเวลา (`CareReminderJobsTest`, `StaleReportCloseJobTest`)
+- **Class Diagram:**
+
+![Template Method](diagrams/pattern-template-method.png)
+
+> `run()` เป็น `final` (template method) ลำดับตายตัว: 1) `findTargets` → 2) `process` ทีละรายการ → 3) `afterRun` (hook) · ตัวเอียง = abstract ที่คลาสลูกต้องเขียน
