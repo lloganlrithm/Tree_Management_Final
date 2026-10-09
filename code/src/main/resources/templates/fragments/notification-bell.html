@@ -13,7 +13,7 @@
 
   <details class="rp-bell">
     <summary class="bell" th:aria-label="'แจ้งเตือน ยังไม่อ่าน ' + ${unreadCount} + ' รายการ'" aria-label="แจ้งเตือน">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></svg>
+      <span class="icon icon-bell s20" aria-hidden="true"></span>
       <!-- จำนวนที่ยังไม่อ่าน เกิน 99 แสดง 99+ เป็น 0 ไม่แสดง -->
       <span class="rp-bell-count" th:data-count="${unreadCount}" th:if="${unreadCount > 0}"
             th:text="${unreadCount > 99 ? '99+' : unreadCount}">3</span>
@@ -45,7 +45,7 @@
           <!-- ติ๊กว่าอ่านแล้ว โดยไม่ต้องเปิดดู (มีเฉพาะอันที่ยังไม่อ่าน) -->
           <button type="button" class="rp-bell-check" th:unless="${n.isRead}"
                   title="ทำเครื่องหมายว่าอ่านแล้ว" aria-label="ทำเครื่องหมายว่าอ่านแล้ว">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>
+            <span class="icon icon-check s16" aria-hidden="true"></span>
           </button>
         </li>
       </ul>

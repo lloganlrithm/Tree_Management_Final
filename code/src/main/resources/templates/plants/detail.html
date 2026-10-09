@@ -15,10 +15,7 @@
       <main class="content">
 
         <a class="back" th:href="@{/plants}">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" aria-hidden="true">
-            <path d="m15 18-6-6 6-6" />
-          </svg>
+          <span class="icon icon-chevron-left s16" aria-hidden="true"></span>
           กลับไปต้นไม้ของฉัน
         </a>
         <div class="flash ok" th:if="${success}" th:text="${success}">บันทึกแล้ว</div>
@@ -28,13 +25,7 @@
         <section class="card">
           <div class="detail-head">
             <span class="plant-tile lg" th:classappend="'t-' + ${plant.healthStatus}">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.6"
-                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M12 20v-8" />
-                <path d="M12 12c0-4 3-6 7-6 0 4-3 6-7 6z" />
-                <path d="M12 14c0-3-2-5-6-5 0 3 2 5 6 5z" />
-                <path d="M7 20h10" />
-              </svg>
+              <span style="color: var(--primary)" class="icon icon-sprout s48" aria-hidden="true"></span>
             </span>
             <div class="grow">
               <h1 th:text="${plant.nickname ?: plant.species.name}">ม่อนม่อน</h1>
@@ -148,10 +139,7 @@
           <p>แก้ไขข้อมูลของ <span th:text="${plant.nickname ?: plant.species.name}">ม่อนม่อน</span></p>
         </div>
         <button class="btn btn-icon" type="button" data-close aria-label="ปิด">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" aria-hidden="true">
-            <path d="M6 6l12 12M18 6 6 18" />
-          </svg>
+          <span class="icon icon-close s20" aria-hidden="true"></span>
         </button>
       </div>
       <form method="post" th:action="@{/plants}" data-live>

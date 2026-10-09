@@ -24,17 +24,9 @@
 .form-actions.between { justify-content: space-between; }
 .field-label { font-weight: 500; font-size: .9rem; }
 
-/* ไอคอนจากไฟล์ svg ใช้สีตามตัวอักษร (currentColor) */
-.icon {
-  display: inline-block; width: 18px; height: 18px; vertical-align: middle;
-  background: currentColor;
-  -webkit-mask: var(--icon) center / contain no-repeat;
-          mask: var(--icon) center / contain no-repeat;
-}
-.icon-upload { --icon: url("../img/icons/upload.svg"); width: 22px; height: 22px; }
-.icon-logout { --icon: url("../img/icons/logout.svg"); }
-.icon-lock   { --icon: url("../img/icons/lock.svg"); width: 16px; height: 16px; }
-.icon-info { --icon: url("../img/icons/info.svg"); flex: none; }
+/* ขนาดไอคอนเฉพาะหน้าผู้ใช้ (ตัวไอคอนอยู่ใน base.css) */
+.icon-upload { width: 22px; height: 22px; }
+.icon-lock   { width: 16px; height: 16px; }
 .subtitle { margin-top: 4px; }
 /* U4: ข้อความผลลัพธ์ (เหมือน .flash ใน plants.css) */
 .flash { padding: 12px 16px; border-radius: var(--radius-md); margin-bottom: 16px; font-weight: 500; }
