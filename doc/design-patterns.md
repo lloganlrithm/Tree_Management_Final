@@ -13,8 +13,8 @@
 | Strategy | GoF Behavioral |  | `service/strategy/` |  |
 | State | GoF Behavioral |  | `plant/state/` |  |
 | Observer | GoF Behavioral |  | `event/` |  |
-| Command | GoF Behavioral |  | `command/` | Preemphat |
-| Chain of Responsibility | GoF Behavioral |  | `validation/` | Preemphat |
+| Command | GoF Behavioral | แอดมินเปลี่ยน role / ระงับบัญชีผิดคน แล้วย้อนกลับไม่ได้ | `command/` | Preemphat |
+| Chain of Responsibility | GoF Behavioral | การตรวจข้อมูลสมัครสมาชิกกองรวมเป็น if-else ยาวใน service | `validation/` | Preemphat |
 | Memento | GoF Behavioral |  | `plant/memento/` |  |
 | Iterator | GoF Behavioral |  | `iterator/` |  |
 
