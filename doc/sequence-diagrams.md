@@ -8,6 +8,7 @@
 | 2 | เข้าสู่ระบบ | Preemphat | — (Spring Security) |
 | 3 | เพิ่มต้นไม้ | Mukda | Observer, Strategy |
 | 4 | แอดมินตอบรายงานสุขภาพ | (เพื่อนเติม) | (เพื่อนเติม) |
+| 5 | บันทึกการดูแล (กด "ทำแล้ว") | Soranan | Strategy |
 
 ## 1. สมัครสมาชิก
 
@@ -30,3 +31,9 @@ Spring Security หาผู้ใช้จากอีเมล → เช็�
 ## 4. แอดมินตอบรายงานสุขภาพ
 
 ![Report Reply](diagrams/sequence-report-reply-diagram.png)
+
+## 5. บันทึกการดูแล (กด "ทำแล้ว")
+ 
+ผู้ใช้กด "ทำแล้ว" ที่งานดูแล → `CareController` ดึงผู้ใช้ปัจจุบันแล้วเรียก `CareServiceImpl.markDone()` → หาตารางดูแลด้วย `findByIdAndOwner` (ไม่พบหรือไม่ใช่ต้นไม้ของผู้ใช้ แสดง error "ไม่พบตารางดูแลนี้") → บันทึก `CareLog` โดยเก็บวันครบกำหนดเดิมไว้เทียบว่าทำตรงเวลาหรือช้า → `CareIntervalCalculator` เลือก strategy ตามประเภทงาน (Strategy) แล้วคำนวณวันครบกำหนดครั้งถัดไปนับจากวันนี้ → อัปเดต `nextDueDate` (Hibernate บันทึกให้ตอน commit) ทั้งหมดอยู่ใน transaction เดียว → กลับไปหน้าการดูแลพร้อมข้อความ "บันทึกการดูแลแล้ว"
+ 
+![Mark Care Done](diagrams/sequence-mark-care-done-diagram.png)
