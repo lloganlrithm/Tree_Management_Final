@@ -18,8 +18,9 @@
 | Memento | GoF Behavioral | ผู้ใช้แก้ข้อมูลต้นไม้ผิดแล้วกดบันทึกไป ค่าเดิมหาย ต้องจำแล้วแก้กลับเอง | `plant/memento/` | Mukda |
 | Iterator | GoF Behavioral | ปฏิทิน 30 วันต้องแสดงทุกวันแม้วันที่ไม่มีงาน แต่ข้อมูลที่ได้มาเป็นรายการตารางดูแล ไม่ใช่รายวัน | `iterator/` | Soranan |
 | Template Method | GoF Behavioral | job รายวัน 3 ตัวมีขั้นตอนเหมือนกัน (เปิด transaction, หาวันที่, วนทำ, เขียน log) ต่างกันแค่หาอะไร / ทำอะไร | `job/` | Kamolpon |
-
 ---
+
+## 1. Enterprise / Architectural Patterns (บังคับทุกกลุ่ม)
 
 ### 1.1 Layered Architecture
 - **ปัญหาที่แก้:** ถ้า controller เรียกฐานข้อมูลเอง หรือเขียน business logic ปนกับโค้ดหน้าเว็บ พอแก้ส่วนหนึ่งจะกระทบส่วนอื่นทั้งหมด และเทสต์แยกส่วนไม่ได้
