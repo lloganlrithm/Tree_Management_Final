@@ -4,54 +4,72 @@
 
 | Pattern | กลุ่ม | ปัญหาที่แก้ | ไฟล์/คลาสที่ใช้ | ผู้รับผิดชอบ |
 |---|---|---|---|---|
-| Layered Architecture | Architectural |  | `controller/` → `service/` → `repository/` → `domain/` |  |
-| MVC | Architectural |  | `controller/web/` + `templates/` |  |
-| Repository | Architectural |  | `repository/` |  |
-| Service Layer | Architectural |  | `service/`, `service/impl/` |  |
-| DTO + Mapper | Architectural |  | `dto/request/`, `dto/response/`, `mapper/` |  |
-| Dependency Injection | Architectural |  | Constructor Injection ทุก service/controller |  |
+| Layered Architecture | Architectural | ถ้า controller เรียก DB เองหรือเขียน business ปนกับหน้าเว็บ แก้ส่วนหนึ่งจะกระทบทุกส่วน | `controller/` → `service/` → `repository/` → `domain/` | ทีม |
+| MVC | Architectural | ถ้าเขียน HTML ปนกับโค้ดรับ request แก้หน้าตาเว็บต้องแก้ Java ด้วย | `controller/web/` + `templates/` | ทีม |
+| Repository | Architectural | ถ้าเขียน SQL กระจายใน service จะซ้ำและแก้ยาก และ service จะผูกกับฐานข้อมูล | `repository/` | ทีม |
+| Service Layer | Architectural | หน้าเว็บกับ REST API ทำงานเดียวกัน ถ้าเขียน business ใน controller ต้องเขียนซ้ำ 2 ที่ | `service/`, `service/impl/` | ทีม |
+| DTO + Mapper | Architectural | ถ้าส่ง entity ออก API ตรง ๆ จะหลุดข้อมูลที่ไม่ควรเห็น และ JSON จะเปลี่ยนทุกครั้งที่แก้ตาราง | `dto/request/`, `dto/response/`, `mapper/` | ทีม |
+| Dependency Injection | Architectural | ถ้าแต่ละคลาส `new` สิ่งที่ต้องใช้เอง จะเปลี่ยนตัว implementation หรือใส่ mock ตอนเทสต์ไม่ได้ | Constructor Injection ทุก service/controller | ทีม |
 | Strategy | GoF Behavioral | งานดูแลแต่ละประเภทคำนวณรอบวันไม่เหมือนกัน ถ้าเขียน if-else ใน service เพิ่มงานใหม่ต้องแก้ service ทุกครั้ง | `service/strategy/` | Soranan |
-| State |
+| State | GoF Behavioral | ต้นไม้มี 4 สถานะที่เปลี่ยนไปหากันได้ไม่ครบทุกทาง ถ้าเขียน if-else ใน service กติกาจะกระจาย และอาจเปลี่ยนผิด เช่นต้นที่ตายแล้วกลับมาปกติ | `plant/state/` | Mukda |
 | Observer | GoF Behavioral | งานหลักหลายจุด (ตอบรายงาน, ส่งรายงาน, job รายวัน) ต้องสร้างแจ้งเตือน ถ้าเรียก NotificationService ตรงๆ ทุกโมดูลจะผูกกับระบบแจ้งเตือน | `event/` | Kamolpon |
 | Command | GoF Behavioral | แอดมินเปลี่ยน role / ระงับบัญชีผิดคน แล้วย้อนกลับไม่ได้ | `command/` | Preemphat |
 | Chain of Responsibility | GoF Behavioral | การตรวจข้อมูลสมัครสมาชิกกองรวมเป็น if-else ยาวใน service | `validation/` | Preemphat |
 | Memento | GoF Behavioral | ผู้ใช้แก้ข้อมูลต้นไม้ผิดแล้วกดบันทึกไป ค่าเดิมหาย ต้องจำแล้วแก้กลับเอง | `plant/memento/` | Mukda |
 | Iterator | GoF Behavioral | ปฏิทิน 30 วันต้องแสดงทุกวันแม้วันที่ไม่มีงาน แต่ข้อมูลที่ได้มาเป็นรายการตารางดูแล ไม่ใช่รายวัน | `iterator/` | Soranan |
 | Template Method | GoF Behavioral | job รายวัน 3 ตัวมีขั้นตอนเหมือนกัน (เปิด transaction, หาวันที่, วนทำ, เขียน log) ต่างกันแค่หาอะไร / ทำอะไร | `job/` | Kamolpon |
-
 ---
 
 ## 1. Enterprise / Architectural Patterns (บังคับทุกกลุ่ม)
 
 ### 1.1 Layered Architecture
-- **ปัญหาที่แก้:** _(รอใส่)_
+- **ปัญหาที่แก้:** ถ้า controller เรียกฐานข้อมูลเอง หรือเขียน business logic ปนกับโค้ดหน้าเว็บ พอแก้ส่วนหนึ่งจะกระทบส่วนอื่นทั้งหมด และเทสต์แยกส่วนไม่ได้
 - **ไฟล์/คลาสที่ใช้:** `controller/` → `service/` → `repository/` → `domain/` (ห้าม controller เรียก repository ตรง)
-- **เหตุผลที่เลือก:** _(รอใส่)_
+- **เหตุผลที่เลือก:**
+  - แต่ละชั้นมีหน้าที่ชัด: controller รับ/ตอบ request, service ทำ business + transaction, repository คุยกับ DB, domain เก็บ entity/enum
+  - เรียกได้ทางเดียวจากบนลงล่าง ไม่มี controller ไหน import `repository` เลย (ตรวจทั้ง `controller/` แล้ว)
+  - เปลี่ยนชั้นล่างได้โดยไม่กระทบชั้นบน เช่น เปลี่ยน query ใน repository แล้ว controller ไม่ต้องแก้
 
 ### 1.2 MVC
-- **ปัญหาที่แก้:** _(รอใส่)_
-- **ไฟล์/คลาสที่ใช้:** Controller = `controller/web/*Controller`, View = `resources/templates/`, Model = DTO ที่ส่งเข้า `Model`
-- **เหตุผลที่เลือก:** _(รอใส่)_
+- **ปัญหาที่แก้:** ถ้าเขียน HTML ปนกับโค้ดรับ request แก้หน้าตาเว็บทีไรต้องแก้ Java ด้วย และคนทำหน้าเว็บกับคนทำ logic ทำงานพร้อมกันไม่ได้
+- **ไฟล์/คลาสที่ใช้:** Controller = `controller/web/*Controller`, View = `resources/templates/` (Thymeleaf), Model = ข้อมูลที่ controller ใส่ใน `Model` เช่น `model.addAttribute("plant", plant)`
+- **เหตุผลที่เลือก:**
+  - controller แค่เตรียมข้อมูลแล้วคืนชื่อหน้า (เช่น `"plants/detail"`) ส่วนการแสดงผลอยู่ใน template ทั้งหมด
+  - แยกหน้าตามฟีเจอร์เป็นโฟลเดอร์ (`plants/`, `care/`, `reports/`, `admin/`, `auth/`, `profile/`) และใช้ `fragments/` ร่วมกัน ทำให้แต่ละคนทำหน้าของตัวเองได้ไม่ชนกัน
+  - Thymeleaf escape ข้อความให้อัตโนมัติ ลดความเสี่ยง XSS
 
 ### 1.3 Repository
-- **ปัญหาที่แก้:** _(รอใส่)_
-- **ไฟล์/คลาสที่ใช้:** `repository/*Repository` (Spring Data JPA)
-- **เหตุผลที่เลือก:** _(รอใส่)_
+- **ปัญหาที่แก้:** ถ้าเขียน SQL กระจายอยู่ใน service โค้ดจะซ้ำกัน แก้ยาก และ service จะผูกกับฐานข้อมูลโดยตรง
+- **ไฟล์/คลาสที่ใช้:** `repository/*Repository` (Spring Data JPA) 8 ตัว ตามตารางใน DB
+- **เหตุผลที่เลือก:**
+  - service เรียกผ่าน method ที่อ่านแล้วเข้าใจทันที เช่น `plantRepository.findByIdAndUserEmail(id, email)` ซึ่งหาต้นไม้และเช็กความเป็นเจ้าของในคำสั่งเดียว
+  - Spring Data สร้าง query จากชื่อ method ให้เอง ไม่ต้องเขียน SQL ส่วนใหญ่ และรองรับแบ่งหน้า (`Pageable`) ให้ REST API
+  - ตอนเทสต์ mock repository แทน DB จริงได้
 
 ### 1.4 Service Layer
-- **ปัญหาที่แก้:** _(รอใส่)_
+- **ปัญหาที่แก้:** หน้าเว็บกับ REST API ทำงานเดียวกัน (เช่น เพิ่มต้นไม้) ถ้าเขียน business logic ไว้ใน controller ต้องเขียนซ้ำ 2 ที่ และกติกาอาจไม่ตรงกัน
 - **ไฟล์/คลาสที่ใช้:** interface ใน `service/` + implementation ใน `service/impl/`
-- **เหตุผลที่เลือก:** _(รอใส่)_
+- **เหตุผลที่เลือก:**
+  - `PlantController` (หน้าเว็บ) กับ `PlantApiController` (REST) เรียก `PlantService` ตัวเดียวกัน กติกาเลยอยู่ที่เดียว เช่น เพิ่มต้นไม้ผ่าน API ก็ได้ตารางดูแลอัตโนมัติเหมือนหน้าเว็บ
+  - transaction (`@Transactional`) อยู่ที่ชั้น service ทำให้หลายขั้นตอนสำเร็จหรือล้มเหลวไปพร้อมกัน
+  - controller ขึ้นกับ interface ไม่ใช่ `*Impl` จึงเปลี่ยน implementation หรือ mock ตอนเทสต์ได้
 
 ### 1.5 DTO + Mapper
-- **ปัญหาที่แก้:** _(รอใส่)_
-- **ไฟล์/คลาสที่ใช้:** `dto/request/`, `dto/response/`, `mapper/PlantMapper`, `mapper/HealthReportMapper`
-- **เหตุผลที่เลือก:** _(รอใส่)_
+- **ปัญหาที่แก้:** ถ้ารับ/ส่ง entity ตรง ๆ ข้อมูลที่ไม่ควรเห็นอาจหลุดออก API, ผู้ใช้อาจส่ง field ที่ไม่ควรแก้ได้ (เช่น `healthStatus`) และ JSON จะเปลี่ยนทุกครั้งที่แก้ตาราง
+- **ไฟล์/คลาสที่ใช้:** `dto/request/` (เช่น `PlantRequest`, `RegisterRequest`), `dto/response/` (เช่น `PlantResponse`, `ErrorResponse`), `mapper/PlantMapper`, `mapper/HealthReportMapper`
+- **เหตุผลที่เลือก:**
+  - request DTO รับเฉพาะ field ที่ผู้ใช้กรอกได้ และใส่ `@Valid` ตรวจข้อมูลก่อนถึง service
+  - response DTO กำหนดรูปแบบ JSON ของ API เอง แก้ entity แล้ว API ไม่เปลี่ยนตาม
+  - mapper เป็นที่เดียวที่แปลง entity → DTO ไม่ต้องเขียนซ้ำในทุก controller และเทสต์แยกได้ (`PlantMapperTest`)
 
 ### 1.6 Dependency Injection
-- **ปัญหาที่แก้:** _(รอใส่)_
+- **ปัญหาที่แก้:** ถ้าแต่ละคลาส `new` สิ่งที่ต้องใช้เอง จะเปลี่ยนตัว implementation ไม่ได้ (เช่น สลับที่เก็บรูปจากเครื่องเป็น Cloudinary) และใส่ mock ตอนเทสต์ไม่ได้
 - **ไฟล์/คลาสที่ใช้:** Constructor Injection (`@RequiredArgsConstructor` + field `final`) ทุก service/controller
-- **เหตุผลที่เลือก:** _(รอใส่)_
+- **เหตุผลที่เลือก:**
+  - Spring สร้างและส่ง dependency เข้า constructor ให้เอง field เป็น `final` จึงไม่มีทางเป็น null หรือถูกเปลี่ยนทีหลัง
+  - ทั้งโปรเจกต์ไม่มี `@Autowired` เลย (ตรงตามที่ใบงานกำหนด)
+  - ตอนเทสต์ส่ง mock เข้า constructor ได้ตรง ๆ ด้วย Mockito ไม่ต้องเปิด Spring
+  - ดูตัวอย่างเพิ่มเติมได้ในหัวข้อ D ของ [solid-analysis.md](solid-analysis.md)
 
 ---
 
