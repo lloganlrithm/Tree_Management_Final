@@ -47,6 +47,7 @@
 | `plant/state/PlantHealthStates.java` | `register(new HealthyState())` ... ลงใน `EnumMap` | จะเพิ่มสถานะสุขภาพใหม่ แค่สร้าง class ที่ `implements PlantHealthState` แล้ว register ไม่ต้องแก้ if-else ใน `PlantServiceImpl` หรือ controller |
 | `job/AbstractDailyJob.java` | `CareDueReminderJob`, `OverdueCareReminderJob`, `StaleReportCloseJob` extends คลาสนี้ | เพิ่ม job รายวันตัวใหม่ = สร้างคลาสใหม่ที่ extends แล้วเขียน `findTargets()` กับ `process()` ไม่ต้องแก้คลาสแม่หรือ job เดิม |
 | `event/NotificationListener.java` | service ส่งแค่ `publishEvent(...)` ไม่รู้ว่าใครฟัง | จะเพิ่มการแจ้งเตือนแบบใหม่ เช่น ส่งอีเมล ทำได้ด้วยการเพิ่ม listener ใหม่ ฝั่ง `HealthReportServiceImpl` ที่ส่ง event ไม่ต้องแก้เลย |
+
 ---
 
 ## L : Liskov Substitution Principle
@@ -61,6 +62,7 @@
 | `plant/state/HealthyState.java`, `SickState.java`, `RecoveringState.java`, `DeadState.java` | ทุกตัว implement `PlantHealthState` และเมื่อเปลี่ยนไม่ได้จะ throw `InvalidHealthTransitionException` แบบเดียวกัน | `PlantServiceImpl` เรียก `PlantHealthStates.of(status).changeTo(plant, target)` ได้โดยไม่ต้องรู้ว่าเป็นสถานะไหน สลับตัวไหนมาก็ทำงานถูก |
 | ทั้งโปรเจค | ค้นทั้ง `code/src/main` ไม่พบ `UnsupportedOperationException` | ไม่มี implementation ไหนที่ทำไม่ได้ แล้วโยน exception แทน |
 | `job/CareDueReminderJob.java`, `OverdueCareReminderJob.java`, `StaleReportCloseJob.java` | ทั้ง 3 ตัว override แค่ `name()`, `findTargets()`, `process()` ส่วน `run()` เป็น `final` | ใช้ job ตัวไหนแทน `AbstractDailyJob` ก็ได้ เรียก `run()` แล้วลำดับขั้นตอนเหมือนกันทุกตัว ไม่มีตัวไหนข้ามขั้นหรือโยน exception ว่าไม่รองรับ |
+
 ---
 
 ## I : Interface Segregation Principle
