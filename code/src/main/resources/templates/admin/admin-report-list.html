@@ -73,7 +73,9 @@
                 <!-- มีรูปแนบ = แสดงรูปย่อ กดแถวแล้วดูรูปใหญ่ในแผงตอบ -->
                 <img class="rp-thumb" th:if="${r.imageUrl != null}" th:src="${r.imageUrl}" alt="มีรูปแนบ" loading="lazy">
               </td>
-              <td th:text="${r.plant.nickname != null ? r.plant.nickname : 'ไม่มีชื่อเล่น'}" data-field="plants.nickname">บอสตันฟู</td>
+              <!-- ชื่อยาวตัดเป็น ... ชี้เมาส์เห็นชื่อเต็ม -->
+              <td><span class="rp-clip" th:with="plantName=${r.plant.nickname != null ? r.plant.nickname : 'ไม่มีชื่อเล่น'}"
+                        th:text="${plantName}" th:title="${plantName}" data-field="plants.nickname">บอสตันฟู</span></td>
               <td><span class="badge" th:classappend="${r.severity != null} ? ('sev-' + ${r.severity})"
                         th:text="${@reportLabels.severity(r.severity)}" data-field="health_reports.severity">ปานกลาง</span></td>
               <td><span class="badge" th:classappend="'st-' + ${r.status}"
