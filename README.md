@@ -14,6 +14,12 @@ PlantPal เป็นเว็บแอปสำหรับจัดการ�
 | 3 | นางสาวมุกดา บุญประจันทร์ | 673380598-1 | 3 | `Mukda_6733805981_03` | จัดการต้นไม้, สถานะสุขภาพ, REST API (State, Memento) |
 | 4 | นางสาวสรนันท์ บุสดี | 673380605-0 | 3 | `Soranan_6733806050_03` | ตารางการดูแล, ปฏิทิน, ประวัติการดูแล (Strategy, Iterator) |
 
+## Presentation
+
+- สไลด์นำเสนอ (PDF): [PlantPal_Slides.pdf](doc/slide/PlantPal_Slides.pdf)
+- สไลด์นำเสนอ (Canva): [เปิดใน Canva](https://canva.link/sbs6wymgrya8tg3)
+- รายงาน (PDF): [PlantPal_Report.pdf](doc/PlantPal_Report.pdf)
+
 ## Tech Stack
 
 | ส่วน | เทคโนโลยี |
