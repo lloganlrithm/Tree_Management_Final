@@ -6,6 +6,10 @@
 
 /* ---------- หน้ารายงานทั้งฝั่งผู้ใช้และ admin: ลิงก์ไม่ขีดเส้นใต้ (ชิปตัวกรอง ชื่อต้นไม้ ประวัติ ฯลฯ) ---------- */
 .rp-page a, .rp-page a:hover { text-decoration: none; }
+/* ข้อความยาวไม่มีเว้นวรรค (เช่น ชื่อต้นไม้ภาษาอังกฤษติดกันยาวๆ) ให้ตัดบรรทัดได้ ไม่ดันหน้าจนล้น */
+.rp-page { overflow-wrap: anywhere; }
+/* ในตาราง: ตัดเป็น ... บรรทัดเดียว (ชื่อเต็มอยู่ใน title ชี้เมาส์ดูได้) */
+.rp-clip { display: block; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ---------- ป้ายสถานะที่เพิ่มทีหลัง (4 ตัวแรกอยู่ใน base.css) ---------- */
 .st-FOLLOWED_UP { background: #efe9f6; color: #7a5aa6; }
